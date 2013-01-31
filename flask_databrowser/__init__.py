@@ -139,7 +139,7 @@ class DataBrowser(object):
         self.blueprint = Blueprint("__data_browser__", __name__, 
                                    static_folder="static", 
                                    template_folder="templates")
-        app.register_blueprint(self.blueprint)
+        app.register_blueprint(self.blueprint, url_prefix="/__data_browser__")
         self.page_size = page_size
 
 
