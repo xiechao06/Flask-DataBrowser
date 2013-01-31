@@ -6,6 +6,7 @@ import os
 import re
 import codecs
 from flask import render_template, render_template_string
+from flask.ext.databrowser import utils
 
 def get_primary_key(model):
     """
@@ -28,6 +29,28 @@ class ModelView(object):
 
     __list_formatters__ = {}
     __list_columns__ = {}
+
+
+    @property
+    def normalized_list_columns(self):
+        if self.__list_columns__: 
+            for c in self.__list_columns__:
+                if isinstance(c, types.TupleType):
+                    col_name = c[0]
+                    col_label = c[1]
+                    col_doc = c[2] if len(c) == 3 else ""
+                else:
+                    col_name = c
+                    col_label = c
+                    col = getattr(self.model, col_name)
+                    try:
+                        col_doc = getattr(col, "doc")
+                    except AttributeError:
+                        col_doc = ""
+                yield (col_name, col_label, col_doc) 
+        else:
+            for k, c in enumerate(self.model.__table__.c):
+                yield (c.name, c.name, c.doc if c.doc else "")
 
     def __init__(self, model):
         self.model = model
@@ -54,6 +77,10 @@ class ModelView(object):
         kwargs["__list_columns__"] = self.scaffold_list_columns()
         kwargs["__actions__"] = self.scaffold_actions()
         count, kwargs["__data__"] = self.scaffold_list(page)
+        from flask.ext.sqlalchemy import Pagination
+        kwargs["__pagination__"] = Pagination(None, page, 
+                                              self.data_browser.page_size,
+                                              count, kwargs["__data__"])
         kwargs.update(self.extra_params.get("list_view", {}))
         template_fname = self.blueprint.name + self.list_view_url+".html"
         if not os.path.exists(template_fname):
@@ -67,19 +94,7 @@ class ModelView(object):
         """
         collect columns displayed in table
         """
-        for col_name in self.__list_columns__:
-            if isinstance(col_name, types.TupleType):
-                col_label = col_name[1]
-                col_doc = col_name[2] if len(col_name) == 3 else ""
-            else:
-                col_label = col_name
-                col = getattr(self.model, col_name)
-                try:
-                    col_doc = getattr(col, "doc")
-                except AttributeError:
-                    col_doc = ""
-                
-            yield dict(label=col_label, doc=col_doc)
+        return (dict(label=c[1], doc=c[2]) for c in self.normalized_list_columns)
 
     def scaffold_actions(self):
         return 1
@@ -94,13 +109,8 @@ class ModelView(object):
             for r in q.all():
                 pk = self.scaffold_pk(r)
                 fields = []
-                list_columns = self.__list_columns__
-                if not list_columns:
-                    list_columns = [c.name for c in enumerate(self.model.__table__.c)]
-                for col_name in list_columns:
-                    if isinstance(col_name, types.TupleType):
-                        col_name = col_name[0]
-                    fields.append(self.format_value(getattr(r, col_name), col_name))
+                for c in self.normalized_list_columns:
+                    fields.append(self.format_value(getattr(r, c[0]), c[0]))
                 yield dict(pk=pk, fields=fields)
         return count, g()
 
@@ -123,6 +133,7 @@ class DataBrowser(object):
         from jinja2 import Environment
         from hamlish_jinja import HamlishExtension
         app.jinja_env.add_extension(HamlishExtension)
+        app.jinja_env.globals['url_for_other_page'] = utils.url_for_other_page
         from flask import Blueprint
         # register it for using the templates of data browser
         self.blueprint = Blueprint("__data_browser__", __name__, 
