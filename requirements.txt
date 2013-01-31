@@ -1,1 +1,3 @@
 flask
+flask-sqlalchemy
+Hamlish-Jinja==0.3.0
