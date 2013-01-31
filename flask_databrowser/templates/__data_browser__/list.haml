@@ -1,5 +1,10 @@
 -extends "layout.html"
 
+-block custom_external
+  %link rel="stylesheet" \
+    href="{{ url_for('__data_browser__.static', filename="css/bootstrap/css/bootstrap.min.css") }}" \
+      type="text/css" media="screen"
+
 -block body
 
   %table.bordertable
@@ -9,7 +14,16 @@
           %th -> %input type="checkbox" name="rowtoggle"
         -for c in __list_columns__
           %th title={% if c.doc %} {{c.doc}} {% endif %}
-            {{ c.label }}
+            -if c.sort_url
+              %a href="{{ c.sort_url }}"
+                {{ c.label }}
+                -if __order_by__(c.name) 
+                  -if __desc__
+                    %i class="icon-chevron-down"
+                  -else
+                    %i class="icon-chevron-up"
+            -else
+              {{ c.label }}
     %tbody
       -for row in __data__
         %tr
@@ -17,5 +31,5 @@
           %td -> %input type="checkbox" value="{{ row.pk }}"
         -for v in row.fields:
           %td -> {{ v }}
-          
-         
+  
+  %a.ym-add.ym-button.success href="{{ __create_url__ }}" << {{ _("创建") }}

@@ -5,8 +5,9 @@ import types
 import os
 import re
 import codecs
-from flask import render_template, render_template_string
+from flask import render_template, render_template_string, request, url_for
 from flask.ext.databrowser import utils
+from flask.ext.sqlalchemy import Pagination
 
 def get_primary_key(model):
     """
@@ -29,7 +30,7 @@ class ModelView(object):
 
     __list_formatters__ = {}
     __list_columns__ = {}
-
+    __sortable_columns__ = []
 
     @property
     def normalized_list_columns(self):
@@ -60,47 +61,86 @@ class ModelView(object):
 
     @property
     def list_view_url(self):
-        return "/" + re.sub(r"([A-Z])+", lambda m: "-" + m.groups()[0].lower(), 
-                      self.model.__name__).lstrip("-") + "-list"
+        return self.object_view_url + "-list"
 
     @property
     def list_view_endpoint(self):
+        return self.object_view_endpoint + "_list"
+
+    @property
+    def object_view_url(self):
+        return "/" + re.sub(r"([A-Z])+", lambda m: "-" + m.groups()[0].lower(), 
+                              self.model.__name__).lstrip("-")
+
+    @property
+    def object_view_endpoint(self):
         return re.sub(r"([A-Z])+", lambda m: "_" + m.groups()[0].lower(), 
-                      self.model.__name__).lstrip("_") + "_list"
+                              self.model.__name__).lstrip("_")
 
     def list_view(self):
         """
         the view function of list of models
         """
-        page = self._parse_args()
+        page, order_by, desc = self._parse_args()
         kwargs = {}
-        kwargs["__list_columns__"] = self.scaffold_list_columns()
+        kwargs["__list_columns__"] = self.scaffold_list_columns(order_by, desc)
         kwargs["__actions__"] = self.scaffold_actions()
-        count, kwargs["__data__"] = self.scaffold_list(page)
-        from flask.ext.sqlalchemy import Pagination
+        count, kwargs["__data__"] = self.scaffold_list(page, order_by, desc)
+        kwargs["__create_url__"] = url_for(".".join([self.blueprint.name, self.object_view_endpoint]))
+        kwargs["__order_by__"] = lambda col_name: col_name == order_by
+        if desc:
+            kwargs["__desc__"] = desc
         kwargs["__pagination__"] = Pagination(None, page, 
                                               self.data_browser.page_size,
                                               count, kwargs["__data__"])
+
         kwargs.update(self.extra_params.get("list_view", {}))
         template_fname = self.blueprint.name + self.list_view_url+".html"
         if not os.path.exists(template_fname):
             template_fname = os.path.join(self.data_browser.blueprint.name, "list.haml")
         return render_template(template_fname, **kwargs)
 
-    def _parse_args(self):
-        return None 
+    def object_view(self, id_):
+        pass
 
-    def scaffold_list_columns(self):
+    def _parse_args(self):
+        from flask import request
+        order_by = request.args.get("order_by")
+        desc = int(request.args.get("desc", 0))
+        return None, order_by, desc
+
+    def scaffold_list_columns(self, order_by, desc):
         """
         collect columns displayed in table
         """
-        return (dict(label=c[1], doc=c[2]) for c in self.normalized_list_columns)
+        for c in self.normalized_list_columns:
+            if c[0] in self.__sortable_columns__:
+                args = request.args.copy()
+                args["order_by"] = c[0]
+                if order_by == c[0]: # the table is sorted by c, so revert the order
+                    if not desc:
+                        args["desc"] = 1
+                    else:
+                        try:
+                            args.pop("desc")
+                        except KeyError:
+                            pass
+                sort_url = url_for(".".join([self.blueprint.name, self.list_view_endpoint]), 
+                                   **args)
+            else:
+                sort_url = ""
+            yield dict(name=c[0], label=c[1], doc=c[2], sort_url=sort_url)
 
     def scaffold_actions(self):
         return 1
 
-    def scaffold_list(self, page):
+    def scaffold_list(self, page, order_by, desc):
         q = self.model.query
+        if order_by:
+            order_criterion = getattr(self.model, order_by)
+            if desc:
+                order_criterion = order_criterion.desc()
+            q = q.order_by(order_criterion)
         count = q.count()
         if page:
             q.offset((page-1) * self.data_browser.page_size)
@@ -155,3 +195,7 @@ class DataBrowser(object):
         blueprint.add_url_rule(model_view.list_view_url, 
                                model_view.list_view_endpoint, model_view.list_view, 
                                methods=["GET", "POST"])
+        blueprint.add_url_rule(model_view.object_view_url, 
+                               model_view.object_view_endpoint, model_view.object_view, 
+                               methods=["GET", "POST"])
+
