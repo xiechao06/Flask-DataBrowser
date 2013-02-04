@@ -80,7 +80,7 @@
         <div class="control-group{{ ' error' if f.errors }}">
             <div class="control-label">
                 {{ f.label.text }}
-                {% if is_required_form_field(f) %}
+                {% if h.is_required_form_field(f) %}
                     <strong style="color: red">&#42;</strong>
                 {% else %}
                     &nbsp;
