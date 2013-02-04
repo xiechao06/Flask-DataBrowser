@@ -68,9 +68,7 @@ class BaseFilter(TemplateParam):
         if self.__options:
             return self.__options
         else:
-            """
-            if column is a relation, then we should find all of them
-            """
+            # if column is a relation, then we should find all of them
             # TODO table joinning unsupported
             attr = getattr(self.model, self.col_name)
             ret = []
