@@ -34,9 +34,6 @@ def main():
             "create_time": u"创建于", 
             "group": u"用户组",
         }
-        __list_columns__ = ["id", "name"]
-        __sortable_columns__ = ["id", "user"]
-        form_formatters = {"group": lambda x:".".join([x.name, str(x.id)])}
 
         from flask.ext.databrowser import filters
         from datetime import datetime, timedelta
