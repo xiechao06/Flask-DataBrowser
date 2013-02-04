@@ -20,7 +20,7 @@
     .row-fluid
       -block lists
         %form.span10 method="POST" 
-          %a.btn.btn-success href="{{ __create_url__ }}" 
+          %a.btn.btn-success href="{{ __object_url__ }}" 
             %span.add-on.icon-plus
             {{ _("新建") }}
           -if __data__
@@ -47,7 +47,10 @@
                     -if __actions__
                       %td.span1 -> %input type="checkbox" value="{{ row.pk }}" name="selected-ids"
                     -for v in row.fields:
-                      %td -> {{ v }}
+                      -if v.link
+                        %td -> %a href="{{ v.link }}" << {{ v.value }}
+                      -else
+                        %td << {{ v }}
           -else
             %p.text-error << {{ _("没有符合条件的结果") }}
 

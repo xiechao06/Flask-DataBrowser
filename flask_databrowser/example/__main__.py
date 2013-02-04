@@ -35,6 +35,8 @@ def main():
             "group": u"用户组",
         }
 
+        form_formatters = {"group": lambda group: group.name}
+
         from flask.ext.databrowser import filters
         from datetime import datetime, timedelta
         today = datetime.today()

@@ -358,7 +358,7 @@ class ModelView(object):
             kwargs["__filters__"] = [f.as_dict("op", "label", "input_type", "input_class", "value", "options") for f in column_filters]
             kwargs["__actions__"] = self.scaffold_actions()
             count, kwargs["__data__"] = self.scaffold_list(page, order_by, desc, column_filters)
-            kwargs["__create_url__"] = url_for(".".join([self.blueprint.name, self.object_view_endpoint]), url=request.url)
+            kwargs["__object_url__"] = url_for(".".join([self.blueprint.name, self.object_view_endpoint]), url=request.url)
             kwargs["__order_by__"] = lambda col_name: col_name == order_by
             if desc:
                 kwargs["__desc__"] = desc
@@ -418,6 +418,7 @@ class ModelView(object):
         return [{"name": "delete", "value": gettext(u"删除")}]
 
     def scaffold_list(self, page, order_by, desc, filters):
+        from .utils import get_primary_key
         q = self.model.query
 
         for filter in filters:
@@ -438,7 +439,14 @@ class ModelView(object):
                 pk = self.scaffold_pk(r)
                 fields = []
                 for c in self.normalized_list_columns:
-                    fields.append(self.format_value(getattr(r, c[0]), c[0]))
+                    raw_value = getattr(r, c[0])
+                    formatted_value = self.format_value(raw_value, c[0])
+                    # add link to object if it is primary key
+                    if get_primary_key(self.model) == c[0]:
+                        formatted_value = {"value": formatted_value}
+                        formatted_value["link"] = url_for("."+self.object_view_endpoint, 
+                                                          id_=raw_value)
+                    fields.append(formatted_value)
                 yield dict(pk=pk, fields=fields)
         return count, g()
 
