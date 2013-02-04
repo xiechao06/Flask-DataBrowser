@@ -23,7 +23,9 @@ class ModelView(object):
 
     can_create = can_edit = can_delete = True
 
-    __create_form__ = None
+    __create_form__ = __edit_form__ = None
+
+    create_template = edit_template = None
 
     def render(self, template, **kwargs):
         kwargs['_gettext'] = gettext
@@ -75,17 +77,13 @@ class ModelView(object):
                       self.model.__name__).lstrip(link) + link + "list"
 
     def get_one(self, id_):
-        return self.model.query.get(id_)
+        return self.model.query.get_or_404(id_)
 
     def object_view(self, id_=None):
         if id_:
             return self.edit_view(id_)
         else:
             return self.create_view()
-
-    def get_one(self, id_):
-        return self.model.query.get(id_)
-
 
     # Model handlers
     def on_model_change(self, form, model):
@@ -177,6 +175,12 @@ class ModelView(object):
         """
             Create model view
         """
+        if self.create_template is None:
+            import posixpath
+
+            self.create_template = posixpath.join(
+                self.data_browser.blueprint.name, "form.haml")
+
         return_url = request.args.get('url') or url_for(
             '.' + self.list_view_endpoint)
 
@@ -193,8 +197,8 @@ class ModelView(object):
                                             url=return_url))
                 else:
                     return redirect(return_url)
-        import posixpath
-        return self.render(posixpath.join(self.data_browser.blueprint.name,"form.haml"), form=form,
+
+        return self.render(self.create_template, form=form,
                            return_url=return_url)
 
 
@@ -202,6 +206,12 @@ class ModelView(object):
         """
             Edit model view
         """
+        if self.edit_template is None:
+           import posixpath
+
+           self.edit_template = posixpath.join(
+               self.data_browser.blueprint.name, "form.haml")
+
         return_url = request.args.get('url') or url_for(
             '.' + self.list_view_endpoint)
 
@@ -213,10 +223,7 @@ class ModelView(object):
 
         model = self.get_one(id_)
 
-        if model is None:
-            return redirect(return_url)
-
-        form = self.edit_form(obj=model)
+        form = self.get_edit_form(obj=model)
 
         if form.validate_on_submit():
             if self.update_model(form, model):
@@ -242,8 +249,7 @@ class ModelView(object):
 
         model = self.get_one(id)
 
-        if model:
-            self.delete_model(model)
+        self.delete_model(model)
 
         return redirect(return_url)
 
@@ -289,6 +295,11 @@ class ModelView(object):
         if self.__create_form__ is None:
             self.__create_form__ = self.get_form()
         return self.__create_form__()
+
+    def get_edit_form(self, obj=None):
+        if self.__edit_form__ is None:
+            self.__edit_form__ = self.get_form(self.__list_columns__)
+        return self.__edit_form__(obj=obj)
 
     def __init__(self, model):
         self.model = model
