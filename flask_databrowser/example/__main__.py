@@ -15,8 +15,24 @@ def main():
 
     class UserModelView(databrowser.ModelView):
 
-        __list_columns__ = ["id", "name"]
-        __sortable_columns__ = ["id", "user"]
+        __list_columns__ = ["id", "name", "group", "password"]
+
+        __list_formatters__ = {
+            "create_time": lambda model, v: v.strftime("%Y-%m-%d %H") + u"点",
+            "group": lambda model, v: v.name,
+        }
+
+        __column_docs__ = {
+            "password": u"md5值",
+        }
+
+        __sortable_columns__ = ["id", "name"]
+
+        __column_labels__ = {
+            "name": u"姓名",
+            "create_time": u"创建于", 
+            "group": u"用户组",
+        }
 
         from flask.ext.databrowser import filters
         from datetime import datetime, timedelta
@@ -31,6 +47,8 @@ def main():
                                                         (week_ago, u'一周内'), 
                                                         (_30days_ago, u'30天内')]), 
                              filters.EqualTo("name", name=u"是")]
+        
+
     browser.register_model_view(UserModelView(User), accounts_bp)
     app.register_blueprint(accounts_bp, url_prefix="/accounts")
     app.config["CSRF_ENABLED"] = False
