@@ -287,10 +287,8 @@ class ModelView(object):
             self.__create_form__ = self.get_form()
         return self.__create_form__()
 
-    def __init__(self, model, list_columns=None, list_formatters=None):
+    def __init__(self, model):
         self.model = model
-        self.__list_columns__ = list_columns or {}
-        self.__list_formatters__ = list_formatters or {}
         self.blueprint = None
         self.data_browser = None
         self.extra_params = {}
