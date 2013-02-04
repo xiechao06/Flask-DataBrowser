@@ -3,3 +3,4 @@ flask-sqlalchemy
 Hamlish-Jinja==0.3.0
 PyYAML==3.10
 yafowil==2.0.2
+wtforms
