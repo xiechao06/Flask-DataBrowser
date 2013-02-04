@@ -7,6 +7,7 @@
 def main():
     from flask.ext import databrowser
     from flask import Blueprint
+
     from basemain import app, db
     from models import User
     accounts_bp = Blueprint("accounts", __name__, static_folder="static", 
@@ -33,6 +34,9 @@ def main():
             "create_time": u"创建于", 
             "group": u"用户组",
         }
+        __list_columns__ = ["id", "name"]
+        __sortable_columns__ = ["id", "user"]
+        form_formatters = {"group": lambda x:".".join([x.name, str(x.id)])}
 
         from flask.ext.databrowser import filters
         from datetime import datetime, timedelta
@@ -40,6 +44,7 @@ def main():
         yesterday = today.date()
         week_ago = (today - timedelta(days=7)).date()
         _30days_ago = (today - timedelta(days=30)).date()
+
 
         __column_filters__ = [filters.EqualTo("group", name=u"是", opt_formatter=lambda opt: opt.name),
                              filters.BiggerThan("create_time", name=u"在", 
@@ -51,7 +56,9 @@ def main():
 
     browser.register_model_view(UserModelView(User), accounts_bp)
     app.register_blueprint(accounts_bp, url_prefix="/accounts")
+    app.config["SECRET_KEY"] = "JHdkj1;"
     app.config["CSRF_ENABLED"] = False
+
     app.run(debug=True)
 
 

@@ -123,7 +123,7 @@ class AdminModelConverter(ModelConverterBase):
         if 'label' in field_args:
             return field_args['label']
 
-        column_labels = getattr(self.view, '__list_columns__', None)
+        column_labels = getattr(self.view, '__column_labels__', {})
 
         if column_labels:
             return column_labels.get(name)

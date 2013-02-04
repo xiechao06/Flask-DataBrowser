@@ -4,7 +4,8 @@ import os
 import re
 import codecs
 import copy
-from flask.ext.babel import gettext as _
+from flask import render_template, flash, request, url_for, redirect
+from flask.ext.babel import gettext, ngettext
 
 class ModelView(object):
 
@@ -15,18 +16,22 @@ class ModelView(object):
     __column_docs__ = {}
     __column_filters__ = []
 
+    form = None
+    form_formatters = None
+    column_descriptions = None
+    column_hide_backrefs = True
+
+    can_create = can_edit = can_delete = True
+
+    __create_form__ = __edit_form__ = None
+
+    create_template = edit_template = None
+
     def render(self, template, **kwargs):
-
-        def is_required_form_field(field):
-            from wtforms.validators import Required
-            for validator in field.validators:
-                if isinstance(validator, Required):
-                    return True
-            return False
-
         kwargs['_gettext'] = gettext
         kwargs['_ngettext'] = ngettext
-        kwargs['is_required_form_field'] = is_required_form_field
+        from . import helpers
+        kwargs['h'] = helpers
 
         return render_template(template, **kwargs)
 
@@ -72,17 +77,13 @@ class ModelView(object):
                       self.model.__name__).lstrip(link) + link + "list"
 
     def get_one(self, id_):
-        return self.model.query.get(id_)
+        return self.model.query.get_or_404(id_)
 
     def object_view(self, id_=None):
         if id_:
             return self.edit_view(id_)
         else:
             return self.create_view()
-
-    def get_one(self, id_):
-        return self.model.query.get(id_)
-
 
     # Model handlers
     def on_model_change(self, form, model):
@@ -174,6 +175,12 @@ class ModelView(object):
         """
             Create model view
         """
+        if self.create_template is None:
+            import posixpath
+
+            self.create_template = posixpath.join(
+                self.data_browser.blueprint.name, "form.haml")
+
         return_url = request.args.get('url') or url_for(
             '.' + self.list_view_endpoint)
 
@@ -190,8 +197,8 @@ class ModelView(object):
                                             url=return_url))
                 else:
                     return redirect(return_url)
-        import posixpath
-        return self.render(posixpath.join(self.data_browser.blueprint.name,"form.haml"), form=form,
+
+        return self.render(self.create_template, form=form,
                            return_url=return_url)
 
 
@@ -199,6 +206,12 @@ class ModelView(object):
         """
             Edit model view
         """
+        if self.edit_template is None:
+           import posixpath
+
+           self.edit_template = posixpath.join(
+               self.data_browser.blueprint.name, "form.haml")
+
         return_url = request.args.get('url') or url_for(
             '.' + self.list_view_endpoint)
 
@@ -210,10 +223,7 @@ class ModelView(object):
 
         model = self.get_one(id_)
 
-        if model is None:
-            return redirect(return_url)
-
-        form = self.edit_form(obj=model)
+        form = self.get_edit_form(obj=model)
 
         if form.validate_on_submit():
             if self.update_model(form, model):
@@ -239,26 +249,25 @@ class ModelView(object):
 
         model = self.get_one(id)
 
-        if model:
-            self.delete_model(model)
+        self.delete_model(model)
 
         return redirect(return_url)
 
 
-    def get_form(self):
+    def get_form(self, list_columns=None):
         if self.form:
             return self.form
 
-        return self.scaffold_form()
+        return self.scaffold_form(list_columns)
 
-    def scaffold_form(self):
+    def scaffold_form(self, list_columns):
         """
             Create form from the model.
         """
-        from flask_admin.contrib.sqlamodel.form import AdminModelConverter, get_form
+        from flask.ext.databrowser.form.convent import AdminModelConverter, get_form
         converter = AdminModelConverter(self.session, self)
         form_class = get_form(self.model, converter,
-                          only=self.__list_columns__,
+                          only=list_columns,
                           exclude=None,
                           field_args=None)
 
@@ -286,6 +295,11 @@ class ModelView(object):
         if self.__create_form__ is None:
             self.__create_form__ = self.get_form()
         return self.__create_form__()
+
+    def get_edit_form(self, obj=None):
+        if self.__edit_form__ is None:
+            self.__edit_form__ = self.get_form(self.__list_columns__)
+        return self.__edit_form__(obj=obj)
 
     def __init__(self, model):
         self.model = model
@@ -331,24 +345,20 @@ class ModelView(object):
         """
         from flask import render_template, request, url_for, redirect
         import yaml
-        from flask.ext.databrowser import utils
         from flask.ext.sqlalchemy import Pagination
         from .utils import get_primary_key
 
         if request.method == "GET":
             page, order_by, desc = self._parse_args()
             column_filters = self._parse_filters()
-
             kwargs = {}
-
-
             with self.data_browser.blueprint.open_resource("static/css_classes/list.yaml") as f:
                 kwargs["__css_classes__"] = yaml.load(f.read()) 
             kwargs["__list_columns__"] = self.scaffold_list_columns(order_by, desc)
             kwargs["__filters__"] = [f.as_dict("op", "label", "input_type", "input_class", "value", "options") for f in column_filters]
             kwargs["__actions__"] = self.scaffold_actions()
             count, kwargs["__data__"] = self.scaffold_list(page, order_by, desc, column_filters)
-            kwargs["__create_url__"] = url_for(".".join([self.blueprint.name, self.object_view_endpoint]))
+            kwargs["__create_url__"] = url_for(".".join([self.blueprint.name, self.object_view_endpoint]), url=request.url)
             kwargs["__order_by__"] = lambda col_name: col_name == order_by
             if desc:
                 kwargs["__desc__"] = desc
@@ -364,14 +374,12 @@ class ModelView(object):
                 template_fname = posixpath.join(self.data_browser.blueprint.name, "list.haml")
             return render_template(template_fname, **kwargs)
         else: # POST
-            if request.form.get("action") == _(u"删除"):
+            if request.form.get("action") == gettext(u"删除"):
                 self.model.query.filter(getattr(self.model, get_primary_key(self.model)).in_(request.form.getlist('selected-ids'))).delete(synchronize_session=False)
                 self.data_browser.db.session.commit()
             return redirect(url_for(".".join([self.blueprint.name, self.list_view_endpoint]), 
                                    **request.args))
 
-    def object_view(self, id_):
-        pass
 
     def _parse_args(self):
         from flask import request
@@ -407,7 +415,7 @@ class ModelView(object):
         return [dict(label="a", op=dict(name="lt", id="a__lt"))]
 
     def scaffold_actions(self):
-        return [{"name": "delete", "value": _(u"删除")}]
+        return [{"name": "delete", "value": gettext(u"删除")}]
 
     def scaffold_list(self, page, order_by, desc, filters):
         q = self.model.query
@@ -479,21 +487,24 @@ class DataBrowser(object):
         self.page_size = page_size
 
 
-    def register_model(self, model, session, blueprint=None, list_columns=None, list_formatters=None):
-        return self.register_model_view(ModelView(model, session, list_columns, list_formatters), blueprint)
+    def register_model(self, model, blueprint=None):
+        return self.register_model_view(ModelView(model), blueprint)
 
     def register_model_view(self, model_view, blueprint, extra_params=None):
         
         model_view.blueprint = blueprint
         model_view.data_browser = self
         model_view.extra_params = extra_params or {}
-        
-        blueprint.add_url_rule(model_view.list_view_url, 
-                               model_view.list_view_endpoint, model_view.list_view, 
+
+        blueprint.add_url_rule(model_view.list_view_url,
+                               model_view.list_view_endpoint,
+                               model_view.list_view,
                                methods=["GET", "POST"])
         blueprint.add_url_rule(model_view.object_view_url,
                                model_view.object_view_endpoint,
-                               model_view.object_view, methods=["GET", "POST"])
+                               model_view.object_view,
+                               methods=["GET", "POST"])
         blueprint.add_url_rule(model_view.object_view_url + "/<int:id_>",
                                model_view.object_view_endpoint,
-                               model_view.object_view, methods=["GET", "POST"])
+                               model_view.object_view,
+                               methods=["GET", "POST"])
