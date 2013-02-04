@@ -383,7 +383,7 @@ class ModelView(object):
 
     def _parse_args(self):
         from flask import request
-        page = request.args.get("page", 1)
+        page = int(request.args.get("page", 1))
         order_by = request.args.get("order_by")
         desc = int(request.args.get("desc", 0))
         return page, order_by, desc
@@ -431,8 +431,8 @@ class ModelView(object):
             q = q.order_by(order_criterion)
         count = q.count()
         if page:
-            q.offset((page-1) * self.data_browser.page_size)
-            q.limit(self.data_browser.page_size)
+            q = q.offset((page-1) * self.data_browser.page_size)
+        q = q.limit(self.data_browser.page_size)
         def g():
             for r in q.all():
                 pk = self.scaffold_pk(r)

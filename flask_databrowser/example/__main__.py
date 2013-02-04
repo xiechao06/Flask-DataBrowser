@@ -12,7 +12,7 @@ def main():
     from models import User
     accounts_bp = Blueprint("accounts", __name__, static_folder="static", 
                             template_folder="templates")
-    browser = databrowser.DataBrowser(app, db)
+    browser = databrowser.DataBrowser(app, db, page_size=4)
 
     class UserModelView(databrowser.ModelView):
 
