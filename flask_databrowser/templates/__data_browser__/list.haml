@@ -12,7 +12,7 @@
          $("#list-table tbody input[type=checkbox]").removeAttr("checked");
        }
      });
-     $("input[name=action]").click(function(){
+     $("#main-form #actions input[name=action]").click(function(){
       if($("#list-table tbody input[type=checkbox]:checked").val() == undefined){
         alert("{{ _("请至少选择一条记录！") }}");
         return false;
@@ -25,7 +25,7 @@
   .container-fluid
     .row-fluid
       -block lists
-        %form.span10 method="POST" 
+        %form.span10#main-form method="POST" 
           %a.btn.btn-success href="{{ __object_url__ }}" 
             %span.add-on.icon-plus
             {{ _("新建") }}
@@ -65,8 +65,11 @@
 
           -block actions
             .alert.alert-block
-              -for action in __actions__:
-                %input value="{{action.value}}" type="submit" name="action" class="btn btn-info"
+              %span#actions
+                -for action in __actions__:
+                  %input value="{{action.value}}" type="submit" name="action" class="btn btn-info"
+              %span#action-fillings
+                -block action_fillings
 
       -block filters
 

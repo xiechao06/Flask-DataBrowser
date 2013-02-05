@@ -367,11 +367,18 @@ class ModelView(object):
                                                   count, kwargs["__data__"])
 
             kwargs.update(self.extra_params.get("list_view", {}))
+            import posixpath
+            # try html first
             template_fname = self.blueprint.name + self.list_view_url+".html"
-            if not os.path.exists(template_fname):
-                import posixpath
-                #jinja分割模板是用"/"，在windows下，os.path.join是用"\\"，导致模板路径分割失败。所以一定要用posixpath.join
-                template_fname = posixpath.join(self.data_browser.blueprint.name, "list.haml")
+            if os.path.exists(os.path.join(self.blueprint.template_folder, template_fname)):
+                return render_template(template_fname, **kwargs) 
+            # then haml
+            template_fname = self.blueprint.name + self.list_view_url+".haml"
+            if os.path.exists(os.path.join(self.blueprint.template_folder, template_fname)):
+                return render_template(template_fname, **kwargs) 
+            # finally using default
+            #jinja分割模板是用"/"，在windows下，os.path.join是用"\\"，导致模板路径分割失败。所以一定要用posixpath.join
+            template_fname = posixpath.join(self.data_browser.blueprint.name, "list.haml")
             return render_template(template_fname, **kwargs)
         else: # POST
             if request.form.get("action") == gettext(u"删除"):
