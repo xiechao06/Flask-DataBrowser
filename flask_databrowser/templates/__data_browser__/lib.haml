@@ -5,7 +5,7 @@
       %li class="disabled"
         %a << {{ _("上一页") }}
       {% else %}
-      %li class="disabled"
+      %li
         %a href="{{ url_for_other_page(page=pagination.page-1 if pagination.page-1 else 1) }}" << {{ _("上一页") }}
       {% endif %}
 
