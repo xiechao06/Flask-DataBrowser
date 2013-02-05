@@ -18,6 +18,9 @@
         return false;
         }
      });
+     $("#reset-button").click(function(){
+     $("select").select2("val","");
+     });
    });
 
 -block body
@@ -95,4 +98,4 @@
               .control-group.pagination-centered
                 .controls
                   %input.btn.btn-primary type="submit" value={{ _("刷新结果") }}
-      
+                  %input.btn type="reset" value={{ _("重置") }} id="reset-button"
