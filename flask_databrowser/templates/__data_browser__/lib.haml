@@ -1,13 +1,12 @@
 -macro render_pagination(pagination)
   %div.pagination
     %ul
-      {% if not pagination.has_prev %}
-      %li class="disabled"
-        %a << {{ _("上一页") }}
-      {% else %}
-      %li
-        %a href="{{ url_for_other_page(page=pagination.page-1 if pagination.page-1 else 1) }}" << {{ _("上一页") }}
-      {% endif %}
+      -if not pagination.has_prev:
+        %li class="disabled"
+          %a << {{ _("上一页") }}
+      -else:
+        %li
+          %a href="{{ url_for_other_page(page=pagination.page-1 if pagination.page-1 else 1) }}" << {{ _("上一页") }}
 
       -for page in pagination.iter_pages()
         %li class="{% if page == pagination.page %}active{% endif %}"
