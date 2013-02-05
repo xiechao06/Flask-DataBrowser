@@ -4,15 +4,21 @@
 -block custom_external
 
  %script
-   $(
+   $(function(){
      $("input[name=rowtoggle]").click(function () {
        if ($(this).attr('checked')) {
          $("#list-table tbody input[type=checkbox]").attr("checked", "checked");
        } else {
          $("#list-table tbody input[type=checkbox]").removeAttr("checked");
        }
-     })
-   );
+     });
+     $("input[name=action]").click(function(){
+      if($("#list-table tbody input[type=checkbox]:checked").val() == undefined){
+        alert("{{ _("请至少选择一条记录！") }}");
+        return false;
+        }
+     });
+   });
 
 -block body
   
