@@ -49,6 +49,11 @@
 {% block page_body %}
     <div class="ym-wrapper">
         <div class="ym-wbox">
+            {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    <div class="success error flash">{{ messages[0] }}</div>
+                {% endif %}
+            {% endwith %}
             {% block body %}{% endblock %}
         </div>
     </div>
