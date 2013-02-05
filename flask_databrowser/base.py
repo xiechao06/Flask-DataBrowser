@@ -434,6 +434,9 @@ class ModelView(object):
 
         if order_by:
             order_criterion = getattr(self.model, order_by)
+            
+            if hasattr(order_criterion.property, 'direction'):
+                order_criterion = enumerate(order_criterion.property.local_columns).next()[1]
             if desc:
                 order_criterion = order_criterion.desc()
             q = q.order_by(order_criterion)
