@@ -27,7 +27,7 @@ def main():
             "password": u"md5值",
         }
 
-        __sortable_columns__ = ["id", "name"]
+        __sortable_columns__ = ["id", "name", "group"]
 
         __column_labels__ = {
             "name": u"姓名",
