@@ -360,6 +360,7 @@ class ModelView(object):
             count, kwargs["__data__"] = self.scaffold_list(page, order_by, desc, column_filters)
             kwargs["__object_url__"] = url_for(".".join([self.blueprint.name, self.object_view_endpoint]), url=request.url)
             kwargs["__order_by__"] = lambda col_name: col_name == order_by
+            kwargs["__can_create__"] = self.can_create
             if desc:
                 kwargs["__desc__"] = desc
             kwargs["__pagination__"] = Pagination(None, page, 
