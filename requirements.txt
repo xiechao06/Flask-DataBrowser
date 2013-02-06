@@ -2,5 +2,4 @@ flask
 flask-sqlalchemy
 Hamlish-Jinja
 PyYAML==3.10
-yafowil==2.0.2
 wtforms
