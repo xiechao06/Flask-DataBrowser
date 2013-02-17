@@ -7,14 +7,15 @@ import copy
 from flask import render_template, flash, request, url_for, redirect
 from flask.ext.babel import gettext, ngettext
 
-class ModelView(object):
 
+class ModelView(object):
     __list_formatters__ = {}
     __list_columns__ = {}
     __sortable_columns__ = []
     __column_labels__ = {}
     __column_docs__ = {}
     __column_filters__ = []
+    __default_order__ = None
 
     form = None
     form_formatters = None
@@ -31,6 +32,7 @@ class ModelView(object):
         kwargs['_gettext'] = gettext
         kwargs['_ngettext'] = ngettext
         from . import helpers
+
         kwargs['h'] = helpers
 
         return render_template(template, **kwargs)
@@ -58,7 +60,7 @@ class ModelView(object):
 
     @property
     def normalized_list_columns(self):
-        if self.__list_columns__: 
+        if self.__list_columns__:
             for col_name in self.__list_columns__:
                 doc = self.__column_docs__.get(col_name, "")
                 if not doc:
@@ -170,7 +172,6 @@ class ModelView(object):
             return False
 
 
-
     def create_view(self):
         """
             Create model view
@@ -207,10 +208,10 @@ class ModelView(object):
             Edit model view
         """
         if self.edit_template is None:
-           import posixpath
+            import posixpath
 
-           self.edit_template = posixpath.join(
-               self.data_browser.blueprint.name, "form.haml")
+            self.edit_template = posixpath.join(
+                self.data_browser.blueprint.name, "form.haml")
 
         return_url = request.args.get('url') or url_for(
             '.' + self.list_view_endpoint)
@@ -230,8 +231,8 @@ class ModelView(object):
                 return redirect(return_url)
 
         return self.render(self.edit_template,
-                               form=form,
-                               return_url=return_url)
+                           form=form,
+                           return_url=return_url)
 
     def delete_view(self):
         """
@@ -265,11 +266,12 @@ class ModelView(object):
             Create form from the model.
         """
         from flask.ext.databrowser.form.convent import AdminModelConverter, get_form
+
         converter = AdminModelConverter(self.session, self)
         form_class = get_form(self.model, converter,
-                          only=list_columns,
-                          exclude=None,
-                          field_args=None)
+                              only=list_columns,
+                              exclude=None,
+                              field_args=None)
 
         return form_class
 
@@ -285,9 +287,9 @@ class ModelView(object):
 
         for m in self.inline_models:
             form_class = inline_converter.contribute(converter,
-                                                self.model,
-                                                form_class,
-                                                m)
+                                                     self.model,
+                                                     form_class,
+                                                     m)
 
         return form_class
 
@@ -313,13 +315,13 @@ class ModelView(object):
     def session(self):
         return self.data_browser.db.session
 
-    #def __init__(self, model):
+        #def __init__(self, model):
         #self.model = model
         #self.blueprint = None
         #self.data_browser = None
         #self.extra_params = {}
         #for fltr in self.__column_filters__:
-            #fltr.model_view = self
+        #fltr.model_view = self
 
     @property
     def list_view_url(self):
@@ -331,13 +333,13 @@ class ModelView(object):
 
     @property
     def object_view_url(self):
-        return "/" + re.sub(r"([A-Z])+", lambda m: "-" + m.groups()[0].lower(), 
-                              self.model.__name__).lstrip("-")
+        return "/" + re.sub(r"([A-Z])+", lambda m: "-" + m.groups()[0].lower(),
+                            self.model.__name__).lstrip("-")
 
     @property
     def object_view_endpoint(self):
-        return re.sub(r"([A-Z])+", lambda m: "_" + m.groups()[0].lower(), 
-                              self.model.__name__).lstrip("_")
+        return re.sub(r"([A-Z])+", lambda m: "_" + m.groups()[0].lower(),
+                      self.model.__name__).lstrip("_")
 
     def list_view(self):
         """
@@ -352,48 +354,72 @@ class ModelView(object):
             page, order_by, desc = self._parse_args()
             column_filters = self._parse_filters()
             kwargs = {}
-            with self.data_browser.blueprint.open_resource("static/css_classes/list.yaml") as f:
-                kwargs["__css_classes__"] = yaml.load(f.read()) 
-            kwargs["__list_columns__"] = self.scaffold_list_columns(order_by, desc)
-            kwargs["__filters__"] = [f.as_dict("op", "label", "input_type", "input_class", "value", "options") for f in column_filters]
+            with self.data_browser.blueprint.open_resource(
+                    "static/css_classes/list.yaml") as f:
+                kwargs["__css_classes__"] = yaml.load(f.read())
+            kwargs["__list_columns__"] = self.scaffold_list_columns(order_by,
+                                                                    desc)
+            kwargs["__filters__"] = [
+                f.as_dict("op", "label", "input_type", "input_class", "value",
+                          "options") for f in column_filters]
             kwargs["__actions__"] = self.scaffold_actions()
-            count, kwargs["__data__"] = self.scaffold_list(page, order_by, desc, column_filters)
-            kwargs["__object_url__"] = url_for(".".join([self.blueprint.name, self.object_view_endpoint]), url=request.url)
+            count, kwargs["__data__"] = self.scaffold_list(page, order_by,
+                                                           desc,
+                                                           column_filters)
+            kwargs["__object_url__"] = url_for(
+                ".".join([self.blueprint.name, self.object_view_endpoint]),
+                url=request.url)
             kwargs["__order_by__"] = lambda col_name: col_name == order_by
             kwargs["__can_create__"] = self.can_create
             if desc:
                 kwargs["__desc__"] = desc
-            kwargs["__pagination__"] = Pagination(None, page, 
+            kwargs["__pagination__"] = Pagination(None, page,
                                                   self.data_browser.page_size,
                                                   count, kwargs["__data__"])
 
             kwargs.update(self.extra_params.get("list_view", {}))
             import posixpath
             # try html first
-            template_fname = self.blueprint.name + self.list_view_url+".html"
-            if os.path.exists(os.path.join(self.blueprint.template_folder, template_fname)):
-                return render_template(template_fname, **kwargs) 
-            # then haml
-            template_fname = self.blueprint.name + self.list_view_url+".haml"
-            if os.path.exists(os.path.join(self.blueprint.template_folder, template_fname)):
-                return render_template(template_fname, **kwargs) 
-            # finally using default
+            template_fname = self.blueprint.name + self.list_view_url + ".html"
+            if os.path.exists(os.path.join(self.blueprint.template_folder,
+                                           template_fname)):
+                return render_template(template_fname, **kwargs)
+                # then haml
+            template_fname = self.blueprint.name + self.list_view_url + ".haml"
+            if os.path.exists(os.path.join(self.blueprint.template_folder,
+                                           template_fname)):
+                return render_template(template_fname, **kwargs)
+                # finally using default
             #jinja分割模板是用"/"，在windows下，os.path.join是用"\\"，导致模板路径分割失败。所以一定要用posixpath.join
-            template_fname = posixpath.join(self.data_browser.blueprint.name, "list.haml")
+            template_fname = posixpath.join(self.data_browser.blueprint.name,
+                                            "list.haml")
             return render_template(template_fname, **kwargs)
         else: # POST
             if request.form.get("action") == gettext(u"删除"):
-                self.model.query.filter(getattr(self.model, get_primary_key(self.model)).in_(request.form.getlist('selected-ids'))).delete(synchronize_session=False)
+                self.model.query.filter(
+                    getattr(self.model, get_primary_key(self.model)).in_(
+                        request.form.getlist('selected-ids'))).delete(
+                    synchronize_session=False)
                 self.data_browser.db.session.commit()
-            return redirect(url_for(".".join([self.blueprint.name, self.list_view_endpoint]), 
-                                   **request.args))
+            return redirect(url_for(
+                ".".join([self.blueprint.name, self.list_view_endpoint]),
+                **request.args))
 
 
     def _parse_args(self):
         from flask import request
-        page = int(request.args.get("page", 1))
+
+        page = request.args.get("page", 1, type=int)
         order_by = request.args.get("order_by")
-        desc = int(request.args.get("desc", 0))
+        desc = request.args.get("desc", 0, type=int)
+        if order_by is None and isinstance(self.__default_order__,
+                                           (list, tuple)):
+            order_by = self.__default_order__[0]
+            try:
+                if self.__default_order__[1] == "desc":
+                    desc = "desc"
+            except IndexError:
+                pass
         return page, order_by, desc
 
     def scaffold_list_columns(self, order_by, desc):
@@ -401,11 +427,13 @@ class ModelView(object):
         collect columns displayed in table
         """
         from flask import request, url_for
+
         for c in self.normalized_list_columns:
             if c[0] in self.__sortable_columns__:
                 args = request.args.copy()
                 args["order_by"] = c[0]
-                if order_by == c[0]: # the table is sorted by c, so revert the order
+                if order_by == c[
+                    0]: # the table is sorted by c, so revert the order
                     if not desc:
                         args["desc"] = 1
                     else:
@@ -413,8 +441,9 @@ class ModelView(object):
                             args.pop("desc")
                         except KeyError:
                             pass
-                sort_url = url_for(".".join([self.blueprint.name, self.list_view_endpoint]), 
-                                   **args)
+                sort_url = url_for(
+                    ".".join([self.blueprint.name, self.list_view_endpoint]),
+                    **args)
             else:
                 sort_url = ""
             yield dict(name=c[0], label=c[1], doc=c[2], sort_url=sort_url)
@@ -427,6 +456,7 @@ class ModelView(object):
 
     def scaffold_list(self, page, order_by, desc, filters):
         from .utils import get_primary_key
+
         q = self.model.query
 
         for filter in filters:
@@ -435,7 +465,7 @@ class ModelView(object):
 
         if order_by:
             order_criterion = getattr(self.model, order_by)
-            
+
             if hasattr(order_criterion.property, 'direction'):
                 order_criterion = enumerate(order_criterion.property.local_columns).next()[1]
             if desc:
@@ -443,8 +473,9 @@ class ModelView(object):
             q = q.order_by(order_criterion)
         count = q.count()
         if page:
-            q = q.offset((page-1) * self.data_browser.page_size)
+            q = q.offset((page - 1) * self.data_browser.page_size)
         q = q.limit(self.data_browser.page_size)
+
         def g():
             for r in q.all():
                 pk = self.scaffold_pk(r)
@@ -455,10 +486,12 @@ class ModelView(object):
                     # add link to object if it is primary key
                     if get_primary_key(self.model) == c[0]:
                         formatted_value = {"value": formatted_value}
-                        formatted_value["link"] = url_for("."+self.object_view_endpoint, 
-                                                          id_=raw_value)
+                        formatted_value["link"] = url_for(
+                            "." + self.object_view_endpoint,
+                            id_=raw_value)
                     fields.append(formatted_value)
                 yield dict(pk=pk, fields=fields)
+
         return count, g()
 
     def format_value(self, v, col_name):
@@ -470,6 +503,7 @@ class ModelView(object):
 
     def scaffold_pk(self, entry):
         from .utils import get_primary_key
+
         return getattr(entry, get_primary_key(self.model))
 
     def _parse_filters(self):
@@ -477,7 +511,9 @@ class ModelView(object):
         set filter's value using args
         """
         from flask import request
-        op_id_2_filter = dict((fltr.op.id, copy.copy(fltr)) for fltr in self.__column_filters__)
+
+        op_id_2_filter = dict(
+            (fltr.op.id, copy.copy(fltr)) for fltr in self.__column_filters__)
         for k, v in request.args.items():
             try:
                 op_id_2_filter[k].value = v
@@ -485,22 +521,23 @@ class ModelView(object):
                 pass
         return op_id_2_filter.values()
 
+
 class DataBrowser(object):
-    
     def __init__(self, app, db, page_size=16):
         self.app = app
         self.db = db
         from jinja2 import Environment
         from hamlish_jinja import HamlishExtension
         from . import utils
+
         app.jinja_env.add_extension(HamlishExtension)
-        app.jinja_env.hamlish_mode='debug'
-        app.jinja_env.hamlish_enable_div_shortcut=True
+        app.jinja_env.hamlish_mode = 'debug'
+        app.jinja_env.hamlish_enable_div_shortcut = True
         app.jinja_env.globals['url_for_other_page'] = utils.url_for_other_page
         from flask import Blueprint
         # register it for using the templates of data browser
-        self.blueprint = Blueprint("__data_browser__", __name__, 
-                                   static_folder="static", 
+        self.blueprint = Blueprint("__data_browser__", __name__,
+                                   static_folder="static",
                                    template_folder="templates")
         app.register_blueprint(self.blueprint, url_prefix="/__data_browser__")
         self.page_size = page_size
@@ -510,7 +547,6 @@ class DataBrowser(object):
         return self.register_model_view(ModelView(model), blueprint)
 
     def register_model_view(self, model_view, blueprint, extra_params=None):
-        
         model_view.blueprint = blueprint
         model_view.data_browser = self
         model_view.extra_params = extra_params or {}
