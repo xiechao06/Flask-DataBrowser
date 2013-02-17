@@ -414,12 +414,14 @@ class ModelView(object):
         desc = request.args.get("desc", 0, type=int)
         if order_by is None and isinstance(self.__default_order__,
                                            (list, tuple)):
-            order_by = self.__default_order__[0]
             try:
-                if self.__default_order__[1] == "desc":
-                    desc = "desc"
-            except IndexError:
-                pass
+                order_by, desc = self.__default_order__
+                if desc == "desc":
+                    desc = 1
+                else:
+                    desc = 0
+            except ValueError:
+                order_by = self.__default_order__[0]
         return page, order_by, desc
 
     def scaffold_list_columns(self, order_by, desc):
