@@ -396,10 +396,11 @@ class ModelView(object):
             return render_template(template_fname, **kwargs)
         else: # POST
             if request.form.get("action") == gettext(u"删除"):
-                self.model.query.filter(
+                models = self.model.query.filter(
                     getattr(self.model, get_primary_key(self.model)).in_(
-                        request.form.getlist('selected-ids'))).delete(
-                    synchronize_session=False)
+                        request.form.getlist('selected-ids'))).all()
+                for model in models:
+                    self.data_browser.db.session.delete(model)
                 self.data_browser.db.session.commit()
             return redirect(url_for(
                 ".".join([self.blueprint.name, self.list_view_endpoint]),
