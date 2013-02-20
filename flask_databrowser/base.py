@@ -502,7 +502,7 @@ class ModelView(object):
                             "." + self.object_view_endpoint,
                             id_=raw_value)
                     fields.append(formatted_value)
-                yield dict(pk=pk, fields=fields, css=self.patch_row_css(cnter.next(), r))
+                yield dict(pk=pk, fields=fields, css=self.patch_row_css(cnter.next(), r) or "")
 
         return count, g()
 
