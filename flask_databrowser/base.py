@@ -16,6 +16,8 @@ class ModelView(object):
     __column_docs__ = {}
     __column_filters__ = []
 
+    __render_preprocessors__ = []
+
     form = None
     form_formatters = None
     column_descriptions = None
@@ -26,6 +28,7 @@ class ModelView(object):
     __create_form__ = __edit_form__ = None
 
     create_template = edit_template = None
+
 
     def render(self, template, **kwargs):
         kwargs['_gettext'] = gettext
@@ -434,23 +437,27 @@ class ModelView(object):
                 q = q.filter(filter.sa_criterion)
 
         if order_by:
-            order_criterion = getattr(self.model, order_by)
-            
-            if hasattr(order_criterion.property, 'direction'):
-                order_criterion = enumerate(order_criterion.property.local_columns).next()[1]
-            if desc:
-                order_criterion = order_criterion.desc()
-            q = q.order_by(order_criterion)
+            order_by_list = order_by.split(".")
+            for order_by in order_by_list:
+                order_criterion = getattr(self.model, order_by)
+                
+                if hasattr(order_criterion.property, 'direction'):
+                    order_criterion = enumerate(order_criterion.property.local_columns).next()[1]
+                if desc:
+                    order_criterion = order_criterion.desc()
+                q = q.order_by(order_criterion)
         count = q.count()
         if page:
             q = q.offset((page-1) * self.data_browser.page_size)
         q = q.limit(self.data_browser.page_size)
         def g():
             for r in q.all():
+                for rpp in self.__render_preprocessors__:
+                    r = rpp(r)
                 pk = self.scaffold_pk(r)
                 fields = []
                 for c in self.normalized_list_columns:
-                    raw_value = getattr(r, c[0])
+                    raw_value = reduce(lambda x, y: getattr(x, y), [r]+ c[0].split("."))
                     formatted_value = self.format_value(raw_value, c[0])
                     # add link to object if it is primary key
                     if get_primary_key(self.model) == c[0]:
