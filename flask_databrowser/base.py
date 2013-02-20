@@ -26,7 +26,7 @@ class ModelView(object):
 
     can_create = can_edit = can_delete = True
 
-    __create_form__ = __edit_form__ = None
+    __create_form__ = __edit_form__ = __batch_edit_form__ = None
 
     create_template = edit_template = None
 
@@ -210,6 +210,7 @@ class ModelView(object):
         """
             Edit model view
         """
+        id_list = [int(i) for i in id_.split(",") if i]
         if self.edit_template is None:
             import posixpath
 
@@ -222,15 +223,27 @@ class ModelView(object):
         if not self.can_edit:
             return redirect(return_url)
 
-        if id_ is None:
+        if id_list is None:
             return redirect(return_url)
+        if len(id_list) == 1:
+            model = self.get_one(id_list[0])
 
-        model = self.get_one(id_)
+            form = self.get_edit_form(obj=model)
 
-        form = self.get_edit_form(obj=model)
-
-        if form.validate_on_submit():
-            if self.update_model(form, model):
+            if form.validate_on_submit():
+                if self.update_model(form, model):
+                    return redirect(return_url)
+        else:
+            form = self.get_edit_form()
+            if form.is_submitted():
+                from wtforms.compat import iteritems
+                for id_ in id_list:
+                    model = self.get_one(id_)
+                    for name, field in iteritems(form._fields):
+                        if field.data:
+                            field.populate_obj(model, name)
+                    self.on_model_change(form, model)
+                self.session.commit()
                 return redirect(return_url)
 
         return self.render(self.edit_template,
@@ -271,11 +284,8 @@ class ModelView(object):
         from flask.ext.databrowser.form.convent import AdminModelConverter, get_form
 
         converter = AdminModelConverter(self.session, self)
-        form_class = get_form(self.model, converter,
-                              only=list_columns,
-                              exclude=None,
-                              field_args=None)
-
+        form_class = get_form(self.model, converter, only=list_columns,
+                              exclude=None, field_args=None)
         return form_class
 
     def scaffold_inline_form_models(self, form_class):
@@ -353,6 +363,7 @@ class ModelView(object):
         from flask.ext.sqlalchemy import Pagination
         from .utils import get_primary_key
 
+
         if request.method == "GET":
             page, order_by, desc = self._parse_args()
             column_filters = self._parse_filters()
@@ -370,10 +381,10 @@ class ModelView(object):
                                                            desc,
                                                            column_filters)
             kwargs["__object_url__"] = url_for(
-                ".".join([self.blueprint.name, self.object_view_endpoint]),
-                url=request.url)
+                ".".join([self.blueprint.name, self.object_view_endpoint]))
             kwargs["__order_by__"] = lambda col_name: col_name == order_by
             kwargs["__can_create__"] = self.can_create
+            kwargs["__can_edit__"] = self.can_edit
             if desc:
                 kwargs["__desc__"] = desc
             kwargs["__pagination__"] = Pagination(None, page,
@@ -405,6 +416,9 @@ class ModelView(object):
                 for model in models:
                     self.data_browser.db.session.delete(model)
                 self.data_browser.db.session.commit()
+            else:
+                pass
+
             return redirect(url_for(
                 ".".join([self.blueprint.name, self.list_view_endpoint]),
                 **request.args))
@@ -458,7 +472,10 @@ class ModelView(object):
         return [dict(label="a", op=dict(name="lt", id="a__lt"))]
 
     def scaffold_actions(self):
-        return [{"name": "delete", "value": gettext(u"删除")}]
+        l = [{"name": "delete", "value": gettext(u"删除")}]
+        if self.can_edit:
+            l.append({"name": "batch_edit", "value": gettext(u"批量修改")})
+        return l
 
     def scaffold_list(self, page, order_by, desc, filters):
         from .utils import get_primary_key
@@ -569,7 +586,7 @@ class DataBrowser(object):
                                model_view.object_view_endpoint,
                                model_view.object_view,
                                methods=["GET", "POST"])
-        blueprint.add_url_rule(model_view.object_view_url + "/<int:id_>",
+        blueprint.add_url_rule(model_view.object_view_url + "/<string:id_>",
                                model_view.object_view_endpoint,
                                model_view.object_view,
                                methods=["GET", "POST"])
