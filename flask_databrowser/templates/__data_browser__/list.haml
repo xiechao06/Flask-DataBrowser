@@ -53,7 +53,7 @@
                         {{ c.label }}
               %tbody
                 -for row in __data__
-                  %tr.row-fluid
+                  %tr class="{{row.css}} row-fluid"
                     -if __actions__
                       %td.span1 -> %input type="checkbox" value="{{ row.pk }}" name="selected-ids"
                     -for v in row.fields:

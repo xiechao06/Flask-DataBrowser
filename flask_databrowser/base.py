@@ -2,6 +2,7 @@
 import types
 import os
 import re
+import itertools
 import codecs
 import copy
 from flask import render_template, flash, request, url_for, redirect
@@ -485,6 +486,7 @@ class ModelView(object):
         q = q.limit(self.data_browser.page_size)
 
         def g():
+            cnter = itertools.count()
             for r in q.all():
                 for rpp in self.__render_preprocessors__:
                     r = rpp(r)
@@ -500,9 +502,12 @@ class ModelView(object):
                             "." + self.object_view_endpoint,
                             id_=raw_value)
                     fields.append(formatted_value)
-                yield dict(pk=pk, fields=fields)
+                yield dict(pk=pk, fields=fields, css=self.patch_row_css(cnter.next(), r))
 
         return count, g()
+
+    def patch_row_css(self, idx, row):
+        return ""
 
     def format_value(self, v, col_name):
         try:

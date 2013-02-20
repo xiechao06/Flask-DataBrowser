@@ -15,7 +15,9 @@ def main():
     browser = databrowser.DataBrowser(app, db, page_size=4)
 
     class UserModelView(databrowser.ModelView):
-
+        def patch_row_css(self, idx, row):
+            if idx%2 == 0:
+                return "box warning"
         __list_columns__ = ["id", "name", "group", "password"]
 
         __list_formatters__ = {
