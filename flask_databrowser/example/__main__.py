@@ -35,6 +35,8 @@ def main():
             "group": u"用户组",
         }
 
+        __default_order__ = ("name", "desc")
+
         form_formatters = {"group": lambda group: group.name}
 
         from flask.ext.databrowser import filters

@@ -76,11 +76,10 @@
                 -block action_fillings
 
       -block filters
-
-        %div class="{{ __css_classes__.filters_class }} span2"
-          %h4 << {{ _("过滤条件") }}
-          %hr
-          -if __filters__
+        -if __filters__
+          %div class="{{ __css_classes__.filters_class }} span2"
+            %h4 << {{ _("过滤条件") }}
+            %hr
             %form
               %fieldset.pagination-centered
                 -for filter in __filters__
@@ -99,4 +98,4 @@
               .control-group.pagination-centered
                 .controls
                   %input.btn.btn-primary type="submit" value={{ _("刷新结果") }}
-                  %input.btn type="reset" value={{ _("重置") }} id="reset-button"
+                  %input.btn.btn-danger type="reset" value={{ _("重置") }} id="reset-button"
