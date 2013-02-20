@@ -86,15 +86,42 @@
                     &nbsp;
                 {% endif %}
             </div>
+            {% if h.is_batch_edit() %}
+                <script type="text/javascript">
+                    $(function () {
+                        $("[type=checkbox]").click(function () {
+                            if (this.checked) {
+                                $(this).parent("div").children("select").select2("disable").attr("disabled", true);
+                                $(this).parent("div").children("input[type=text]").attr("disabled", true);
+                            } else {
+                                $(this).parent("div").children("select").select2("enable").attr("disabled", false);
+                                $(this).parent("div").children("input").attr("disabled", false);
+                            }
+                        });
+                    })
+                </script>
+            {% endif %}
             <div class="controls">
                 <div>
-                    {% if h.is_disabled_form_field(f)%}
-                        {{ f(disabled=True)|safe }}
-                    {% elif not focus_set %}
-                        {{ f(autofocus='autofocus')|safe }}
-                        {% set focus_set = True %}
+
+                    {% if h.is_batch_edit() %}
+                        {% if h.is_disabled_form_field(f)%}
+                            {{ f(disabled=True, value=_("唯一值，不能批量修改"))|safe }}
+                        {% elif not focus_set %}
+                            {{ f(autofocus='autofocus', disabled=True)|safe }}
+                            <input type="checkbox" name="" id="" checked="checked">保持原值
+                            {% set focus_set = True %}
+                        {% else %}
+                            {{ f(disabled=True)|safe }}
+                            <input type="checkbox" name="" id="" checked="checked">保持原值
+                        {% endif %}
                     {% else %}
-                        {{ f()|safe }}
+                        {% if not focus_set %}
+                            {{ f(autofocus='autofocus')|safe }}
+                            {% set focus_set = True %}
+                        {% else %}
+                            {{ f()|safe }}
+                        {% endif %}
                     {% endif %}
                 </div>
                 {% if f.description %}

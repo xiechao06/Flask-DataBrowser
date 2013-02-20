@@ -234,13 +234,35 @@ class ModelView(object):
                 if self.update_model(form, model):
                     return redirect(return_url)
         else:
-            form = self.get_edit_form()
+            model_list = [self.get_one(id_) for id_ in id_list]
+            model = self.model()
+            for attr in dir(model):
+                if attr.startswith("_"):
+                    continue
+                default_value = getattr(model_list[0], attr)
+                if all(getattr(model_, attr) == default_value for model_ in model_list):
+                    setattr(model, attr, default_value)
+                else:
+                    for column in self.model.__table__.c:
+                        if column.name == attr:
+                            default = getattr(column, "default", None)
+                            if default is not None:
+                                value = getattr(default, 'arg', None)
+
+                                if value is not None:
+                                    if getattr(default, 'is_callable', False):
+                                        value = value(None)
+                                    else:
+                                        if not getattr(default, 'is_scalar', True):
+                                            value = None
+                                setattr(model, attr, value)
+
+            form = self.get_edit_form(obj=model)
+            self.session.rollback()
             if form.is_submitted():
-                from wtforms.compat import iteritems
-                for id_ in id_list:
-                    model = self.get_one(id_)
-                    for name, field in iteritems(form._fields):
-                        if field.data:
+                for model in model_list:
+                    for name, field in form._fields.iteritems():
+                        if name in request.form.iterkeys():
                             field.populate_obj(model, name)
                     self.on_model_change(form, model)
                 self.session.commit()
@@ -490,7 +512,7 @@ class ModelView(object):
             order_by_list = order_by.split(".")
             for order_by in order_by_list:
                 order_criterion = getattr(self.model, order_by)
-                
+
                 if hasattr(order_criterion.property, 'direction'):
                     order_criterion = enumerate(order_criterion.property.local_columns).next()[1]
                 if desc:
