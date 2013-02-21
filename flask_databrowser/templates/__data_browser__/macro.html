@@ -89,6 +89,11 @@
             {% if h.is_batch_edit() %}
                 <script type="text/javascript">
                     $(function () {
+                        $("[type=checkbox]").each(function () {
+                            $(this).parent("div").children("select").select2("disable").attr("disabled", true);
+                            $(this).parent("div").children("input[type=text]").attr("disabled", true);
+                        });
+
                         $("[type=checkbox]").click(function () {
                             if (this.checked) {
                                 $(this).parent("div").children("select").select2("disable").attr("disabled", true);
@@ -103,17 +108,18 @@
             {% endif %}
             <div class="controls">
                 <div>
-
                     {% if h.is_batch_edit() %}
-                        {% if h.is_disabled_form_field(f)%}
+                        {% if h.is_disabled_form_field(f) %}
                             {{ f(disabled=True, value=_("唯一值，不能批量修改"))|safe }}
                         {% elif not focus_set %}
-                            {{ f(autofocus='autofocus', disabled=True)|safe }}
-                            <input type="checkbox" name="" id="" checked="checked">保持原值
+                            {{ f(autofocus='autofocus')|safe }}
+                            <input type="checkbox" name="" id=""
+                                   checked="checked">保持原值
                             {% set focus_set = True %}
                         {% else %}
-                            {{ f(disabled=True)|safe }}
-                            <input type="checkbox" name="" id="" checked="checked">保持原值
+                            {{ f()|safe }}
+                            <input type="checkbox" name="" id=""
+                                   checked="checked">保持原值
                         {% endif %}
                     {% else %}
                         {% if not focus_set %}

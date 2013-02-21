@@ -145,7 +145,9 @@ class ModelView(object):
                 Model instance
         """
         try:
-            form.populate_obj(model)
+            for name, field in form._fields.iteritems():
+                if field.raw_data:
+                    field.populate_obj(model, name)
             self.on_model_change(form, model)
             self.session.commit()
             return True
@@ -235,38 +237,36 @@ class ModelView(object):
                     return redirect(return_url)
         else:
             model_list = [self.get_one(id_) for id_ in id_list]
-            model = self.model()
-            for attr in dir(model):
-                if attr.startswith("_"):
-                    continue
-                default_value = getattr(model_list[0], attr)
-                if all(getattr(model_, attr) == default_value for model_ in model_list):
-                    setattr(model, attr, default_value)
-                else:
-                    for column in self.model.__table__.c:
-                        if column.name == attr:
-                            default = getattr(column, "default", None)
-                            if default is not None:
-                                value = getattr(default, 'arg', None)
+            model = None
+            if request.method == "GET":
+                model = self.model()
+                for attr in dir(model):
+                    if attr.startswith("_"):
+                        continue
+                    default_value = getattr(model_list[0], attr)
+                    if all(getattr(model_, attr) == default_value for model_ in model_list):
+                        setattr(model, attr, default_value)
+                    else:
+                        for column in self.model.__table__.c:
+                            if column.name == attr:
+                                default = getattr(column, "default", None)
+                                if default is not None:
+                                    value = getattr(default, 'arg', None)
 
-                                if value is not None:
-                                    if getattr(default, 'is_callable', False):
-                                        value = value(None)
-                                    else:
-                                        if not getattr(default, 'is_scalar', True):
-                                            value = None
-                                setattr(model, attr, value)
+                                    if value is not None:
+                                        if getattr(default, 'is_callable', False):
+                                            value = value(None)
+                                        else:
+                                            if not getattr(default, 'is_scalar', True):
+                                                value = None
+                                    setattr(model, attr, value)
+                self.session.rollback()
+                #由于model为临时对象，不能持久化，所以需要rollback下。
 
             form = self.get_edit_form(obj=model)
-            self.session.rollback()
             if form.is_submitted():
-                for model in model_list:
-                    for name, field in form._fields.iteritems():
-                        if name in request.form.iterkeys():
-                            field.populate_obj(model, name)
-                    self.on_model_change(form, model)
-                self.session.commit()
-                return redirect(return_url)
+                if all(self.update_model(form, model) for model in model_list):
+                    return redirect(return_url)
 
         return self.render(self.edit_template,
                            form=form,
