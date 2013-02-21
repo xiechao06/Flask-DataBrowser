@@ -11,10 +11,11 @@ _raised_when_model_unset = raised_when(lambda inst, *args, **kwargs: not inst.mo
                                        RuntimeError(r'field "model view" unset, you should set it'))
 
 class BaseFilter(TemplateParam):
+    __notation__ = ""
 
     def __init__(self, col_name, name, options=[], opt_formatter=None):
         # TODO datetime unsupported
-        self.op = namedtuple("op", ["name", "id"])(name, col_name)
+        self.op = namedtuple("op", ["name", "id"])(name, col_name + self.__notation__)
         self.col_name = col_name
         self.value = None
         self.model_view = None
@@ -57,13 +58,6 @@ class BaseFilter(TemplateParam):
         return 'numeric-filter'
 
     @property
-    def sa_criterion(self):
-        """
-        generate the sqlalchemy filter criterion
-        """
-        raise NotImplementedError("this is base filter")
-
-    @property
     def options(self):
         if self.__options:
             return self.__options
@@ -92,10 +86,11 @@ class BaseFilter(TemplateParam):
         else:
             return self.__operator__(attr, self.value)
 
-class EqualTo(BaseFilter):
 
+class EqualTo(BaseFilter):
     __notation__ = ""
     __operator__ = operator.eq
+
 
 class LessThan(BaseFilter):
     __notation__ = "__lt"
@@ -106,3 +101,7 @@ class BiggerThan(BaseFilter):
     __notation__ = "__gt"
     __operator__ = operator.gt
 
+
+class Contains(BaseFilter):
+    __notation__ = "__contains"
+    __operator__ = lambda self, attr, value: attr.like(value.join(["%", "%"]))
