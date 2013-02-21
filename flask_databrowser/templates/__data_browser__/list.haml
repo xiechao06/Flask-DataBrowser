@@ -5,6 +5,8 @@
 
  %script
    $(function(){
+     -for filter in __filters__:
+        $("[name='{{ filter.op.id }}']").val('{{ filter.value }}').trigger("change");
      $("input[name=rowtoggle]").click(function () {
        if ($(this).attr('checked')) {
          $("#list-table tbody input[type=checkbox]").attr("checked", "checked");
@@ -13,13 +15,21 @@
        }
      });
      $("#main-form #actions input[name=action]").click(function(){
-      if($("#list-table tbody input[type=checkbox]:checked").val() == undefined){
+     var list_val = ""
+     $("#list-table tbody input[type=checkbox]:checked").each(function(){
+        list_val += $(this).val() +",";
+     })
+      if(list_val == ""){
         alert("{{ _("请至少选择一条记录！") }}");
         return false;
-        }
+      }
+      if($(this).val() == "{{ _('批量修改') }}"){
+        $("#main-form").attr("method", "GET");
+        $("#main-form").attr("action", "{{ __object_url__ }}/"+ list_val);
+      }
      });
      $("#reset-button").click(function(){
-     $("select").select2("val","");
+      $("select").select2("val","");
      });
    });
 
@@ -30,7 +40,7 @@
       -block lists
         %form.span10#main-form method="POST" 
           -if __can_create__
-            %a.btn.btn-success href="{{ __object_url__ }}" 
+            %a.btn.btn-success href="{{ "?url=".join([__object_url__, request.url]) }}"
               %span.add-on.icon-plus
               {{ _("新建") }}
           -if __data__
@@ -91,9 +101,9 @@
                       -if filter.options
                         %select name="{{ filter.op.id }}" class="input-medium" 
                           -for opt in filter.options:
-                            %option value={{opt[0]}} {% if opt[0]|string == filter.value|string %}selected{% endif %} << {{ opt[1] }}
+                            %option value={{opt[0]}} << {{ opt[1] }}
                       -else
-                        %input type="{{ filter.input_type }}" name="{{ filter.op.id }}" value="{{ filter.value }}" class="{{ __css_classes__[filter.input_class] }}" min=0 placeholder="{{ _("请输入") + filter.label }}"
+                        %input type="{{ filter.input_type }}" name="{{ filter.op.id }}" class="{{ __css_classes__[filter.input_class] }}" min=0 placeholder="{{ _("请输入") + filter.label }}"
               %hr
               .control-group.pagination-centered
                 .controls
