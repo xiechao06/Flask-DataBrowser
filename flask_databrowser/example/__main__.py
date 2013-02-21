@@ -20,6 +20,8 @@ def main():
                 return "box warning"
         __list_columns__ = ["id", "name", "group", "password"]
 
+        __batch_form_columns__ = ["name", "group"]
+
         __list_formatters__ = {
             "create_time": lambda model, v: v.strftime("%Y-%m-%d %H") + u"点",
             "group": lambda model, v: v.name if v else "",
