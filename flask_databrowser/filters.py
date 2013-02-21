@@ -13,13 +13,14 @@ _raised_when_model_unset = raised_when(lambda inst, *args, **kwargs: not inst.mo
 class BaseFilter(TemplateParam):
     __notation__ = ""
 
-    def __init__(self, col_name, name, options=[], opt_formatter=None):
+    def __init__(self, col_name, name="", options=None, opt_formatter=None,
+                 value=None):
         # TODO datetime unsupported
         self.op = namedtuple("op", ["name", "id"])(name, col_name + self.__notation__)
         self.col_name = col_name
-        self.value = None
+        self.value = value
         self.model_view = None
-        self.__options = options
+        self.__options = options or []
         if self.__options and len(self.__options) > 1:
             self.__options.insert(0, (",".join(str(o[0]) for o in self.__options), u'--%s--' % _(u"所有")))
         self.opt_formatter = opt_formatter
@@ -63,7 +64,7 @@ class BaseFilter(TemplateParam):
             return self.__options
         else:
             # if column is a relation, then we should find all of them
-            # TODO table joinning unsupported
+            # TODO table joining unsupported
             attr = getattr(self.model, self.col_name)
             ret = []
             if hasattr(attr, 'property') and hasattr(attr.property, 'direction'):
@@ -91,6 +92,10 @@ class EqualTo(BaseFilter):
     __notation__ = ""
     __operator__ = operator.eq
 
+
+class NotEqualTo(BaseFilter):
+    __notation__ = "__ne"
+    __operator__ = operator.ne
 
 class LessThan(BaseFilter):
     __notation__ = "__lt"

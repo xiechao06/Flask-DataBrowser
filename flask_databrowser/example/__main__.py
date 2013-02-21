@@ -15,15 +15,21 @@ def main():
     browser = databrowser.DataBrowser(app, db, page_size=4)
 
     class UserModelView(databrowser.ModelView):
+
         def patch_row_css(self, idx, row):
-            if idx%2 == 0:
+            if row.group_id == 1:
                 return "box warning"
+
+
+
         __list_columns__ = ["id", "name", "group", "password"]
 
         __list_formatters__ = {
             "create_time": lambda model, v: v.strftime("%Y-%m-%d %H") + u"点",
             "group": lambda model, v: v.name if v else "",
         }
+
+
 
         __column_docs__ = {
             "password": u"md5值",
@@ -57,7 +63,8 @@ def main():
                              filters.EqualTo("name", name=u"是"),
                              filters.Contains("name", name=u"包含")
                              ]
-        
+
+        __list_filters__ = [filters.NotEqualTo("name", value=u"Type")]
 
     browser.register_model_view(UserModelView(User), accounts_bp)
     app.register_blueprint(accounts_bp, url_prefix="/accounts")

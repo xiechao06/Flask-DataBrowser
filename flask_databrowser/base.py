@@ -12,6 +12,7 @@ from flask.ext.babel import gettext, ngettext
 class ModelView(object):
     __list_formatters__ = {}
     __list_columns__ = {}
+    __list_filters__ = {}
     __sortable_columns__ = []
     __column_labels__ = {}
     __column_docs__ = {}
@@ -344,6 +345,8 @@ class ModelView(object):
         self.blueprint = None
         self.data_browser = None
         self.extra_params = {}
+        for fltr in self.__list_filters__:
+            fltr.model_view = self
         for fltr in self.__column_filters__:
             fltr.model_view = self
 
@@ -505,9 +508,12 @@ class ModelView(object):
 
         q = self.model.query
 
-        for filter in filters:
-            if filter.has_value():
-                q = q.filter(filter.sa_criterion)
+        for filter_ in self.__list_filters__:
+            q = q.filter(filter_.sa_criterion)
+
+        for filter_ in filters:
+            if filter_.has_value():
+                q = q.filter(filter_.sa_criterion)
 
         if order_by:
             order_by_list = order_by.split(".")
