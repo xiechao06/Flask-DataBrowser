@@ -1,6 +1,8 @@
 # -*- coding: UTF-8 -*-
+import urllib
 from flask import request
 from flask.ext.databrowser.form.validators import Unique
+
 
 def is_required_form_field(field):
     if not is_batch_edit():
@@ -18,5 +20,10 @@ def is_disabled_form_field(field):
                 return True
     return False
 
+
 def is_batch_edit():
     return len(request.args.getlist("selected-ids")) > 1
+
+
+def urlencode(s):
+    return urllib.quote_plus(s)

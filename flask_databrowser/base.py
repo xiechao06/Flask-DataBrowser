@@ -429,17 +429,17 @@ class ModelView(object):
             template_fname = self.blueprint.name + self.list_view_url + ".html"
             if os.path.exists(os.path.join(self.blueprint.template_folder,
                                            template_fname)):
-                return render_template(template_fname, **kwargs)
+                return self.render(template_fname, **kwargs)
                 # then haml
             template_fname = self.blueprint.name + self.list_view_url + ".haml"
             if os.path.exists(os.path.join(self.blueprint.template_folder,
                                            template_fname)):
-                return render_template(template_fname, **kwargs)
+                return self.render(template_fname, **kwargs)
                 # finally using default
             #jinja分割模板是用"/"，在windows下，os.path.join是用"\\"，导致模板路径分割失败。所以一定要用posixpath.join
             template_fname = posixpath.join(self.data_browser.blueprint.name,
                                             "list.haml")
-            return render_template(template_fname, **kwargs)
+            return self.render(template_fname, **kwargs)
         else: # POST
             if request.form.get("action") == gettext(u"删除"):
                 models = self.model.query.filter(
@@ -548,10 +548,10 @@ class ModelView(object):
                     formatted_value = self.format_value(raw_value, c[0])
                     # add link to object if it is primary key
                     if get_primary_key(self.model) == c[0]:
-                        formatted_value = {"value": formatted_value}
-                        formatted_value["link"] = url_for(
-                            "." + self.object_view_endpoint,
-                            id_=raw_value)
+                        formatted_value = {"value": formatted_value,
+                                           "link": url_for(
+                                               "." + self.object_view_endpoint,
+                                               id_=raw_value, url=request.url)}
                     fields.append(formatted_value)
                 yield dict(pk=pk, fields=fields, css=self.patch_row_css(cnter.next(), r) or "")
 
