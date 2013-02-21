@@ -20,7 +20,7 @@ def main():
 
         __list_formatters__ = {
             "create_time": lambda model, v: v.strftime("%Y-%m-%d %H") + u"点",
-            "group": lambda model, v: v.name,
+            "group": lambda model, v: v.name if v else "",
         }
 
         __column_docs__ = {
@@ -52,7 +52,9 @@ def main():
                                                 options=[(yesterday, u'一天内'),
                                                         (week_ago, u'一周内'), 
                                                         (_30days_ago, u'30天内')]), 
-                             filters.EqualTo("name", name=u"是")]
+                             filters.EqualTo("name", name=u"是"),
+                             filters.Contains("name", name=u"包含")
+                             ]
         
 
     browser.register_model_view(UserModelView(User), accounts_bp)

@@ -561,14 +561,17 @@ class ModelView(object):
         """
         from flask import request
 
+        shadow_column_filters = copy.copy(self.__column_filters__)
+        #如果不用copy的话，会修改原来的filter
+
         op_id_2_filter = dict(
-            (fltr.op.id, copy.copy(fltr)) for fltr in self.__column_filters__)
+            (fltr.op.id, fltr) for fltr in shadow_column_filters)
         for k, v in request.args.items():
             try:
                 op_id_2_filter[k].value = v
             except KeyError:
                 pass
-        return op_id_2_filter.values()
+        return shadow_column_filters
 
 
 class DataBrowser(object):
