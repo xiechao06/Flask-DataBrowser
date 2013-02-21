@@ -573,7 +573,7 @@ class DataBrowser(object):
         app.jinja_env.hamlish_enable_div_shortcut = True
         app.jinja_env.globals['url_for_other_page'] = utils.url_for_other_page
         import urllib
-        from jinja2._markupsafe import Markup
+        from jinja2 import Markup
 
         @app.template_filter('urlencode')
         def urlencode_filter(s):
