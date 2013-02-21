@@ -18,6 +18,7 @@ class ModelView(object):
     __column_docs__ = {}
     __column_filters__ = []
     __default_order__ = None
+    __batch_form_columns__ = []
 
     __render_preprocessors__ = []
 
@@ -265,7 +266,7 @@ class ModelView(object):
                 self.session.rollback()
                 #由于model为临时对象，不能持久化，所以需要rollback下。
 
-            form = self.get_edit_form(obj=model)
+            form = self.get_batch_edit_form(obj=model)
             if form.is_submitted():
                 if all(self.update_model(form, model) for model in model_list):
                     return redirect(return_url)
@@ -339,6 +340,11 @@ class ModelView(object):
         if self.__edit_form__ is None:
             self.__edit_form__ = self.get_form(self.__list_columns__)
         return self.__edit_form__(obj=obj)
+
+    def get_batch_edit_form(self, obj=None):
+        if self.__batch_edit_form__ is None:
+            self.__batch_edit_form__ = self.get_form(self.__batch_form_columns__ or self.__list_columns__)
+        return  self.__batch_edit_form__(obj=obj)
 
     def __init__(self, model):
         self.model = model
