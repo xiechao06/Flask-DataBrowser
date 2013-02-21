@@ -3,7 +3,6 @@ import types
 import os
 import re
 import itertools
-import codecs
 import copy
 from flask import render_template, flash, request, url_for, redirect
 from flask.ext.babel import gettext, ngettext
@@ -71,11 +70,13 @@ class ModelView(object):
                 doc = self.__column_docs__.get(col_name, "")
                 if not doc:
                     try:
-                        doc = getattr(self.model.__table__.c, col_name).doc or ""
+                        doc = getattr(self.model.__table__.c,
+                                      col_name).doc or ""
                     except AttributeError: # col may not be table's field
                         pass
-                yield (col_name, self.__column_labels__.get(col_name, col_name),
-                      doc)
+                yield (
+                    col_name, self.__column_labels__.get(col_name, col_name),
+                    doc)
         else:
             for k, c in enumerate(self.model.__table__.c):
                 yield (c.name, c.name, c.doc or "")
@@ -160,26 +161,6 @@ class ModelView(object):
             self.session.rollback()
             return False
 
-    def delete_model(self, model):
-        """
-            Delete model.
-
-            :param model:
-                Model to delete
-        """
-        try:
-            self.on_model_delete(model)
-            self.session.flush()
-            self.session.delete(model)
-            self.session.commit()
-            return True
-        except Exception, ex:
-            flash(gettext('Failed to delete model. %(error)s', error=str(ex)),
-                  'error')
-            self.session.rollback()
-            return False
-
-
     def create_view(self):
         """
             Create model view
@@ -247,7 +228,8 @@ class ModelView(object):
                     if attr.startswith("_"):
                         continue
                     default_value = getattr(model_list[0], attr)
-                    if all(getattr(model_, attr) == default_value for model_ in model_list):
+                    if all(getattr(model_,
+                                   attr) == default_value for model_ in model_list):
                         setattr(model, attr, default_value)
                     else:
                         for column in self.model.__table__.c:
@@ -257,10 +239,12 @@ class ModelView(object):
                                     value = getattr(default, 'arg', None)
 
                                     if value is not None:
-                                        if getattr(default, 'is_callable', False):
+                                        if getattr(default, 'is_callable',
+                                                   False):
                                             value = value(None)
                                         else:
-                                            if not getattr(default, 'is_scalar', True):
+                                            if not getattr(default,
+                                                           'is_scalar', True):
                                                 value = None
                                     setattr(model, attr, value)
                 self.session.rollback()
@@ -274,27 +258,6 @@ class ModelView(object):
         return self.render(self.edit_template,
                            form=form,
                            return_url=return_url)
-
-    def delete_view(self):
-        """
-            Delete model view. Only POST method is allowed.
-        """
-        return_url = request.args.get('url') or url_for(
-            '.' + self.list_view_endpoint)
-
-        if not self.can_delete:
-            return redirect(return_url)
-
-        id = request.args.get('id')
-        if id is None:
-            return redirect(return_url)
-
-        model = self.get_one(id)
-
-        self.delete_model(model)
-
-        return redirect(return_url)
-
 
     def get_form(self, list_columns=None):
         if self.form:
@@ -343,8 +306,9 @@ class ModelView(object):
 
     def get_batch_edit_form(self, obj=None):
         if self.__batch_edit_form__ is None:
-            self.__batch_edit_form__ = self.get_form(self.__batch_form_columns__ or self.__list_columns__)
-        return  self.__batch_edit_form__(obj=obj)
+            self.__batch_edit_form__ = self.get_form(
+                self.__batch_form_columns__ or self.__list_columns__)
+        return self.__batch_edit_form__(obj=obj)
 
     def __init__(self, model):
         self.model = model
@@ -390,11 +354,10 @@ class ModelView(object):
         """
         the view function of list of models
         """
-        from flask import render_template, request, url_for, redirect
+        from flask import request, url_for, redirect
         import yaml
         from flask.ext.sqlalchemy import Pagination
         from .utils import get_primary_key
-
 
         if request.method == "GET":
             page, order_by, desc = self._parse_args()
@@ -445,9 +408,14 @@ class ModelView(object):
                 models = self.model.query.filter(
                     getattr(self.model, get_primary_key(self.model)).in_(
                         request.form.getlist('selected-ids'))).all()
-                for model in models:
-                    self.data_browser.db.session.delete(model)
-                self.data_browser.db.session.commit()
+                try:
+                    for model in models:
+                        self.session.delete(model)
+                    self.session.commit()
+                except Exception, ex:
+                    flash(gettext('Failed to delete model. %(error)s', error=str(ex)),
+                          'error')
+                    self.session.rollback()
             else:
                 pass
 
@@ -544,7 +512,8 @@ class ModelView(object):
                 pk = self.scaffold_pk(r)
                 fields = []
                 for c in self.normalized_list_columns:
-                    raw_value = reduce(lambda x, y: getattr(x, y), [r]+ c[0].split("."))
+                    raw_value = reduce(lambda x, y: getattr(x, y),
+                                       [r] + c[0].split("."))
                     formatted_value = self.format_value(raw_value, c[0])
                     # add link to object if it is primary key
                     if get_primary_key(self.model) == c[0]:
@@ -553,7 +522,8 @@ class ModelView(object):
                                                "." + self.object_view_endpoint,
                                                id_=raw_value, url=request.url)}
                     fields.append(formatted_value)
-                yield dict(pk=pk, fields=fields, css=self.patch_row_css(cnter.next(), r) or "")
+                yield dict(pk=pk, fields=fields,
+                           css=self.patch_row_css(cnter.next(), r) or "")
 
         return count, g()
 
@@ -595,7 +565,6 @@ class DataBrowser(object):
     def __init__(self, app, db, page_size=16):
         self.app = app
         self.db = db
-        from jinja2 import Environment
         from hamlish_jinja import HamlishExtension
         from . import utils
 
@@ -603,6 +572,17 @@ class DataBrowser(object):
         app.jinja_env.hamlish_mode = 'debug'
         app.jinja_env.hamlish_enable_div_shortcut = True
         app.jinja_env.globals['url_for_other_page'] = utils.url_for_other_page
+        import urllib
+        from jinja2._markupsafe import Markup
+
+        @app.template_filter('urlencode')
+        def urlencode_filter(s):
+            if type(s) == 'Markup':
+                s = s.unescape()
+            s = s.encode('utf8')
+            s = urllib.quote_plus(s)
+            return Markup(s)
+
         from flask import Blueprint
         # register it for using the templates of data browser
         self.blueprint = Blueprint("__data_browser__", __name__,

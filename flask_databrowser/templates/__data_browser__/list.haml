@@ -40,7 +40,7 @@
       -block lists
         %form.span10#main-form method="POST"
           -if __can_create__
-            %a.btn.btn-success href="{{ "?url=".join([__object_url__, h.urlencode(request.url)]) }}"
+            %a.btn.btn-success href="{{ "?url=".join([__object_url__, request.url|urlencode]) }}"
               %span.add-on.icon-plus
               {{ _("新建") }}
           -if __data__
