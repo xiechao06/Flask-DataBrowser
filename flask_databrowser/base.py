@@ -161,6 +161,18 @@ class ModelView(object):
             self.session.rollback()
             return False
 
+    @property
+    def creation_allowable(self):
+        return self.can_create() if isinstance(self.can_create, types.MethodType) else self.can_create
+
+    @property
+    def delete_allowable(self):
+        return self.can_delete() if isinstance(self.can_delete, types.MethodType) else self.can_delete
+
+    @property
+    def edit_allowable(self):
+        return self.can_edit() if isinstance(self.can_edit, types.MethodType) else self.can_edit
+
     def create_view(self):
         """
             Create model view
@@ -174,7 +186,7 @@ class ModelView(object):
         return_url = request.args.get('url') or url_for(
             '.' + self.list_view_endpoint)
 
-        if not self.can_create:
+        if not self.creation_allowable:
             return redirect(return_url)
 
         form = self.get_create_form()
@@ -206,7 +218,7 @@ class ModelView(object):
         return_url = request.args.get('url') or url_for(
             '.' + self.list_view_endpoint)
 
-        if not self.can_edit:
+        if not self.edit_allowable:
             return redirect(return_url)
 
         if id_list is None:
@@ -378,8 +390,8 @@ class ModelView(object):
             kwargs["__object_url__"] = url_for(
                 ".".join([self.blueprint.name, self.object_view_endpoint]))
             kwargs["__order_by__"] = lambda col_name: col_name == order_by
-            kwargs["__can_create__"] = self.can_create
-            kwargs["__can_edit__"] = self.can_edit
+            kwargs["__can_create__"] = self.creation_allowable
+            kwargs["__can_edit__"] = self.edit_allowable
             if desc:
                 kwargs["__desc__"] = desc
             kwargs["__pagination__"] = Pagination(None, page,
@@ -472,8 +484,10 @@ class ModelView(object):
         return [dict(label="a", op=dict(name="lt", id="a__lt"))]
 
     def scaffold_actions(self):
-        l = [{"name": "delete", "value": gettext(u"删除")}]
-        if self.can_edit:
+        l = []
+        if self.delete_allowable:
+            l = [{"name": "delete", "value": gettext(u"删除")}]
+        if self.edit_allowable:
             l.append({"name": "batch_edit", "value": gettext(u"批量修改")})
         return l
 
