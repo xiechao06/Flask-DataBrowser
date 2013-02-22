@@ -18,7 +18,7 @@ class ModelView(object):
     __column_filters__ = []
     __default_order__ = None
     __batch_form_columns__ = []
-
+    __form_columns__ = []
     __render_preprocessors__ = []
 
     form = None
@@ -39,7 +39,7 @@ class ModelView(object):
         from . import helpers
 
         kwargs['h'] = helpers
-
+        kwargs.update(self.extra_params.get("list_view", {}))
         return render_template(template, **kwargs)
 
     def get_column_name(self, field):
@@ -313,7 +313,8 @@ class ModelView(object):
 
     def get_edit_form(self, obj=None):
         if self.__edit_form__ is None:
-            self.__edit_form__ = self.get_form(self.__list_columns__)
+            self.__edit_form__ = self.get_form(
+                self.__form_columns__ or self.__list_columns__)
         return self.__edit_form__(obj=obj)
 
     def get_batch_edit_form(self, obj=None):
@@ -398,7 +399,7 @@ class ModelView(object):
                                                   self.data_browser.page_size,
                                                   count, kwargs["__data__"])
 
-            kwargs.update(self.extra_params.get("list_view", {}))
+
             import posixpath
             # try html first
             template_fname = self.blueprint.name + self.list_view_url + ".html"

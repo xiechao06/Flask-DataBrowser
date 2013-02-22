@@ -8,6 +8,9 @@
     %link href="{{ url_for('__data_browser__.static', filename='select2/select2.css') }}" rel="stylesheet"
     %link href="{{ url_for('__data_browser__.static', filename='css/admin.css') }}" rel="stylesheet"
     %link href="{{ url_for('__data_browser__.static', filename='css/datepicker.css') }}" rel="stylesheet"
+    %script src="{{ url_for('__data_browser__.static', filename='js/jquery-1.8.2.min.js') }}"
+    %script src="{{ url_for('__data_browser__.static', filename='select2/select2.js') }}"
+    %script src="{{ url_for('__data_browser__.static', filename='css/bootstrap/js/bootstrap.min.js')}}"
   %body
 
     -block page_body
@@ -19,12 +22,12 @@
                 {{ messages[0] }}
           -block body
 
-    %script src="{{ url_for('__data_browser__.static', filename='js/jquery-1.8.2.min.js') }}"
-    %script src="{{ url_for('__data_browser__.static', filename='select2/select2.js') }}"
-    %script src="{{ url_for('__data_browser__.static', filename='css/bootstrap/js/bootstrap.min.js')}}"
+
 
 
     -block tail
       %script src="{{ url_for('__data_browser__.static', filename='js/bootstrap-datepicker.js') }}"
       %script src="{{ url_for('__data_browser__.static', filename='js/form.js') }}"
     -block custom_external
+      %script
+        $("select").select2();
