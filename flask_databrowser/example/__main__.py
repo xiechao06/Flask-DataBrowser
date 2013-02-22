@@ -22,7 +22,7 @@ def main():
 
 
 
-        __list_columns__ = ["id", "name", "group", "password"]
+        __list_columns__ = ["id", "name", "group", "password", "roll_called"]
 
         __batch_form_columns__ = ["name", "group"]
 
@@ -43,6 +43,7 @@ def main():
             "name": u"姓名",
             "create_time": u"创建于", 
             "group": u"用户组",
+            "roll_called": u"点名过", 
         }
 
         __default_order__ = ("name", "desc")
@@ -68,7 +69,12 @@ def main():
 
         __list_filters__ = [filters.NotEqualTo("name", value=u"Type")]
 
-    browser.register_model_view(UserModelView(User), accounts_bp)
+        __customized_actions__ = [dict(op=lambda user: user.roll_call(), 
+                                       name=u"点名", 
+                                       success_message=lambda users: ",".join(user.name for user in users) + u" 点名成功")
+                                 ]
+
+    browser.register_model_view(UserModelView(User, u"用户"), accounts_bp)
     app.register_blueprint(accounts_bp, url_prefix="/accounts")
     app.config["SECRET_KEY"] = "JHdkj1;"
     app.config["CSRF_ENABLED"] = False

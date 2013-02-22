@@ -16,14 +16,23 @@
     -block page_body
       %div
         %div
-          -with messages = get_flashed_messages()
+          -with messages = get_flashed_messages(with_categories=True)
             -if messages
-              %div.error.flash
-                {{ messages[0] }}
+              -for category, m in messages
+                -if category == 'error'
+                  .alert.alert-error
+                    %a href="#" class="close" data-dismiss="alert" << x
+                    {{ m }}
+                -elif category == 'success'
+                  .alert.alert-success
+                    %a href="#" class="close" data-dismiss="alert" << x
+                    {{ m }}
+                -else
+                  .alert.alert-success
+                    %a href="#" class="close" data-dismiss="alert" << x
+                    {{ m }}
+
           -block body
-
-
-
 
     -block tail
       %script src="{{ url_for('__data_browser__.static', filename='js/bootstrap-datepicker.js') }}"

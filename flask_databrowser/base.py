@@ -6,7 +6,7 @@ import itertools
 import copy
 from flask import render_template, flash, request, url_for, redirect
 from flask.ext.babel import gettext, ngettext
-
+from .utils import get_primary_key, named_actions
 
 class ModelView(object):
     __list_formatters__ = {}
@@ -323,15 +323,20 @@ class ModelView(object):
                 self.__batch_form_columns__ or self.__list_columns__)
         return self.__batch_edit_form__(obj=obj)
 
-    def __init__(self, model):
+    def __init__(self, model, model_name=""):
         self.model = model
         self.blueprint = None
         self.data_browser = None
         self.extra_params = {}
+        self.__model_name = model_name
         for fltr in self.__list_filters__:
             fltr.model_view = self
         for fltr in self.__column_filters__:
             fltr.model_view = self
+
+    @property
+    def model_name(self):
+        return self.__model_name or self.model.__name__
 
     @property
     def session(self):
@@ -370,7 +375,6 @@ class ModelView(object):
         from flask import request, url_for, redirect
         import yaml
         from flask.ext.sqlalchemy import Pagination
-        from .utils import get_primary_key
 
         if request.method == "GET":
             page, order_by, desc = self._parse_args()
@@ -417,20 +421,80 @@ class ModelView(object):
                                             "list.haml")
             return self.render(template_fname, **kwargs)
         else: # POST
-            if request.form.get("action") == gettext(u"删除"):
-                models = self.model.query.filter(
-                    getattr(self.model, get_primary_key(self.model)).in_(
-                        request.form.getlist('selected-ids'))).all()
-                try:
-                    for model in models:
-                        self.session.delete(model)
-                    self.session.commit()
-                except Exception, ex:
-                    flash(gettext('Failed to delete model. %(error)s', error=str(ex)),
-                          'error')
-                    self.session.rollback()
+            action_name = request.form.get("action")
+            models = self.model.query.filter(
+                getattr(self.model, get_primary_key(self.model)).in_(
+                    request.form.getlist('selected-ids'))).all()
+            if action_name == gettext(u"删除"):
+                op = lambda model: self.session.delete(model)
+                success_message = lambda models: gettext(self.model_name + 
+                                                         ','.join(str(getattr(model, get_primary_key(model))) for model in models) + 
+                                                         ' deleted.')
+                error_message = lambda models: gettext('Failed to delete. %(error)s', error=str(ex))
             else:
-                pass
+                for action in self.__customized_actions__:
+                    if action["name"] == action_name:
+                        break
+                else:
+                    return gettext('such action %(action)s doesn\'t be allowed', action=action_name), 403
+                tmp_models = []
+                for model in models:
+                    for rpp in self.__render_preprocessors__:
+                        model = rpp(model)
+                    tmp_models.append(model)
+                models = tmp_models
+                op = action["op"]
+                success_message = action.get("success_message", lambda models: "")
+                error_message = action.get("error_message", lambda models: "")
+
+            try:
+                processed_models = []
+                for model in models:
+                    op(model)
+                    processed_models.append(model)
+                self.session.commit()
+                flash(success_message(processed_models), 'success')
+            except Exception, ex:
+                flash(error_message(models), 
+                      'error')
+                self.session.rollback()
+            
+            #if request.form.get("action") == gettext(u"删除"):
+                #models = self.model.query.filter(
+                    #getattr(self.model, get_primary_key(self.model)).in_(
+                        #request.form.getlist('selected-ids'))).all()
+                #try:
+                    #for model in models:
+                        #self.session.delete(model)
+                    #self.session.commit()
+                #except Exception, ex:
+                    #flash(gettext('Failed to delete model. %(error)s', error=str(ex)),
+                          #'error')
+                    #self.session.rollback()
+            #else:
+                #action_name = request.form.get("action")
+                #for action in self.__customized_actions__:
+                    #if action["name"] == action_name:
+                        #break
+                #else:
+                    #return gettext('such action %(action)s doesn't be allowed', action_name), 403
+                #models = self.model.query.filter(
+                    #getattr(self.model, get_primary_key(self.model)).in_(
+                        #request.form.getlist('selected-ids'))).all()
+                #try:
+                    #processed_models = []
+                    #for model in models:
+                        #for rpp in self.__render_preprocessors__:
+                            #model = rpp(model)
+                        #processed_models.append(model)
+                        #action["action"](model)
+                    #self.session.commit()
+                    #flash(action["success_message"](processed_models))
+                #except Exception, ex:
+                    #flash(gettext('Failed to %(action)s. %(error)s', action["name"], error=str(ex)),
+                          #'error')
+                    #self.session.rollback()
+                        
 
             return redirect(url_for(
                 ".".join([self.blueprint.name, self.list_view_endpoint]),
@@ -490,6 +554,9 @@ class ModelView(object):
             l = [{"name": "delete", "value": gettext(u"删除")}]
         if self.edit_allowable:
             l.append({"name": "batch_edit", "value": gettext(u"批量修改")})
+
+        for action in self.__customized_actions__:
+            l.append({"name": action["name"], "value": action["name"]})
         return l
 
     def scaffold_list(self, page, order_by, desc, filters):

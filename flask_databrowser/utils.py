@@ -48,6 +48,7 @@ class TemplateParam(object):
             items.append((field, v))
         return dict(items)
 
+named_actions = set()
 
 from functools import wraps
 
@@ -61,3 +62,7 @@ def raised_when(test, assertion):
         return f_
     
     return decorator
+
+        
+
+
