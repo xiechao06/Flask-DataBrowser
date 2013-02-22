@@ -434,7 +434,7 @@ def get_form(model, converter,
             raise ValueError('Invalid model property name %s.%s' % (model, name))
 
         # Filter properties while maintaining property order in 'only' list
-        properties = ((x, find(x)) for x in only)
+        properties = ((x, find(x)) for x in only if x.find(".") == -1)
     elif exclude:
         properties = (x for x in properties if x[0] not in exclude)
 
