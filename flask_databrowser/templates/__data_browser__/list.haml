@@ -5,6 +5,7 @@
 
  %script
    $(function(){
+     $("select").select2();
      -for filter in __filters__:
         $("[name='{{ filter.op.id }}']").val('{{ filter.value }}').trigger("change");
      $("input[name=rowtoggle]").click(function () {

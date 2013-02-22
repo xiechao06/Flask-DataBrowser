@@ -1,7 +1,7 @@
--extends "__data_browser__/master.html"
+-extends "__data_browser__/layout.haml"
 -import '__data_browser__/macro.html' as lib with context
--block head
-    %link href="{{ url_for('__data_browser__.static', filename='select2/select2.css') }}" rel="stylesheet"
-    %link href="{{ url_for('__data_browser__.static', filename='css/datepicker.css') }}" rel="stylesheet"
 -block body
+  %div.container
     =lib.render_form(form, return_url)
+
+-block custom_external
