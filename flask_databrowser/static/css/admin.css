@@ -69,3 +69,15 @@ form.search-form a.clear i {
 .select2-results li {
     min-height: 24px !important;
 }
+
+.select2-container {
+    width: 220px;
+}
+
+ul.select2-choices {
+    background-color: #ffffff;
+    border: 1px solid #cccccc;
+    border-radius: 5px; /* css 3标准 */
+    -moz-border-radius: 5px;  /* mozilla */
+    -webkit-border-radius: 5px;  /* webkit */
+}
