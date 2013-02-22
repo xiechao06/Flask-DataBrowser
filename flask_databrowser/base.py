@@ -483,11 +483,11 @@ class ModelView(object):
         q = self.model.query
 
         for filter_ in self.__list_filters__:
-            q = q.filter(filter_.sa_criterion)
+            q = filter_.set_sa_criterion(q)
 
         for filter_ in filters:
             if filter_.has_value():
-                q = q.filter(filter_.sa_criterion)
+                q = filter_.set_sa_criterion(q)
 
         if order_by:
             order_by_list = order_by.split(".")
