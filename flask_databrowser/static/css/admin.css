@@ -69,3 +69,7 @@ form.search-form a.clear i {
 .select2-results li {
     min-height: 24px !important;
 }
+
+.select2-container {
+    width: 220px;
+}
