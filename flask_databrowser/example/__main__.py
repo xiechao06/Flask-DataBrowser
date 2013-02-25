@@ -16,11 +16,11 @@ def main():
 
     class UserModelView(databrowser.ModelView):
 
+        list_template = "accounts/list.haml"
+
         def patch_row_css(self, idx, row):
             if row.group_id == 1:
                 return "box warning"
-
-
 
         __list_columns__ = ["id", "name", "group", "password", "roll_called"]
 
@@ -30,8 +30,6 @@ def main():
             "create_time": lambda model, v: v.strftime("%Y-%m-%d %H") + u"点",
             "group": lambda model, v: v.name if v else "",
         }
-
-
 
         __column_docs__ = {
             "password": u"md5值",

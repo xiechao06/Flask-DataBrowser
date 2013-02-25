@@ -32,7 +32,7 @@ class ModelView(object):
 
     __create_form__ = __edit_form__ = __batch_edit_form__ = None
 
-    create_template = edit_template = None
+    list_template = create_template = edit_template = ""
 
 
     def render(self, template, **kwargs):
@@ -406,7 +406,12 @@ class ModelView(object):
                                                   count, kwargs["__data__"])
 
 
+
             import posixpath
+            # try user defined template
+            if self.list_template and os.path.exists(os.path.join(self.blueprint.template_folder,
+                                           self.list_template)):
+                return self.render(self.list_template, **kwargs)
             # try html first
             template_fname = self.blueprint.name + self.list_view_url + ".html"
             if os.path.exists(os.path.join(self.blueprint.template_folder,
