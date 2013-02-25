@@ -88,7 +88,7 @@ def main():
     app.config["SECRET_KEY"] = "JHdkj1;"
     app.config["CSRF_ENABLED"] = False
 
-    app.run(debug=True, port=5001)
+    app.run(debug=True)
 
 
 if __name__ == "__main__":
