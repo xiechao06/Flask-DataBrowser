@@ -49,12 +49,10 @@
            }
          });
          $("input[name=action]").each(function () {
-           $(this).show();
-           for (i = 0; i < invalid_list.length; i++) {
-             if ($(this).val() == invalid_list[i]) {
-               $(this).hide();
-               break;
-             }
+           if ($.inArray($(this).val(), invalid_list) != -1) {
+             $(this).attr("disabled", true);
+           }else{
+             $(this).attr("disabled", false);
            }
          });
        });

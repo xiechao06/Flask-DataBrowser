@@ -81,10 +81,7 @@ def main():
                 return ",".join(user.name for user in model) + u" 点名成功"
 
             def enable(self, model):
-                if model.name.startswith("T"):
-                    return True
-                else:
-                    return False
+                return not model.roll_called
 
         __customized_actions__ = [RollCall()]
 
@@ -93,7 +90,7 @@ def main():
     app.config["SECRET_KEY"] = "JHdkj1;"
     app.config["CSRF_ENABLED"] = False
 
-    app.run(debug=True)
+    app.run(debug=True, port=5001)
 
 
 if __name__ == "__main__":
