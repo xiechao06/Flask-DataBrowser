@@ -110,7 +110,7 @@
             %p.text-error << {{ _("没有符合条件的结果") }}
 
           -from "__data_browser__/lib.haml" import render_pagination 
-          {{ render_pagination(__pagination__) }}
+          {{ render_pagination(__pagination__, __count__) }}
 
           -block actions
             .alert.alert-block

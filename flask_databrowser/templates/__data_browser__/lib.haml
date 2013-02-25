@@ -1,4 +1,4 @@
--macro render_pagination(pagination)
+-macro render_pagination(pagination, __count__)
   %div.pagination
     %ul
       -if not pagination.has_prev:
@@ -12,3 +12,6 @@
         %li class="{% if page == pagination.page %}active{% endif %}"
           %a href="{{ url_for_other_page(page=page) }}" << {{ page }}
 
+      -if __count__:
+        %li class="disabled"
+          %a << {{ _("符合条件的记录共%(count)d条", count=__count__) }}
