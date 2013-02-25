@@ -74,14 +74,8 @@ def main():
             def op(self, model):
                 model.roll_call()
 
-            def success_message(self, model):
-                return ",".join(user.name for user in model) + u" 点名成功"
-
             def enabled(self, model):
                 return not model.roll_called
-
-            def disabled_tooltip(self, model):
-                return u"id为%d的不能被点名" % model.id
 
         __customized_actions__ = [RollCall(u"点名")]
 
