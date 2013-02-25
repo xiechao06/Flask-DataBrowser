@@ -78,8 +78,11 @@ def main():
             def success_message(self, model):
                 return ",".join(user.name for user in model) + u" 点名成功"
 
-            def enable(self, model):
+            def enabled(self, model):
                 return not model.roll_called
+
+            def disabled_tooltip(self, model):
+                return u"id为%d的不能被点名" % model.id
 
         __customized_actions__ = [RollCall()]
 
@@ -88,7 +91,7 @@ def main():
     app.config["SECRET_KEY"] = "JHdkj1;"
     app.config["CSRF_ENABLED"] = False
 
-    app.run(debug=True)
+    app.run(debug=True, port=5001)
 
 
 if __name__ == "__main__":
