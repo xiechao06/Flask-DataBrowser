@@ -16,18 +16,19 @@
        }
      });
      $("#main-form #actions input[name=action]").click(function(){
-     var list_val = ""
-     $("#list-table tbody input[type=checkbox]:checked").each(function(){
-        list_val += $(this).val() +",";
-     })
-      if(list_val == ""){
-        alert("{{ _("请至少选择一条记录！") }}");
-        return false;
-      }
-      if($(this).val() == "{{ _('批量修改') }}"){
-        $("#main-form").attr("method", "GET");
-        $("#main-form").attr("action", "{{ __object_url__ }}/"+ list_val);
-      }
+         var list_val = "";
+         $("#list-table tbody input[type=checkbox]:checked").each(function(){
+           list_val += $(this).val() +",";
+         });
+         if (list_val == ""){
+             alert("{{ _("请至少选择一条记录！") }}");
+             return false;
+         }
+         if ($(this).val() == "{{ _('批量修改') }}"){
+             $("#main-form").attr("method", "GET");
+             $("#main-form").attr("action", "{{ __object_url__ }}/"+ list_val);
+         }
+         return confirm("您确认要" + $(this).val() + "选中的记录?");
      });
      $("#reset-button").click(function(){
       $("select").select2("val","");
@@ -61,7 +62,11 @@
            }
          });
        });
+       setTimeout(function () {
+           $("#flash").fadeOut("slow")
+       }, 3000);
    });
+
 
 -block body
   

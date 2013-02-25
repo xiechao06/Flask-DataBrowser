@@ -614,14 +614,25 @@ class ModelView(object):
                 pass
         return shadow_column_filters
 
-    def get_action_list(self, models):
-        return [{"id": self.scaffold_pk(model),
-                 "actions": [
-                     {"name": action.name, "enabled": action.enabled(model),
-                      "disabled_tooltip": action.disabled_tooltip(model)} for
-                     action in self.__customized_actions__]
-                } for model in models]
 
+    def _preprocess_model(self, model):
+        for rpp in self.__render_preprocessors__:
+            model = rpp(model)
+        return model
+
+    def get_action_list(self, models):
+        ret = []
+        for model in models:
+            id = self.scaffold_pk(model)
+            preprocessed_model = self._preprocess_model(model) 
+            ret.append({
+                "id": id,
+                "actions": [
+                    {"name": action.name, "enabled": action.enabled(preprocessed_model),
+                     "disabled_tooltip": action.disabled_tooltip(preprocessed_model)} for
+                    action in self.__customized_actions__]
+            }) 
+        return ret
 
 class DataBrowser(object):
     def __init__(self, app, db, page_size=16):
