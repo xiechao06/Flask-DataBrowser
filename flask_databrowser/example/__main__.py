@@ -70,7 +70,6 @@ def main():
         from flask.ext.databrowser.action import BaseAction
 
         class RollCall(BaseAction):
-            name = u"点名"
 
             def op(self, model):
                 model.roll_call()
@@ -84,7 +83,7 @@ def main():
             def disabled_tooltip(self, model):
                 return u"id为%d的不能被点名" % model.id
 
-        __customized_actions__ = [RollCall()]
+        __customized_actions__ = [RollCall(u"点名")]
 
     browser.register_model_view(UserModelView(User, u"用户"), accounts_bp)
     app.register_blueprint(accounts_bp, url_prefix="/accounts")

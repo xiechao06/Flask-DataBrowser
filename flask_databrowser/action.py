@@ -2,7 +2,9 @@
 
 
 class BaseAction(object):
-    name = "base action"
+
+    def __init__(self, name):
+        self.name = name
 
     def op(self, model):
         return ""
