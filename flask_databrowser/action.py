@@ -15,3 +15,6 @@ class BaseAction(object):
 
     def enable(self, model):
         return True
+
+    def disabled_tooltip(self, model):
+        return ""

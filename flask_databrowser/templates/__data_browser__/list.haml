@@ -36,22 +36,27 @@
        var action_list = {{ __action_list__ | tojson | safe }}
        $("input[type='checkbox']").click(function () {
          var invalid_list = []
+         tooltip = ""
          $("#list-table tbody input[type=checkbox]:checked").each(function () {
            for (i = 0; i < action_list.length; i++) {
              if ($(this).val() == action_list[i].id) {
                for (j = 0; j < action_list[i].actions.length; j++) {
                  name = action_list[i].actions[j].name
-                   if (!action_list[i].actions[j].enable && !(name in invalid_list)) {
-                     invalid_list.push(name);
+                   if (!action_list[i].actions[j].enable) {
+                     tooltip += action_list[i].actions[j].disabled_tooltip +"\n";
+                     if ($.inArray(name, invalid_list) == -1) {
+                       invalid_list.push(name);
+                     }
                    }
                }
              }
            }
-         });
+         })
          $("input[name=action]").each(function () {
            if ($.inArray($(this).val(), invalid_list) != -1) {
              $(this).attr("disabled", true);
-           }else{
+             $(this).attr("title", tooltip);
+           } else {
              $(this).attr("disabled", false);
            }
          });

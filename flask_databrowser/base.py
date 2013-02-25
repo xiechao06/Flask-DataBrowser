@@ -619,7 +619,8 @@ class ModelView(object):
     def get_action_list(self, models):
         return [{"id": self.scaffold_pk(model),
                  "actions": [
-                     {"name": action.name, "enable": action.enable(model)} for
+                     {"name": action.name, "enable": action.enable(model),
+                      "disabled_tooltip": action.disabled_tooltip(model)} for
                      action in self.__customized_actions__]
                 } for model in models]
 

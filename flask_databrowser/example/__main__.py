@@ -81,6 +81,9 @@ def main():
             def enable(self, model):
                 return not model.roll_called
 
+            def disabled_tooltip(self, model):
+                return u"id为%d的不能被点名" % model.id
+
         __customized_actions__ = [RollCall()]
 
     browser.register_model_view(UserModelView(User, u"用户"), accounts_bp)
