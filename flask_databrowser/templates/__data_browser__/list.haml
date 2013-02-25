@@ -42,7 +42,7 @@
              if ($(this).val() == action_list[i].id) {
                for (j = 0; j < action_list[i].actions.length; j++) {
                  name = action_list[i].actions[j].name
-                   if (!action_list[i].actions[j].enable) {
+                   if (!action_list[i].actions[j].enabled) {
                      tooltip += action_list[i].actions[j].disabled_tooltip +"\n";
                      if ($.inArray(name, invalid_list) == -1) {
                        invalid_list.push(name);

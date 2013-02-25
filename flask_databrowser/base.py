@@ -404,9 +404,6 @@ class ModelView(object):
             kwargs["__pagination__"] = Pagination(None, page,
                                                   self.data_browser.page_size,
                                                   count, kwargs["__data__"])
-
-
-
             import posixpath
             # try user defined template
             if self.list_template and os.path.exists(os.path.join(self.blueprint.template_folder,
@@ -619,7 +616,7 @@ class ModelView(object):
     def get_action_list(self, models):
         return [{"id": self.scaffold_pk(model),
                  "actions": [
-                     {"name": action.name, "enable": action.enable(model),
+                     {"name": action.name, "enabled": action.enabled(model),
                       "disabled_tooltip": action.disabled_tooltip(model)} for
                      action in self.__customized_actions__]
                 } for model in models]

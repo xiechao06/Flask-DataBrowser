@@ -13,7 +13,7 @@ class BaseAction(object):
     def error_message(self, model):
         return ""
 
-    def enable(self, model):
+    def enabled(self, model):
         return True
 
     def disabled_tooltip(self, model):
