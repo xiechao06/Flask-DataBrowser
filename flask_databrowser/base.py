@@ -32,7 +32,7 @@ class ModelView(object):
 
     __create_form__ = __edit_form__ = __batch_edit_form__ = None
 
-    list_template = create_template = edit_template = ""
+    list_template = create_template = edit_template = None
 
 
     def render(self, template, **kwargs):
@@ -393,6 +393,7 @@ class ModelView(object):
             kwargs["__actions__"] = self.scaffold_actions()
             count, data = self.query_data(page, order_by, desc, column_filters)
             kwargs["__action_list__"] = self.get_action_list(data)
+            kwargs["__count__"] = count
             kwargs["__data__"] = self.scaffold_list(data)
             kwargs["__object_url__"] = url_for(
                 ".".join([self.blueprint.name, self.object_view_endpoint]))
