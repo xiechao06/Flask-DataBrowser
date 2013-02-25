@@ -10,6 +10,7 @@ user_and_group_table = db.Table('TB_ASSOCIATION',
 
 class User(db.Model):
     __tablename__ = "TB_USER"
+    __modelname__ = u"用户"
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(32), nullable=False, unique=True)
@@ -20,13 +21,14 @@ class User(db.Model):
     roll_called = db.Column(db.Boolean, default=False)
 
     def __unicode__(self):
-        return u"<User %s>" % self.name
+        return self.name
 
     def __repr__(self):
-        return unicode(self).encode("utf-8")
+        return u"<User %s>" % self.name
 
     def roll_call(self):
         self.roll_called = True
+
 
 class Group(db.Model):
     __tablename__ = "TB_GROUP"
