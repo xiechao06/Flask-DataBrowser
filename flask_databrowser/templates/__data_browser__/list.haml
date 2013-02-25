@@ -32,6 +32,32 @@
      $("#reset-button").click(function(){
       $("select").select2("val","");
      });
+     -if __action_list__:
+       var action_list = {{ __action_list__ | tojson | safe }}
+       $("input[type='checkbox']").click(function () {
+         var invalid_list = []
+         $("#list-table tbody input[type=checkbox]:checked").each(function () {
+           for (i = 0; i < action_list.length; i++) {
+             if ($(this).val() == action_list[i].id) {
+               for (j = 0; j < action_list[i].actions.length; j++) {
+                 name = action_list[i].actions[j].name
+                   if (!action_list[i].actions[j].enable && !(name in invalid_list)) {
+                     invalid_list.push(name);
+                   }
+               }
+             }
+           }
+         });
+         $("input[name=action]").each(function () {
+           $(this).show();
+           for (i = 0; i < invalid_list.length; i++) {
+             if ($(this).val() == invalid_list[i]) {
+               $(this).hide();
+               break;
+             }
+           }
+         });
+       });
    });
 
 -block body

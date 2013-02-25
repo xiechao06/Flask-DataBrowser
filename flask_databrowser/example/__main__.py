@@ -67,10 +67,24 @@ def main():
 
         __list_filters__ = [filters.NotEqualTo("name", value=u"Type")]
 
-        __customized_actions__ = [dict(op=lambda user: user.roll_call(), 
-                                       name=u"点名", 
-                                       success_message=lambda users: ",".join(user.name for user in users) + u" 点名成功")
-                                 ]
+        from flask.ext.databrowser.action import BaseAction
+
+        class RollCall(BaseAction):
+            name = u"点名"
+
+            def op(self, model):
+                model.roll_call()
+
+            def success_message(self, model):
+                return ",".join(user.name for user in model) + u" 点名成功"
+
+            def enable(self, model):
+                if model.name.startswith("T"):
+                    return True
+                else:
+                    return False
+
+        __customized_actions__ = [RollCall()]
 
     browser.register_model_view(UserModelView(User, u"用户"), accounts_bp)
     app.register_blueprint(accounts_bp, url_prefix="/accounts")

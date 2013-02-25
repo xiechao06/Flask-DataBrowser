@@ -20,6 +20,8 @@ class ModelView(object):
     __batch_form_columns__ = []
     __form_columns__ = []
     __render_preprocessors__ = []
+    __customized_actions__ = []
+    __create_columns__ = []
 
     form = None
     form_formatters = None
@@ -203,7 +205,6 @@ class ModelView(object):
         return self.render(self.create_template, form=form,
                            return_url=return_url)
 
-
     def edit_view(self, id_):
         """
             Edit model view
@@ -223,6 +224,7 @@ class ModelView(object):
 
         if id_list is None:
             return redirect(return_url)
+
         if len(id_list) == 1:
             model = self.get_one(id_list[0])
 
@@ -308,7 +310,7 @@ class ModelView(object):
 
     def get_create_form(self):
         if self.__create_form__ is None:
-            self.__create_form__ = self.get_form()
+            self.__create_form__ = self.get_form(list_columns=self.__create_columns__)
         return self.__create_form__()
 
     def get_edit_form(self, obj=None):
@@ -389,9 +391,9 @@ class ModelView(object):
                 f.as_dict("op", "label", "input_type", "input_class", "value",
                           "options") for f in column_filters]
             kwargs["__actions__"] = self.scaffold_actions()
-            count, kwargs["__data__"] = self.scaffold_list(page, order_by,
-                                                           desc,
-                                                           column_filters)
+            count, data = self.query_data(page, order_by, desc, column_filters)
+            kwargs["__action_list__"] = self.get_action_list(data)
+            kwargs["__data__"] = self.scaffold_list(data)
             kwargs["__object_url__"] = url_for(
                 ".".join([self.blueprint.name, self.object_view_endpoint]))
             kwargs["__order_by__"] = lambda col_name: col_name == order_by
@@ -425,7 +427,7 @@ class ModelView(object):
             template_fname = posixpath.join(self.data_browser.blueprint.name,
                                             "list.haml")
             return self.render(template_fname, **kwargs)
-        else: # POST
+        else:  # POST
             action_name = request.form.get("action")
             models = self.model.query.filter(
                 getattr(self.model, get_primary_key(self.model)).in_(
@@ -438,7 +440,7 @@ class ModelView(object):
                 error_message = lambda models: gettext('Failed to delete. %(error)s', error=str(ex))
             else:
                 for action in self.__customized_actions__:
-                    if action["name"] == action_name:
+                    if action.name == action_name:
                         break
                 else:
                     return gettext('such action %(action)s doesn\'t be allowed', action=action_name), 403
@@ -448,9 +450,9 @@ class ModelView(object):
                         model = rpp(model)
                     tmp_models.append(model)
                 models = tmp_models
-                op = action["op"]
-                success_message = action.get("success_message", lambda models: "")
-                error_message = action.get("error_message", lambda models: "")
+                op = action.op
+                success_message = action.success_message
+                error_message = action.error_message
 
             try:
                 processed_models = []
@@ -460,46 +462,8 @@ class ModelView(object):
                 self.session.commit()
                 flash(success_message(processed_models), 'success')
             except Exception, ex:
-                flash(error_message(models), 
-                      'error')
+                flash(u"%s(%s)" % (error_message(models), ex.message), 'error')
                 self.session.rollback()
-            
-            #if request.form.get("action") == gettext(u"删除"):
-                #models = self.model.query.filter(
-                    #getattr(self.model, get_primary_key(self.model)).in_(
-                        #request.form.getlist('selected-ids'))).all()
-                #try:
-                    #for model in models:
-                        #self.session.delete(model)
-                    #self.session.commit()
-                #except Exception, ex:
-                    #flash(gettext('Failed to delete model. %(error)s', error=str(ex)),
-                          #'error')
-                    #self.session.rollback()
-            #else:
-                #action_name = request.form.get("action")
-                #for action in self.__customized_actions__:
-                    #if action["name"] == action_name:
-                        #break
-                #else:
-                    #return gettext('such action %(action)s doesn't be allowed', action_name), 403
-                #models = self.model.query.filter(
-                    #getattr(self.model, get_primary_key(self.model)).in_(
-                        #request.form.getlist('selected-ids'))).all()
-                #try:
-                    #processed_models = []
-                    #for model in models:
-                        #for rpp in self.__render_preprocessors__:
-                            #model = rpp(model)
-                        #processed_models.append(model)
-                        #action["action"](model)
-                    #self.session.commit()
-                    #flash(action["success_message"](processed_models))
-                #except Exception, ex:
-                    #flash(gettext('Failed to %(action)s. %(error)s', action["name"], error=str(ex)),
-                          #'error')
-                    #self.session.rollback()
-                        
 
             return redirect(url_for(
                 ".".join([self.blueprint.name, self.list_view_endpoint]),
@@ -561,11 +525,10 @@ class ModelView(object):
             l.append({"name": "batch_edit", "value": gettext(u"批量修改")})
 
         for action in self.__customized_actions__:
-            l.append({"name": action["name"], "value": action["name"]})
+            l.append({"name": action.name, "value": action.name})
         return l
 
-    def scaffold_list(self, page, order_by, desc, filters):
-        from .utils import get_primary_key
+    def query_data(self, page, order_by, desc, filters):
 
         q = self.model.query
 
@@ -591,9 +554,14 @@ class ModelView(object):
             q = q.offset((page - 1) * self.data_browser.page_size)
         q = q.limit(self.data_browser.page_size)
 
+        return count, q.all()
+
+    def scaffold_list(self, models):
+        from .utils import get_primary_key
+
         def g():
             cnter = itertools.count()
-            for r in q.all():
+            for r in models:
                 for rpp in self.__render_preprocessors__:
                     r = rpp(r)
                 pk = self.scaffold_pk(r)
@@ -607,12 +575,13 @@ class ModelView(object):
                         formatted_value = {"value": formatted_value,
                                            "link": url_for(
                                                "." + self.object_view_endpoint,
-                                               id_=raw_value, url=request.url)}
+                                               id_=raw_value, url=request.url,
+                                               preview=not self.edit_allowable)}
                     fields.append(formatted_value)
                 yield dict(pk=pk, fields=fields,
                            css=self.patch_row_css(cnter.next(), r) or "")
 
-        return count, g()
+        return g()
 
     def patch_row_css(self, idx, row):
         return ""
@@ -646,6 +615,13 @@ class ModelView(object):
             except KeyError:
                 pass
         return shadow_column_filters
+
+    def get_action_list(self, models):
+        return [{"id": self.scaffold_pk(model),
+                 "actions": [
+                     {"name": action.name, "enable": action.enable(model)} for
+                     action in self.__customized_actions__]
+                } for model in models]
 
 
 class DataBrowser(object):
