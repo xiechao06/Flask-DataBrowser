@@ -19,7 +19,7 @@ def main():
         list_template = "accounts/list.haml"
 
         def patch_row_css(self, idx, row):
-            if row.group_id == 1:
+            if row.roll_called == 1:
                 return "box warning"
 
         __list_columns__ = ["id", "name", "group", "password", "roll_called"]
