@@ -21,6 +21,7 @@ class ModelView(object):
     __form_columns__ = []
     __render_preprocessors__ = []
     __customized_actions__ = []
+    __create_columns__ = []
 
     form = None
     form_formatters = None
@@ -309,7 +310,7 @@ class ModelView(object):
 
     def get_create_form(self):
         if self.__create_form__ is None:
-            self.__create_form__ = self.get_form()
+            self.__create_form__ = self.get_form(list_columns=self.__create_columns__)
         return self.__create_form__()
 
     def get_edit_form(self, obj=None):
