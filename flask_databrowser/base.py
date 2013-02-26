@@ -283,7 +283,7 @@ class ModelView(object):
         """
             Create form from the model.
         """
-        from flask.ext.databrowser.form.convent import AdminModelConverter, get_form
+        from flask.ext.databrowser.form.convert import AdminModelConverter, get_form
 
         converter = AdminModelConverter(self.session, self)
         form_class = get_form(self.model, converter, only=list_columns,
@@ -579,7 +579,7 @@ class ModelView(object):
                 yield dict(pk=pk, fields=fields,
                            css=self.patch_row_css(cnter.next(), r) or "")
 
-        return g()
+        return None if not models else g()
 
     def patch_row_css(self, idx, row):
         return ""
