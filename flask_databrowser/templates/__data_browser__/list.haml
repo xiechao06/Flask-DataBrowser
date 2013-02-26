@@ -27,6 +27,7 @@
          if ($(this).val() == "{{ _('批量修改') }}"){
              $("#main-form").attr("method", "GET");
              $("#main-form").attr("action", "{{ __object_url__ }}/"+ list_val);
+             return true;
          }
          return confirm("您确认要" + $(this).val() + "选中的记录?");
      });
