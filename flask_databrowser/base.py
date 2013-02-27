@@ -194,11 +194,11 @@ class ModelView(object):
         """
         control if the create button appears
         """
-        return not self.can_create() if isinstance(self.can_create, types.MethodType) else self.can_create
+        return self.can_create() if isinstance(self.can_create, types.MethodType) else self.can_create
 
     @property
     def edit_allowable(self):
-        return not self.can_edit() if isinstance(self.can_edit, types.MethodType) else self.can_edit
+        return self.can_edit() if isinstance(self.can_edit, types.MethodType) else self.can_edit
 
 
     def try_edit(self):
