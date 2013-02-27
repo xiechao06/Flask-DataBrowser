@@ -247,7 +247,9 @@ class ModelView(object):
                 model = type("_temp", (self.model,),
                              {"__init__": lambda self: None})()
                 for attr in dir(model):
-                    if attr.startswith("_") or not hasattr(model, attr):
+                    if attr.startswith("_") or not hasattr(model,
+                                                           attr) or isinstance(
+                            getattr(model.__class__, attr), property):
                         continue
                     default_value = getattr(model_list[0], attr)
                     if all(getattr(model_,
@@ -324,14 +326,13 @@ class ModelView(object):
     def get_edit_form(self, obj=None):
         if self.__edit_form__ is None:
             self.__edit_form__ = self.get_form(
-                self.__form_columns__ or self.__list_columns__)
+                self.__form_columns__)
         return self.__edit_form__(obj=obj)
 
     def get_batch_edit_form(self, obj=None):
         if self.__batch_edit_form__ is None:
             self.__batch_edit_form__ = self.get_form(
-                [column for column in
-                 self.__batch_form_columns__ or self.__list_columns__ if
+                [column for column in self.__batch_form_columns__ if
                  column.find(".") == -1])
         return self.__batch_edit_form__(obj=obj)
 
