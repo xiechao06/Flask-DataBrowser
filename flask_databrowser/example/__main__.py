@@ -47,13 +47,13 @@ def main():
             if row.roll_called == 1:
                 return "box warning"
 
-        __list_columns__ = ["id", "name", "group", "password", "roll_called"]
+        __list_columns__ = ["id", "name", "group", "password", "roll_called", "group.name"]
 
         __batch_form_columns__ = ["name", "group"]
 
-        __list_formatters__ = {
-            "create_time": lambda model, v: v.strftime("%Y-%m-%d %H") + u"点",
-            "group": lambda model, v: v.name if v else "",
+        __column_formatters__ = {
+            "create_time": lambda v, model: v.strftime("%Y-%m-%d %H") + u"点",
+            "group": lambda v, model: v.name if v else "",
         }
 
         __column_docs__ = {
@@ -70,8 +70,6 @@ def main():
         }
 
         __default_order__ = ("name", "desc")
-
-        form_formatters = {"group": lambda group: group.name}
 
         from flask.ext.databrowser import filters
         from datetime import datetime, timedelta

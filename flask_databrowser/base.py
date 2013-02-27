@@ -11,7 +11,7 @@ from .utils import get_primary_key, named_actions
 from .action import DeleteAction
 
 class ModelView(object):
-    __list_formatters__ = {}
+    __column_formatters__ = {}
     __list_columns__ = {}
     __list_filters__ = {}
     __sortable_columns__ = []
@@ -26,7 +26,6 @@ class ModelView(object):
     __create_columns__ = []
 
     form = None
-    form_formatters = None
     column_descriptions = None
     column_hide_backrefs = True
 
@@ -593,10 +592,10 @@ class ModelView(object):
 
     def format_value(self, v, col_name):
         try:
-            formatter = self.__list_formatters__[col_name]
+            formatter = self.__column_formatters__[col_name]
         except KeyError:
             return unicode(v)
-        return formatter(self.model, v)
+        return formatter(v, self.model)
 
     def scaffold_pk(self, entry):
         from .utils import get_primary_key
@@ -635,19 +634,6 @@ class ModelView(object):
                            actions=dict((action.name, action.test_enabled(preprocessed_model)) for action in self.__customized_actions__))
         return ret
 
-    def get_action_list(self):
-        ret = []
-        for model in models:
-            id = self.scaffold_pk(model)
-            preprocessed_model = self._preprocess_model(model) 
-            ret.append({
-                "id": id,
-                "actions": [
-                    {"name": action.name, "enabled": action.enabled(preprocessed_model),
-                     "disabled_tooltip": action.disabled_tooltip(preprocessed_model)} for
-                    action in self.__customized_actions__]
-            }) 
-        return ret
 
 class DataBrowser(object):
     def __init__(self, app, db, page_size=16):

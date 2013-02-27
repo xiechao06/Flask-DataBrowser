@@ -8,7 +8,22 @@ user_and_group_table = db.Table('TB_ASSOCIATION',
                                 db.Column('group_id', db.Integer,
                                           db.ForeignKey('TB_GROUP.id')))
 
-class User(db.Model):
+class NewObject(object):
+    """
+    example:
+        >> class A(object):
+                c = "c"
+        >> class B(NewObject):
+                a = A()
+        >> b= B()
+        >> getattr(b, "a.c") # same as b.a.c
+        will return "c"
+    """
+    def __getattr__(self, item):
+        return reduce(lambda x, y: x.__getattribute__(y),
+                      [self] + item.split("."))
+
+class User(db.Model, NewObject):
     __tablename__ = "TB_USER"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -27,7 +42,6 @@ class User(db.Model):
 
     def roll_call(self):
         self.roll_called = True
-
 
 class Group(db.Model):
     __tablename__ = "TB_GROUP"

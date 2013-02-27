@@ -1,4 +1,6 @@
 import inspect
+import operator
+import functools
 
 from wtforms import fields, validators
 from sqlalchemy import Boolean, Column
@@ -150,6 +152,33 @@ class AdminModelConverter(ModelConverterBase):
             'filters': []
         }
 
+
+        class DisabledTextField(fields.TextField):
+
+            def __call__(self, **kwargs):
+                kwargs["disabled"] = True
+                return self.widget(self, **kwargs)
+
+            def __init__(self, label=None, validators=None,
+                         filters=tuple(),
+                         description='', id=None, default=None,
+                         widget=None,
+                         _form=None, _name=None, _prefix='',
+                         _translations=None, get_label=None):
+                if get_label is None:
+                    get_label = lambda x: x
+                elif isinstance(get_label, basestring):
+                    get_label = operator.attrgetter(get_label)
+                filters = list(filters)
+                filters.append(get_label)
+                super(DisabledTextField, self).__init__(label,
+                                                        validators,
+                                                        filters,
+                                                        description,
+                                                        id, default,
+                                                        widget, _form,
+                                                        _name, _prefix,
+                                                        _translations)
         if field_args:
             kwargs.update(field_args)
 
@@ -161,7 +190,12 @@ class AdminModelConverter(ModelConverterBase):
             kwargs['label'] = self._get_label(prop.key, kwargs)
             kwargs['description'] = self._get_description(prop.key, kwargs)
 
-            kwargs['get_label'] = self._get_label_func(prop.key, kwargs)
+            kwargs['get_label'] = functools.partial(
+                self._get_label_func(prop.key, kwargs) or (
+                lambda x, model: unicode(x)),
+                model=model)
+            if prop.key.find(".") > -1:
+                return DisabledTextField(**kwargs)
 
             if local_column.nullable:
                 kwargs['validators'].append(validators.Optional())
@@ -178,6 +212,7 @@ class AdminModelConverter(ModelConverterBase):
                 kwargs['allow_blank'] = local_column.nullable,
             if 'query_factory' not in kwargs:
                 kwargs['query_factory'] = lambda: self.session.query(remote_model)
+
 
             if prop.direction.name == 'MANYTOONE':
                 return QuerySelectField(widget=form.Select2Widget(),
@@ -234,6 +269,14 @@ class AdminModelConverter(ModelConverterBase):
                             column))
                         unique = True
 
+                # Apply label and description if it isn't inline form field
+                if self.view.model == mapper.class_:
+                    kwargs['label'] = self._get_label(prop.key, kwargs)
+                    kwargs['description'] = self._get_description(prop.key, kwargs)
+
+                if prop.key.find(".") > -1:
+                    return DisabledTextField(**kwargs)
+
                 # If field is unique, validate it
                 if column.unique and not unique:
                     kwargs['validators'].append(Unique(self.session,
@@ -242,11 +285,6 @@ class AdminModelConverter(ModelConverterBase):
 
                 if not column.nullable and not isinstance(column.type, Boolean):
                     kwargs['validators'].append(validators.Required())
-
-                # Apply label and description if it isn't inline form field
-                if self.view.model == mapper.class_:
-                    kwargs['label'] = self._get_label(prop.key, kwargs)
-                    kwargs['description'] = self._get_description(prop.key, kwargs)
 
                 # Figure out default value
                 default = getattr(column, 'default', None)
@@ -369,10 +407,10 @@ class AdminModelConverter(ModelConverterBase):
         if 'get_label' in field_args:
             return field_args['get_label']
 
-        column_labels = getattr(self.view, 'form_formatters')
+        column_formatters = getattr(self.view, '__column_formatters__')
 
-        if column_labels:
-            return column_labels.get(name)
+        if column_formatters:
+            return column_formatters.get(name)
 
         return self.view.prettify_name(name)
 
@@ -427,8 +465,10 @@ def get_form(model, converter,
                 return p
 
             # If it is hybrid property or alias, look it up in a model itself
-            p = getattr(model, name, None)
+            p = reduce(lambda x, y: getattr(x.mapper.class_, y) if hasattr(x, "mapper") else getattr(x, y),
+                       [model] + name.split("."))
             if p is not None and hasattr(p, 'property'):
+                p.property.key = name
                 return p.property
 
             return None

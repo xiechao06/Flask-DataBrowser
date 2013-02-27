@@ -76,7 +76,7 @@ class BaseFilter(TemplateParam):
                 ret.extend((getattr(row, get_primary_key(model)), self.opt_formatter(row) if self.opt_formatter else row) 
                         for row in model.query.all())
             if len(ret) > 1:
-                ret.insert(0, (",".join(str(r[0]) for r in ret), u'--%s--' % _(u"所有")))
+                ret.insert(0, (",".join(unicode(r[0]) for r in ret), u'--%s--' % _(u"所有")))
             return ret
 
 
