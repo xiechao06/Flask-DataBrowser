@@ -10,7 +10,6 @@ user_and_group_table = db.Table('TB_ASSOCIATION',
 
 class User(db.Model):
     __tablename__ = "TB_USER"
-    __modelname__ = u"用户"
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(32), nullable=False, unique=True)

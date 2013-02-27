@@ -63,6 +63,12 @@ def raised_when(test, assertion):
     
     return decorator
 
-        
+
+def raised(E, test, *args, **kwargs):
+    try:
+        test(*args, **kwargs)
+        return True
+    except E:
+        return False 
 
 

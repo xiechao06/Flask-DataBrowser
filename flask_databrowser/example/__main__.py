@@ -4,11 +4,36 @@
 @version: $
 """
 
-def main():
-    from flask.ext import databrowser
-    from flask import Blueprint
+from flask.ext.principal import Permission, RoleNeed, PermissionDenied
 
+admin_permission = Permission(RoleNeed("Admin"))
+
+from collections import namedtuple
+
+roll_call_perm = Permission(namedtuple("foo", ["method"])('roll_call'))
+
+def main():
+    from flask import Blueprint, request
     from basemain import app, db
+
+    from flask.ext.principal import Principal
+
+    principal = Principal(app)
+
+    @app.errorhandler(PermissionDenied)
+    def permission_denied(error):
+        permissions = []
+        for idx, need in enumerate(error.args[0].needs):
+            if need.method == "role":
+                s = '角色是' + need.value
+            else:
+                s = need.method
+            permissions.append(s)
+        return '该操作(' + request.url + ')被拒绝需要的访问权限为:' + ";".join(permissions)
+
+    from flask.ext import databrowser
+    from flask.ext.databrowser.action import DeleteAction
+
     from models import User
     accounts_bp = Blueprint("accounts", __name__, static_folder="static", 
                             template_folder="templates")
@@ -74,10 +99,28 @@ def main():
             def op(self, model):
                 model.roll_call()
 
-            def enabled(self, model):
-                return not model.roll_called
+            def test_enabled(self, model):
+                if model.roll_called:
+                    return -1
+                return 0
 
-        __customized_actions__ = [RollCall(u"点名")]
+            def try_(self):
+                roll_call_perm.test()
+
+        class MyDeleteAction(DeleteAction):
+
+            def test_enabled(self, model):
+                if model.name == "Spock":
+                    return -3
+                elif model.name == "Tyde":
+                    return -2
+                return 0 
+
+            def get_forbidden_msg_formats(self):
+                return {-3: "[%s]是我的偶像, 不要删除他们", 
+                        -2: "[%s]是好狗，不要伤害他们"}
+
+        __customized_actions__ = [MyDeleteAction(u"删除", admin_permission), RollCall(u"点名")]
 
     browser.register_model_view(UserModelView(User, u"用户"), accounts_bp)
     app.register_blueprint(accounts_bp, url_prefix="/accounts")

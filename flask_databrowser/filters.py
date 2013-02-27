@@ -27,17 +27,13 @@ class BaseFilter(TemplateParam):
         self.opt_formatter = opt_formatter
 
     @property
-    def display_col_name(self):
-        return self.__display_col_name or self.col_name
-
-    @property
     @_raised_when_model_unset
     def model(self):
         return self.model_view.model
 
     @property
     def label(self):
-        return self.model_view.__column_labels__.get(self.col_name, self.col_name)
+        return self.__display_col_name or self.model_view.__column_labels__.get(self.col_name, self.col_name)
 
     @property
     @_raised_when_model_unset

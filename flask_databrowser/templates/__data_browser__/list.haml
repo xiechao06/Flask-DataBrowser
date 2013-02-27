@@ -1,72 +1,86 @@
 -extends "__data_browser__/layout.haml"
 
-
 -block __data_browser__custom_external_block
+  %script src="{{ url_for('__data_browser__.static', filename='js/sprintf-0.6.js') }}"
 
- %script
-   $(function(){
-     $("select").select2();
-     -for filter in __filters__:
-        $("[name='{{ filter.op.id }}']").val('{{ filter.value }}').trigger("change");
-     $("input[name=rowtoggle]").click(function () {
-       if ($(this).attr('checked')) {
-         $("#list-table tbody input[type=checkbox]").attr("checked", "checked");
-       } else {
-         $("#list-table tbody input[type=checkbox]").removeAttr("checked");
-       }
-     });
-     $("#main-form #actions input[name=action]").click(function(){
-         var list_val = "";
-         $("#list-table tbody input[type=checkbox]:checked").each(function(){
-           list_val += $(this).val() +",";
-         });
-         if (list_val == ""){
-             alert("{{ _("请至少选择一条记录！") }}");
-             return false;
-         }
-         if ($(this).val() == "{{ _('批量修改') }}"){
-             $("#main-form").attr("method", "GET");
-             $("#main-form").attr("action", "{{ __object_url__ }}/"+ list_val);
-             return true;
-         }
-         return confirm("您确认要" + $(this).val() + "选中的记录?");
-     });
-     $("#reset-button").click(function(){
-      $("select").select2("val","");
-     });
-     setTimeout(function () {
-         $("#flash").fadeOut("slow")
-     }, 3000);
-     -if __action_list__:
-       var action_list = {{ __action_list__ | tojson | safe }}
-       $("input[type='checkbox']").click(function () {
-         var invalid_list = []
-         tooltip = ""
-         $("#list-table tbody input[type=checkbox]:checked").each(function () {
-           for (i = 0; i < action_list.length; i++) {
-             if ($(this).val() == action_list[i].id) {
-               for (j = 0; j < action_list[i].actions.length; j++) {
-                 name = action_list[i].actions[j].name
-                   if (!action_list[i].actions[j].enabled) {
-                     tooltip += action_list[i].actions[j].disabled_tooltip +"\n";
-                     if ($.inArray(name, invalid_list) == -1) {
-                       invalid_list.push(name);
-                     }
-                   }
-               }
-             }
-           }
-         })
-         $("input[name=action]").each(function () {
-           if ($.inArray($(this).val(), invalid_list) != -1) {
-             $(this).attr("disabled", true);
-             $(this).attr("title", tooltip);
-           } else {
-             $(this).attr("disabled", false);
-           }
-         });
-       });
-   });
+  %script
+
+    $(function(){
+      $("select").select2();
+      -for filter in __filters__:
+         $("[name='{{ filter.op.id }}']").val('{{ filter.value }}').trigger("change");
+      $("input[name=rowtoggle]").click(function () {
+        if ($(this).attr('checked')) {
+          $("#list-table tbody input[type=checkbox]").attr("checked", "checked");
+        } else {
+          $("#list-table tbody input[type=checkbox]").removeAttr("checked");
+        }
+      });
+      $("#main-form #actions input[name=action]").click(function(){
+          var list_val = "";
+          $("#list-table tbody input[type=checkbox]:checked").each(function(){
+            list_val += $(this).val() +",";
+          });
+          if (list_val == ""){
+              alert("{{ _("请至少选择一条记录！") }}");
+              return false;
+          }
+          if ($(this).val() == "{{ _('批量修改') }}"){
+              $("#main-form").attr("method", "GET");
+              $("#main-form").attr("action", "{{ __object_url__ }}/"+ list_val);
+              return true;
+          }
+          return confirm("您确认要" + $(this).val() + "选中的记录?");
+      });
+      $("#reset-button").click(function(){
+       $("select").select2("val","");
+      });
+      setTimeout(function () {
+          $("#flash").fadeOut("slow")
+      }, 3000);
+      -if __rows_action_desc__
+        var rows_action_desc = {{ __rows_action_desc__|tojson|safe }}; // row -> (name: row.name, actions: action_name-> forbidden_code)
+        var actions = {{ __action_2_forbidden_message_formats__ | tojson | safe }}; // action_name -> ()
+        $("input[type='checkbox']").click(function () {
+          var action_2_rows = {}; // action -> (forbidden_code -> [rows])
+          $("#list-table tbody input[type=checkbox]:checked").each(function () {
+            var model_repr = rows_action_desc[$(this).val()].name;
+            var action_2_forbidden_code = rows_action_desc[$(this).val()].actions;
+            for (var action_name in action_2_forbidden_code) {
+              var forbidden_code = action_2_forbidden_code[action_name];
+              if (forbidden_code == 0) {
+                  continue;
+              }
+              if (!(action_name in action_2_rows)) {
+                  action_2_rows[action_name] = new Array();
+              }
+              if (!(forbidden_code in action_2_rows[action_name])) {
+                action_2_rows[action_name][forbidden_code] = new Array();
+              }
+              action_2_rows[action_name][forbidden_code].push(model_repr);
+            }
+          });
+          $("input[name=action]").each(function () {
+            var tooltip = "";
+            if ($(this).val() in action_2_rows) {
+              $(this).attr("disabled", true);
+              var forbidden_code_2_rows = action_2_rows[$(this).val()];
+              for (var forbidden_code in forbidden_code_2_rows) {
+                var rows = forbidden_code_2_rows[forbidden_code];
+                var format = actions[$(this).val()][forbidden_code];
+                if (format == undefined) {
+                    format = actions[$(this).val()][-1];
+                }
+                tooltip += sprintf(format, rows.toString()) + '\n';
+              }
+              tooltip = tooltip.substr(0, tooltip.length-1);
+            } else {
+              $(this).attr("disabled", false);
+            }
+            $(this).attr("title", tooltip);
+          });
+        });
+    });
 
 
 -block body
@@ -118,7 +132,7 @@
               %input value="{{ request.url }}" type="hidden" name="url"
               %span#actions
                 -for action in __actions__:
-                  %input value="{{action.value}}" type="submit" name="action" class="btn btn-info"
+                  %input value="{{action.name}}" type="submit" name="action" class="btn btn-info"
               %span#action-fillings
                 -block action_fillings
 

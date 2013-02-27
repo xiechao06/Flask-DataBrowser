@@ -5,8 +5,10 @@ import re
 import itertools
 import copy
 from flask import render_template, flash, request, url_for, redirect
+from flask.ext.principal import PermissionDenied
 from flask.ext.babel import gettext, ngettext
 from .utils import get_primary_key, named_actions
+from .action import DeleteAction
 
 class ModelView(object):
     __list_formatters__ = {}
@@ -28,12 +30,24 @@ class ModelView(object):
     column_descriptions = None
     column_hide_backrefs = True
 
-    can_create = can_edit = can_delete = True
+    can_view = can_create = can_edit = can_delete = True
 
     __create_form__ = __edit_form__ = __batch_edit_form__ = None
 
     list_template = create_template = edit_template = None
 
+    def __init__(self, model, model_name=""):
+        self.model = model
+        self.blueprint = None
+        self.data_browser = None
+        self.extra_params = {}
+        self.__model_name = model_name
+        for fltr in self.__list_filters__:
+            fltr.model_view = self
+        for fltr in self.__column_filters__:
+            fltr.model_view = self
+        for action in self.__customized_actions__:
+            action.model_view = self
 
     def render(self, template, **kwargs):
         kwargs['_gettext'] = gettext
@@ -163,22 +177,38 @@ class ModelView(object):
             self.session.rollback()
             return False
 
-    @property
-    def creation_allowable(self):
-        return self.can_create() if isinstance(self.can_create, types.MethodType) else self.can_create
+    def try_view(self):
+        """
+        control if user could view objects list or object
+        """
+        pass
+
+    def try_create(self):
+        """
+        control if user could create the new object
+        """
+        pass
 
     @property
-    def delete_allowable(self):
-        return self.can_delete() if isinstance(self.can_delete, types.MethodType) else self.can_delete
+    def creation_allowable(self):
+        """
+        control if the create button appears
+        """
+        return not self.can_create() if isinstance(self.can_create, types.MethodType) else self.can_create
 
     @property
     def edit_allowable(self):
-        return self.can_edit() if isinstance(self.can_edit, types.MethodType) else self.can_edit
+        return not self.can_edit() if isinstance(self.can_edit, types.MethodType) else self.can_edit
+
+
+    def try_edit(self):
+        pass
 
     def create_view(self):
         """
             Create model view
         """
+        self.try_create()
         if self.create_template is None:
             import posixpath
 
@@ -209,6 +239,7 @@ class ModelView(object):
         """
             Edit model view
         """
+        self.try_view()
         id_list = [int(i) for i in id_.split(",") if i]
         if self.edit_template is None:
             import posixpath
@@ -283,7 +314,7 @@ class ModelView(object):
         """
             Create form from the model.
         """
-        from flask.ext.databrowser.form.convent import AdminModelConverter, get_form
+        from flask.ext.databrowser.form.convert import AdminModelConverter, get_form
 
         converter = AdminModelConverter(self.session, self)
         form_class = get_form(self.model, converter, only=list_columns,
@@ -324,17 +355,6 @@ class ModelView(object):
             self.__batch_edit_form__ = self.get_form(
                 self.__batch_form_columns__ or self.__list_columns__)
         return self.__batch_edit_form__(obj=obj)
-
-    def __init__(self, model, model_name=""):
-        self.model = model
-        self.blueprint = None
-        self.data_browser = None
-        self.extra_params = {}
-        self.__model_name = model_name
-        for fltr in self.__list_filters__:
-            fltr.model_view = self
-        for fltr in self.__column_filters__:
-            fltr.model_view = self
 
     @property
     def model_name(self):
@@ -379,6 +399,7 @@ class ModelView(object):
         from flask.ext.sqlalchemy import Pagination
 
         if request.method == "GET":
+            self.try_view()
             page, order_by, desc = self._parse_args()
             column_filters = self._parse_filters()
             kwargs = {}
@@ -391,8 +412,9 @@ class ModelView(object):
                 f.as_dict("op", "label", "input_type", "input_class", "value",
                           "options") for f in column_filters]
             kwargs["__actions__"] = self.scaffold_actions()
+            kwargs["__action_2_forbidden_message_formats__"] = dict((action["name"], action["forbidden_msg_formats"]) for action in kwargs["__actions__"])
             count, data = self.query_data(page, order_by, desc, column_filters)
-            kwargs["__action_list__"] = self.get_action_list(data)
+            kwargs["__rows_action_desc__"] = self.get_rows_action_desc(data)
             kwargs["__count__"] = count
             kwargs["__data__"] = self.scaffold_list(data)
             kwargs["__object_url__"] = url_for(
@@ -430,37 +452,24 @@ class ModelView(object):
             models = self.model.query.filter(
                 getattr(self.model, get_primary_key(self.model)).in_(
                     request.form.getlist('selected-ids'))).all()
-            if action_name == gettext(u"删除"):
-                op = lambda model: self.session.delete(model)
-                success_message = lambda models: gettext(self.model_name + 
-                                                         ','.join(str(getattr(model, get_primary_key(model))) for model in models) + 
-                                                         ' deleted.')
-                error_message = lambda models: gettext('Failed to delete. %(error)s', error=str(ex))
+            for action in self.__customized_actions__:
+                if action.name == action_name:
+                    break
             else:
-                for action in self.__customized_actions__:
-                    if action.name == action_name:
-                        break
-                else:
-                    return gettext('such action %(action)s doesn\'t be allowed', action=action_name), 403
-                tmp_models = []
-                for model in models:
-                    for rpp in self.__render_preprocessors__:
-                        model = rpp(model)
-                    tmp_models.append(model)
-                models = tmp_models
-                op = action.op
-                success_message = action.success_message
-                error_message = action.error_message
-
+                return gettext('such action %(action)s doesn\'t be allowed', action=action_name), 403
+            action.try_()
+            tmp_models = []
             try:
                 processed_models = []
                 for model in models:
-                    op(model)
+                    for rpp in self.__render_preprocessors__:
+                        model = rpp(model)
                     processed_models.append(model)
+                    action.op(model)
                 self.session.commit()
-                flash(success_message(processed_models), 'success')
+                flash(action.success_message(processed_models), 'success')
             except Exception, ex:
-                flash(u"%s(%s)" % (error_message(models), ex.message), 'error')
+                flash(u"%s(%s)" % (action.error_message(models), ex.message), 'error')
                 self.session.rollback()
 
             return redirect(url_for(
@@ -517,13 +526,10 @@ class ModelView(object):
 
     def scaffold_actions(self):
         l = []
-        if self.delete_allowable:
-            l = [{"name": "delete", "value": gettext(u"删除")}]
         if self.edit_allowable:
-            l.append({"name": "batch_edit", "value": gettext(u"批量修改")})
+            l.append({"name": gettext(u"批量修改"), "forbidden_msg_formats": {}})
 
-        for action in self.__customized_actions__:
-            l.append({"name": action.name, "value": action.name})
+        l.extend(dict(name=action.name, value=action.name, forbidden_msg_formats=action.get_forbidden_msg_formats()) for action in self.__customized_actions__)
         return l
 
     def query_data(self, page, order_by, desc, filters):
@@ -538,15 +544,17 @@ class ModelView(object):
                 q = filter_.set_sa_criterion(q)
 
         if order_by:
+            last_join_model = self.model
             order_by_list = order_by.split(".")
-            for order_by in order_by_list:
-                order_criterion = getattr(self.model, order_by)
-
-                if hasattr(order_criterion.property, 'direction'):
-                    order_criterion = enumerate(order_criterion.property.local_columns).next()[1]
-                if desc:
-                    order_criterion = order_criterion.desc()
-                q = q.order_by(order_criterion)
+            for order_by in order_by_list[:-1]:
+                last_join_model = getattr(last_join_model, order_by).property.mapper.entity
+                q = q.join(last_join_model)
+            order_criterion = getattr(last_join_model, order_by_list[-1])
+            if hasattr(order_criterion.property, 'direction'):
+                order_criterion = enumerate(order_criterion.property.local_columns).next()[1]
+            if desc:
+                order_criterion = order_criterion.desc()
+            q = q.order_by(order_criterion)
         count = q.count()
         if page:
             q = q.offset((page - 1) * self.data_browser.page_size)
@@ -588,7 +596,7 @@ class ModelView(object):
         try:
             formatter = self.__list_formatters__[col_name]
         except KeyError:
-            return v
+            return unicode(v)
         return formatter(self.model, v)
 
     def scaffold_pk(self, entry):
@@ -614,13 +622,21 @@ class ModelView(object):
                 pass
         return shadow_column_filters
 
-
     def _preprocess_model(self, model):
         for rpp in self.__render_preprocessors__:
             model = rpp(model)
         return model
 
-    def get_action_list(self, models):
+    def get_rows_action_desc(self, models):
+        ret = {}
+        for model in models:
+            id = self.scaffold_pk(model)
+            preprocessed_model = self._preprocess_model(model) 
+            ret[id] = dict(name=unicode(model), 
+                           actions=dict((action.name, action.test_enabled(preprocessed_model)) for action in self.__customized_actions__))
+        return ret
+
+    def get_action_list(self):
         ret = []
         for model in models:
             id = self.scaffold_pk(model)
