@@ -25,6 +25,7 @@ class ModelView(object):
     __render_preprocessors__ = []
     __customized_actions__ = []
     __create_columns__ = []
+    __max_col_len__ = 10
 
     form = None
     column_descriptions = None
@@ -402,6 +403,7 @@ class ModelView(object):
             kwargs["__order_by__"] = lambda col_name: col_name == order_by
             kwargs["__can_create__"] = self.creation_allowable
             kwargs["__can_edit__"] = self.edit_allowable
+            kwargs["__max_col_len__"] = self.__max_col_len__
             if desc:
                 kwargs["__desc__"] = desc
             kwargs["__pagination__"] = Pagination(None, page,
