@@ -249,9 +249,6 @@ class ModelView(object):
         return_url = request.args.get('url') or url_for(
             '.' + self.list_view_endpoint)
 
-        if not self.edit_allowable:
-            return redirect(return_url)
-
         if id_list is None:
             return redirect(return_url)
 
@@ -296,7 +293,7 @@ class ModelView(object):
                 #由于model为临时对象，不能持久化，所以需要rollback下。
 
             form = self.get_batch_edit_form(obj=model)
-            if form.is_submitted():
+            if form.is_submitted() and self.edit_allowable:
                 if all(self.update_model(form, model) for model in model_list):
                     return redirect(return_url)
 
