@@ -227,8 +227,7 @@ class ModelView(object):
             if self.create_model(form):
                 if '_add_another' in request.form:
                     flash(gettext('Model was successfully created.'))
-                    return redirect(url_for('.' + self.object_view_endpoint,
-                                            url=return_url))
+                    return redirect(url_for_object(url=return_url))
                 else:
                     return redirect(return_url)
 
@@ -385,6 +384,9 @@ class ModelView(object):
         return "/" + re.sub(r"([A-Z])+", lambda m: "-" + m.groups()[0].lower(),
                             self.model.__name__).lstrip("-")
 
+    def url_for_object(self, *args, **kwargs):
+        return url_for(".".join([self.blueprint.name, self.object_view_endpoint]), *args, **kwargs)
+
     @property
     def object_view_endpoint(self):
         return re.sub(r"([A-Z])+", lambda m: "_" + m.groups()[0].lower(),
@@ -417,8 +419,7 @@ class ModelView(object):
             kwargs["__rows_action_desc__"] = self.get_rows_action_desc(data)
             kwargs["__count__"] = count
             kwargs["__data__"] = self.scaffold_list(data)
-            kwargs["__object_url__"] = url_for(
-                ".".join([self.blueprint.name, self.object_view_endpoint]))
+            kwargs["__object_url__"] = self.url_for_object()
             kwargs["__order_by__"] = lambda col_name: col_name == order_by
             kwargs["__can_create__"] = self.creation_allowable
             kwargs["__can_edit__"] = self.edit_allowable
@@ -579,9 +580,7 @@ class ModelView(object):
                     # add link to object if it is primary key
                     if get_primary_key(self.model) == c[0]:
                         formatted_value = {"value": formatted_value,
-                                           "link": url_for(
-                                               "." + self.object_view_endpoint,
-                                               id_=raw_value, url=request.url,
+                                           "link": self.url_for_object(id_=raw_value, url=request.url,
                                                preview=not self.edit_allowable)}
                     fields.append(formatted_value)
                 yield dict(pk=pk, fields=fields,
