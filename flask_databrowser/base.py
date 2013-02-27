@@ -4,6 +4,7 @@ import os
 import re
 import itertools
 import copy
+import operator
 from flask import render_template, flash, request, url_for, redirect
 from flask.ext.principal import PermissionDenied
 from flask.ext.babel import gettext, ngettext
@@ -573,8 +574,7 @@ class ModelView(object):
                 pk = self.scaffold_pk(r)
                 fields = []
                 for c in self.normalized_list_columns:
-                    raw_value = reduce(lambda x, y: getattr(x, y),
-                                       [r] + c[0].split("."))
+                    raw_value = operator.attrgetter(c[0])(r)
                     formatted_value = self.format_value(raw_value, c[0])
                     # add link to object if it is primary key
                     if get_primary_key(self.model) == c[0]:
