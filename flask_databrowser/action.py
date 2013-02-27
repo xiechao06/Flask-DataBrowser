@@ -35,7 +35,7 @@ class BaseAction(object):
         return self.model_name + ','.join(unicode(model) for model in models).join(
             ['[', ']']) + gettext(u"%(name))s失败", name=self.name)
 
-    def try_(self, model):
+    def try_(self):
         pass
 
     def _get_forbidden_msg_formats(self):

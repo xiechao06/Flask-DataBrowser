@@ -69,6 +69,15 @@ def raised(E, test, *args, **kwargs):
         test(*args, **kwargs)
         return True
     except E:
-        return False 
+        return False
 
 
+def fslice(iterable, predict):
+    a = []
+    b = []
+    for i in iterable:
+        if predict(i):
+            a.append(i)
+        else:
+            b.append(i)
+    return a, b
