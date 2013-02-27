@@ -20,8 +20,8 @@ class NewObject(object):
         will return "c"
     """
     def __getattr__(self, item):
-        return reduce(lambda x, y: x.__getattribute__(y),
-                      [self] + item.split("."))
+        import operator
+        return operator.attrgetter(item)(self)
 
 class User(db.Model, NewObject):
     __tablename__ = "TB_USER"
