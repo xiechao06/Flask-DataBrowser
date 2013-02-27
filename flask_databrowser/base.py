@@ -58,27 +58,6 @@ class ModelView(object):
         kwargs.update(self.extra_params.get("list_view", {}))
         return render_template(template, **kwargs)
 
-    def get_column_name(self, field):
-        if self.__list_columns__:
-            for c in self.__list_columns__:
-                if isinstance(c, types.TupleType):
-                    if field == c[0]:
-                        return c[1]
-
-        return self.prettify_name(field)
-
-    # Various helpers
-    def prettify_name(self, name):
-        """
-            Prettify pythonic variable name.
-
-            For example, 'hello_world' will be converted to 'Hello World'
-
-            :param name:
-                Name to prettify
-        """
-        return name.replace('_', ' ').title()
-
     @property
     def normalized_list_columns(self):
         if self.__list_columns__:
@@ -459,7 +438,6 @@ class ModelView(object):
             else:
                 return gettext('such action %(action)s doesn\'t be allowed', action=action_name), 403
             action.try_()
-            tmp_models = []
             try:
                 processed_models = []
                 for model in models:
@@ -656,6 +634,28 @@ class DataBrowser(object):
             s = s.encode('utf8')
             s = urllib.quote_plus(s)
             return Markup(s)
+
+        @app.template_filter('truncate')
+        def truncate_str(s, length=255, killwords=False, end='...', href="#"):
+            a_ = "<a title='" + s
+            if href:
+                a_ = a_ + "' href='" + href + "'>" + end + "<a>"
+            else:
+                a_ = a_ + "'>" + end + "<a>"
+            if len(s) <= length:
+                return s
+            elif killwords:
+                return s[:length] + a_
+            words = s.split(' ')
+            result = []
+            m = 0
+            for word in words:
+                m += len(word) + 1
+                if m > length:
+                    break
+                result.append(word)
+            result.append(a_)
+            return u' '.join(result)
 
         from flask import Blueprint
         # register it for using the templates of data browser
