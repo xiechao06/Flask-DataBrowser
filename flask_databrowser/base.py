@@ -25,7 +25,7 @@ class ModelView(object):
     __render_preprocessors__ = []
     __customized_actions__ = []
     __create_columns__ = []
-    __max_col_len__ = 10
+    __max_col_len__ = 255
 
     form = None
     column_descriptions = None
