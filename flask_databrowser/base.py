@@ -587,7 +587,7 @@ class ModelView(object):
                 yield dict(pk=pk, fields=fields,
                            css=self.patch_row_css(cnter.next(), r) or "")
 
-        return g()
+        return None if not models else g()
 
     def patch_row_css(self, idx, row):
         return ""

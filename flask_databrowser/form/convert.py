@@ -431,10 +431,10 @@ def get_form(model, converter,
             if p is not None and hasattr(p, 'property'):
                 return p.property
 
-            raise ValueError('Invalid model property name %s.%s' % (model, name))
+            return None
 
         # Filter properties while maintaining property order in 'only' list
-        properties = ((x, find(x)) for x in only if x.find(".") == -1)
+        properties = ((x, find(x)) for x in only)
     elif exclude:
         properties = (x for x in properties if x[0] not in exclude)
 
