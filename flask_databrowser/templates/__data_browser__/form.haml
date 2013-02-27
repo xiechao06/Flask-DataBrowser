@@ -7,6 +7,7 @@
 -block __data_browser__custom_external_block
   %script
     -if request.args.get("preview") == 'True'
-      alert("{{ request.args.get("preview")}}");
+      $(function(){
       $("input").attr("disabled", true);
       $("select").select2("disable").attr("disabled", true);
+      });
