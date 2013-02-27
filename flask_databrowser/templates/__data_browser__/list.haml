@@ -7,8 +7,18 @@
 
     $(function(){
       $("select").select2();
+      $("input[type=datetime]").each(function(){
+        $(this).datepicker();
+      });
       -for filter in __filters__:
-         $("[name='{{ filter.op.id }}']").val('{{ filter.value }}').trigger("change");
+         var filter_values = {{ filter.value|tojson }};
+         $("[name='{{ filter.op.id }}']").each(function(idx, val) {
+          var val = filter_values
+          if ($.isArray(filter_values)){
+            val = filter_values[idx]
+          }
+          $(this).val(val).trigger("change");
+         })
       $("input[name=rowtoggle]").click(function () {
         if ($(this).attr('checked')) {
           $("#list-table tbody input[type=checkbox]").attr("checked", "checked");
@@ -155,7 +165,10 @@
                           -for opt in filter.options:
                             %option value={{opt[0]}} << {{ opt[1] }}
                       -else
-                        %input type="{{ filter.input_type }}" name="{{ filter.op.id }}" class="{{ __css_classes__[filter.input_class] }}" min=0 placeholder="{{ _("请输入") + filter.label }}"
+                        -for input_type in filter.input_type
+                          %input type="{{ input_type }}" name="{{ filter.op.id }}" class="{{ __css_classes__[filter.input_class] }}" min=0 placeholder="{{ _("请输入") + filter.label }}"
+                          -if not loop.last
+                            %span << {{ filter.sep }}
               %hr
               .control-group.pagination-centered
                 .controls

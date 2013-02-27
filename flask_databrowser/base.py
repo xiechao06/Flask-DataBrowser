@@ -380,7 +380,7 @@ class ModelView(object):
                                                                     desc)
             kwargs["__filters__"] = [
                 f.as_dict("op", "label", "input_type", "input_class", "value",
-                          "options") for f in column_filters]
+                          "options", "sep") for f in column_filters]
             kwargs["__actions__"] = self.scaffold_actions()
             kwargs["__action_2_forbidden_message_formats__"] = dict(
                 (action["name"], action["forbidden_msg_formats"]) for action in
@@ -589,9 +589,9 @@ class ModelView(object):
 
         op_id_2_filter = dict(
             (fltr.op.id, fltr) for fltr in shadow_column_filters)
-        for k, v in request.args.items():
+        for k, v in request.args.lists():
             try:
-                op_id_2_filter[k].value = v
+                op_id_2_filter[k].value = (v[0] if len(v) == 1 else v)
             except KeyError:
                 pass
         return shadow_column_filters

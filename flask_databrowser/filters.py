@@ -51,6 +51,8 @@ class BaseFilter(TemplateParam):
                 col_type = type(attr.property.columns[0].type).__name__
                 if col_type == 'Integer':
                     return 'number'
+                elif col_type == 'DateTime':
+                    return 'datetime'
                 else:
                     return 'text'
 
@@ -81,7 +83,8 @@ class BaseFilter(TemplateParam):
 
 
     def has_value(self):
-        return self.value not in (None, "") and self.value != (self.options and self.options[0][0])
+        return all(val not in (None, "") for val in self.value) and \
+               self.value != (self.options and self.options[0][0])
 
     def set_sa_criterion(self, q):
         """
@@ -113,22 +116,46 @@ class BaseFilter(TemplateParam):
         else:
             return self.__operator__(attr, self.value)
 
+    @property
+    def sep(self):
+        return "--"
+
+
 class EqualTo(BaseFilter):
     __notation__ = ""
     __operator__ = operator.eq
+
 
 class NotEqualTo(BaseFilter):
     __notation__ = "__ne"
     __operator__ = operator.ne
 
+
 class LessThan(BaseFilter):
     __notation__ = "__lt"
     __operator__ = operator.lt
+
 
 class BiggerThan(BaseFilter):
     __notation__ = "__gt"
     __operator__ = operator.gt
 
+
 class Contains(BaseFilter):
     __notation__ = "__contains"
     __operator__ = lambda self, attr, value: attr.like(value.join(["%", "%"]))
+
+
+class Between(BaseFilter):
+    __notation__ = "__between"
+    __operator__ = lambda self, attr, value_list: attr.between(value_list[0], value_list[1])
+
+    @property
+    @_raised_when_model_unset
+    def input_type(self):
+       return (super(Between, self).input_type, ) * 2
+
+    @property
+    @_raised_when_model_unset
+    def input_class(self):
+        return 'numeric-filter'
