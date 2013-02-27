@@ -11,6 +11,7 @@ from flask.ext.babel import gettext, ngettext
 from .utils import get_primary_key, named_actions
 from .action import DeleteAction
 
+
 class ModelView(object):
     __column_formatters__ = {}
     __list_columns__ = {}
@@ -174,11 +175,13 @@ class ModelView(object):
         """
         control if the create button appears
         """
-        return self.can_create() if isinstance(self.can_create, types.MethodType) else self.can_create
+        return self.can_create() if isinstance(self.can_create,
+                                               types.MethodType) else self.can_create
 
     @property
     def edit_allowable(self):
-        return self.can_edit() if isinstance(self.can_edit, types.MethodType) else self.can_edit
+        return self.can_edit() if isinstance(self.can_edit,
+                                             types.MethodType) else self.can_edit
 
 
     def try_edit(self):
@@ -244,33 +247,14 @@ class ModelView(object):
             model_list = [self.get_one(id_) for id_ in id_list]
             model = None
             if request.method == "GET":
-                model = type("_temp", (self.model,),
-                             {"__init__": lambda self: None})()
-                for attr in dir(model):
-                    if attr.startswith("_") or not hasattr(model,
-                                                           attr) or isinstance(
-                            getattr(model.__class__, attr), property):
+                model = type("_temp", (object,),{})()
+                for attr in dir(self.model):
+                    if attr.startswith("_"):
                         continue
                     default_value = getattr(model_list[0], attr)
                     if all(getattr(model_,
                                    attr) == default_value for model_ in model_list):
                         setattr(model, attr, default_value)
-                    else:
-                        for column in self.model.__table__.c:
-                            if column.name == attr:
-                                default = getattr(column, "default", None)
-                                if default is not None:
-                                    value = getattr(default, 'arg', None)
-
-                                    if value is not None:
-                                        if getattr(default, 'is_callable',
-                                                   False):
-                                            value = value(None)
-                                        else:
-                                            if not getattr(default,
-                                                           'is_scalar', True):
-                                                value = None
-                                    setattr(model, attr, value)
                 self.session.rollback()
                 #由于model为临时对象，不能持久化，所以需要rollback下。
 
@@ -320,7 +304,8 @@ class ModelView(object):
 
     def get_create_form(self):
         if self.__create_form__ is None:
-            self.__create_form__ = self.get_form(list_columns=self.__create_columns__)
+            self.__create_form__ = self.get_form(
+                list_columns=self.__create_columns__)
         return self.__create_form__()
 
     def get_edit_form(self, obj=None):
@@ -366,7 +351,9 @@ class ModelView(object):
                             self.model.__name__).lstrip("-")
 
     def url_for_object(self, *args, **kwargs):
-        return url_for(".".join([self.blueprint.name, self.object_view_endpoint]), *args, **kwargs)
+        return url_for(
+            ".".join([self.blueprint.name, self.object_view_endpoint]), *args,
+            **kwargs)
 
     @property
     def object_view_endpoint(self):
@@ -395,7 +382,9 @@ class ModelView(object):
                 f.as_dict("op", "label", "input_type", "input_class", "value",
                           "options") for f in column_filters]
             kwargs["__actions__"] = self.scaffold_actions()
-            kwargs["__action_2_forbidden_message_formats__"] = dict((action["name"], action["forbidden_msg_formats"]) for action in kwargs["__actions__"])
+            kwargs["__action_2_forbidden_message_formats__"] = dict(
+                (action["name"], action["forbidden_msg_formats"]) for action in
+                    kwargs["__actions__"])
             count, data = self.query_data(page, order_by, desc, column_filters)
             kwargs["__rows_action_desc__"] = self.get_rows_action_desc(data)
             kwargs["__count__"] = count
@@ -412,10 +401,11 @@ class ModelView(object):
                                                   count, kwargs["__data__"])
             import posixpath
             # try user defined template
-            if self.list_template and os.path.exists(os.path.join(self.blueprint.template_folder,
-                                           self.list_template)):
+            if self.list_template and os.path.exists(
+                    os.path.join(self.blueprint.template_folder,
+                                 self.list_template)):
                 return self.render(self.list_template, **kwargs)
-            # try html first
+                # try html first
             template_fname = self.blueprint.name + self.list_view_url + ".html"
             if os.path.exists(os.path.join(self.blueprint.template_folder,
                                            template_fname)):
@@ -439,7 +429,8 @@ class ModelView(object):
                 if action.name == action_name:
                     break
             else:
-                return gettext('such action %(action)s doesn\'t be allowed', action=action_name), 403
+                return gettext('such action %(action)s doesn\'t be allowed',
+                               action=action_name), 403
             action.try_()
             try:
                 processed_models = []
@@ -451,7 +442,8 @@ class ModelView(object):
                 self.session.commit()
                 flash(action.success_message(processed_models), 'success')
             except Exception, ex:
-                flash(u"%s(%s)" % (action.error_message(models), ex.message), 'error')
+                flash(u"%s(%s)" % (action.error_message(models), ex.message),
+                      'error')
                 self.session.rollback()
 
             return redirect(url_for(
@@ -511,7 +503,8 @@ class ModelView(object):
         if self.edit_allowable:
             l.append({"name": gettext(u"批量修改"), "forbidden_msg_formats": {}})
 
-        l.extend(dict(name=action.name, value=action.name, forbidden_msg_formats=action.get_forbidden_msg_formats()) for action in self.__customized_actions__)
+        l.extend(dict(name=action.name, value=action.name,
+                      forbidden_msg_formats=action.get_forbidden_msg_formats()) for action in self.__customized_actions__)
         return l
 
     def query_data(self, page, order_by, desc, filters):
@@ -529,7 +522,8 @@ class ModelView(object):
             last_join_model = self.model
             order_by_list = order_by.split(".")
             for order_by in order_by_list[:-1]:
-                last_join_model = getattr(last_join_model, order_by).property.mapper.entity
+                last_join_model = getattr(last_join_model,
+                                          order_by).property.mapper.entity
                 q = q.join(last_join_model)
             order_criterion = getattr(last_join_model, order_by_list[-1])
             if hasattr(order_criterion.property, 'direction'):
@@ -560,7 +554,8 @@ class ModelView(object):
                     # add link to object if it is primary key
                     if get_primary_key(self.model) == c[0]:
                         formatted_value = {"value": formatted_value,
-                                           "link": self.url_for_object(id_=raw_value, url=request.url,
+                                           "link": self.url_for_object(
+                                               id_=raw_value, url=request.url,
                                                preview=not self.edit_allowable)}
                     fields.append(formatted_value)
                 yield dict(pk=pk, fields=fields,
@@ -610,9 +605,10 @@ class ModelView(object):
         ret = {}
         for model in models:
             id = self.scaffold_pk(model)
-            preprocessed_model = self._preprocess_model(model) 
-            ret[id] = dict(name=unicode(model), 
-                           actions=dict((action.name, action.test_enabled(preprocessed_model)) for action in self.__customized_actions__))
+            preprocessed_model = self._preprocess_model(model)
+            ret[id] = dict(name=unicode(model),
+                           actions=dict((action.name, action.test_enabled(
+                               preprocessed_model)) for action in self.__customized_actions__))
         return ret
 
 
