@@ -367,6 +367,11 @@ class ModelView(object):
             ".".join([self.blueprint.name, self.object_view_endpoint]), *args,
             **kwargs)
 
+    def url_for_object_preview(self, *args, **kwargs):
+        return url_for(
+            ".".join([self.blueprint.name, self.object_view_endpoint]), *args,
+            preview=not self.edit_allowable, **kwargs)
+
     @property
     def object_view_endpoint(self):
         return re.sub(r"([A-Z])+", lambda m: "_" + m.groups()[0].lower(),
@@ -566,9 +571,8 @@ class ModelView(object):
                     # add link to object if it is primary key
                     if get_primary_key(self.model) == c[0]:
                         formatted_value = {"value": formatted_value,
-                                           "link": self.url_for_object(
-                                               id_=raw_value, url=request.url,
-                                               preview=not self.edit_allowable)}
+                                           "link": self.url_for_object_preview(
+                                               id_=raw_value, url=request.url)}
                     fields.append(formatted_value)
                 yield dict(pk=pk, fields=fields,
                            css=self.patch_row_css(cnter.next(), r) or "")
