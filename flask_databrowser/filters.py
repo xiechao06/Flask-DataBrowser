@@ -83,8 +83,9 @@ class BaseFilter(TemplateParam):
 
 
     def has_value(self):
-        return all(val not in (None, "") for val in self.value) and \
-               self.value != (self.options and self.options[0][0])
+        return self.value not in (None, "") and any(
+            val not in (None, "") for val in self.value) and self.value != (
+               self.options and self.options[0][0])
 
     def set_sa_criterion(self, q):
         """
@@ -147,8 +148,16 @@ class Contains(BaseFilter):
 
 
 class Between(BaseFilter):
+
+    def between(self, attr, value_list):
+        if value_list[0] and not value_list[1]:
+            return operator.gt(attr, value_list[0])
+        elif value_list[1] and not value_list[0]:
+            return operator.lt(attr, value_list[1])
+        return attr.between(value_list[0], value_list[1])
+
     __notation__ = "__between"
-    __operator__ = lambda self, attr, value_list: attr.between(value_list[0], value_list[1])
+    __operator__ = between
 
     @property
     @_raised_when_model_unset
