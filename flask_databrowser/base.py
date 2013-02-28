@@ -28,7 +28,6 @@ class ModelView(object):
     __create_columns__ = []
     __max_col_len__ = 255
 
-    form = None
     column_descriptions = None
     column_hide_backrefs = True
 
@@ -267,12 +266,6 @@ class ModelView(object):
                            form=form,
                            return_url=return_url)
 
-    def get_form(self, list_columns=None):
-        if self.form:
-            return self.form
-
-        return self.scaffold_form(list_columns)
-
     def scaffold_form(self, list_columns):
         """
             Create form from the model.
@@ -304,19 +297,19 @@ class ModelView(object):
 
     def get_create_form(self):
         if self.__create_form__ is None:
-            self.__create_form__ = self.get_form(
+            self.__create_form__ = self.scaffold_form(
                 list_columns=self.__create_columns__)
         return self.__create_form__()
 
     def get_edit_form(self, obj=None):
         if self.__edit_form__ is None:
-            self.__edit_form__ = self.get_form(
+            self.__edit_form__ = self.scaffold_form(
                 self.__form_columns__)
         return self.__edit_form__(obj=obj)
 
     def get_batch_edit_form(self, obj=None):
         if self.__batch_edit_form__ is None:
-            self.__batch_edit_form__ = self.get_form(
+            self.__batch_edit_form__ = self.scaffold_form(
                 [column for column in self.__batch_form_columns__ if
                  column.find(".") == -1])
         return self.__batch_edit_form__(obj=obj)
