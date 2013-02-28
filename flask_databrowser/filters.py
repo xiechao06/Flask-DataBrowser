@@ -151,9 +151,9 @@ class Between(BaseFilter):
 
     def __operator__(self, attr, value_list):
         if value_list[0] and not value_list[1]:
-            return operator.gt(attr, value_list[0])
+            return operator.ge(attr, value_list[0])
         elif value_list[1] and not value_list[0]:
-            return operator.lt(attr, value_list[1])
+            return operator.le(attr, value_list[1])
         return attr.between(value_list[0], value_list[1])
 
     __notation__ = "__between"
