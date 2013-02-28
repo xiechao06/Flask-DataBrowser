@@ -267,8 +267,6 @@ class ModelView(object):
                     if all(getattr(model_,
                                    attr) == default_value for model_ in model_list):
                         setattr(model, attr, default_value)
-                self.session.rollback()
-                #由于model为临时对象，不能持久化，所以需要rollback下。
 
             form = self.get_batch_edit_form(obj=model)
             if form.is_submitted() and self.edit_allowable:
