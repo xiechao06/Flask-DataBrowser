@@ -148,12 +148,16 @@
     </form>
 {% endmacro %}
 
+{% macro create() %}
+    <input name="_add_another" type="submit" class="btn btn-large" value="{{ _gettext('Save and Add') }}" />
+{% endmacro %}
+
 {% macro render_form_buttons(cancel_url, extra=None) %}
     <div class="control-group">
         <div class="controls">
             <input type="submit" class="btn btn-primary btn-large" value="{{ _gettext('Submit') }}" />
-            {% if extra %}
-                {{ extra }}
+            {% if extra == "create" %}
+                {{ create() }}
             {% endif %}
             {% if cancel_url %}
                 <a href="{{ cancel_url }}" class="btn btn-large">{{ _gettext('Cancel') }}</a>
