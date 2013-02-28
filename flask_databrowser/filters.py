@@ -161,7 +161,7 @@ class Between(BaseFilter):
     @property
     @_raised_when_model_unset
     def input_type(self):
-       return (super(Between, self).input_type, ) * 2
+        return (super(Between, self).input_type, ) * 2
 
     @property
     @_raised_when_model_unset
