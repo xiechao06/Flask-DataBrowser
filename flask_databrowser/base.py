@@ -60,6 +60,18 @@ class ModelView(object):
         kwargs.update(self.extra_params.get("list_view", {}))
         return render_template(template, **kwargs)
 
+    # Various helpers
+    def prettify_name(self, name):
+        """
+            Prettify pythonic variable name.
+
+            For example, 'hello_world' will be converted to 'Hello World'
+
+            :param name:
+                Name to prettify
+        """
+        return name.replace('_', ' ').title()
+
     @property
     def normalized_list_columns(self):
         if self.__list_columns__:
