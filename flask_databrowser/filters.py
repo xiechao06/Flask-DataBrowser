@@ -50,11 +50,11 @@ class BaseFilter(TemplateParam):
             if hasattr(attr, 'property'):
                 col_type = type(attr.property.columns[0].type).__name__
                 if col_type == 'Integer':
-                    return 'number'
+                    return 'number',
                 elif col_type == 'DateTime':
-                    return 'datetime'
+                    return 'datetime',
                 else:
-                    return 'text'
+                    return 'text',
 
     @property
     @_raised_when_model_unset
@@ -161,7 +161,7 @@ class Between(BaseFilter):
     @property
     @_raised_when_model_unset
     def input_type(self):
-        return (super(Between, self).input_type, ) * 2
+        return super(Between, self).input_type * 2
 
     @property
     @_raised_when_model_unset
