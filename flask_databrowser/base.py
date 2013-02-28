@@ -227,7 +227,7 @@ class ModelView(object):
                     return redirect(return_url)
 
         return self.render(self.create_template, form=form,
-                           return_url=return_url)
+                           return_url=return_url, extra="create")
 
     def edit_view(self, id_):
         """
