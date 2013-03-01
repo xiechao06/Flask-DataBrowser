@@ -396,7 +396,7 @@ class ModelView(object):
         for rpp in self.__render_preprocessors__:
             r = rpp(r)
         for col in self.__form_columns__:
-            if isinstance(col, basestring) and not "." in col:
+            if isinstance(col, basestring):
                 try: 
                     # if it is a models property, we yield from model_form
                     ret.append(model_form[col])
