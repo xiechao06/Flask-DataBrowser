@@ -79,6 +79,7 @@ class ModelView(object):
         get column specification from string
         """
         # we get document from sqlalchemy models
+        doc = ""
         attr_name_list = col.split('.')
         last_model = self.model
         for attr_name in attr_name_list[:-1]:
@@ -89,7 +90,8 @@ class ModelView(object):
                 last_model = None
                 break
         if last_model:
-            doc = getattr(getattr(last_model, attr_name_list[-1]), "doc", "")
+            if hasattr(last_model, attr_name_list[-1]):
+                doc = getattr(getattr(last_model, attr_name_list[-1]), "doc", "")
         label=self.__column_labels__.get(col, col)
         if get_primary_key(self.model) == col:
             # TODO add cross ref to registered model
