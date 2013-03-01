@@ -59,7 +59,11 @@ class ModelView(object):
         from . import helpers
 
         kwargs['h'] = helpers
-        kwargs.update(self.extra_params.get("list_view", {}))
+        list_kwargs = self.extra_params.get("list_view", {}):
+        for k, v in list_kwargs.items():
+            if isinstance(v, types.FunctionType):
+                v = v(self)
+            kwargs[k] = v
         return render_template(template, **kwargs)
 
     # Various helpers
@@ -473,7 +477,7 @@ class ModelView(object):
         if request.method == "GET":
             self.try_view()
             page, order_by, desc = self._parse_args()
-            column_filters = self._parse_filters()
+            column_filters = self.parse_filters()
             kwargs = {}
             with self.data_browser.blueprint.open_resource(
                     "static/css_classes/list.yaml") as f:
@@ -507,12 +511,12 @@ class ModelView(object):
                     os.path.join(self.blueprint.template_folder,
                                  self.list_template)):
                 return self.render(self.list_template, **kwargs)
-                # try html first
+            # try html first
             template_fname = self.blueprint.name + self.list_view_url + ".html"
             if os.path.exists(os.path.join(self.blueprint.template_folder,
                                            template_fname)):
                 return self.render(template_fname, **kwargs)
-                # then haml
+            # then haml
             template_fname = self.blueprint.name + self.list_view_url + ".haml"
             if os.path.exists(os.path.join(self.blueprint.template_folder,
                                            template_fname)):
@@ -667,7 +671,7 @@ class ModelView(object):
 
         return getattr(entry, get_primary_key(self.model))
 
-    def _parse_filters(self):
+    def parse_filters(self):
         """
         set filter's value using args
         """

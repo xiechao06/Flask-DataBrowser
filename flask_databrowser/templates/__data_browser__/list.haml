@@ -103,6 +103,9 @@
             %a.btn.btn-success href="{{ "?url=".join([__object_url__, request.url|urlencode]) }}"
               %span.add-on.icon-plus
               {{ _("新建") }}
+
+          -block __data_browser__hint_block
+
           -if __data__
             %table#list-table class="{{ __css_classes__.list_table_class }}"
               %thead
