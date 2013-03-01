@@ -47,12 +47,19 @@ def main():
             if row.roll_called == 1:
                 return "box warning"
 
-        __list_columns__ = ["id", "name", "group", "password", "roll_called", "group.name"]
+        from flask.ext.databrowser.column_spec import ImageColumnSpec, TableColumnSpec
+        __list_columns__ = ["id", "name", "group", "password", "roll_called", "group.name", "create_time", ImageColumnSpec("avatar", alt=u"头像", 
+            formatter=lambda v, model: "http://ts2.mm.bing.net/th?id=H.4886020105371813&pid=15.1"), "good"]
+        __form_columns__ = ["id", "name", "group", "password", "roll_called", "good", 
+                            ImageColumnSpec("avatar", alt=u"头像", 
+                                            formatter=lambda v, model: "http://ts2.mm.bing.net/th?id=H.4886020105371813&pid=15.1"), 
+                            TableColumnSpec("dogs")]
 
         __batch_form_columns__ = ["name", "group"]
 
         __column_formatters__ = {
             "create_time": lambda v, model: v.strftime("%Y-%m-%d %H") + u"点",
+            "avatar": lambda v, model: "http://ts2.mm.bing.net/th?id=H.4886020105371813&pid=15.1",
             "group": lambda v, model: v.name if v else "",
         }
 
@@ -67,6 +74,7 @@ def main():
             "create_time": u"创建于", 
             "group": u"用户组",
             "roll_called": u"点名过", 
+            "group.name": u"用户组名称",
         }
 
         __default_order__ = ("name", "desc")
@@ -89,6 +97,7 @@ def main():
                              ]
 
         __list_filters__ = [filters.NotEqualTo("name", value=u"Type")]
+
 
         from flask.ext.databrowser.action import BaseAction
 

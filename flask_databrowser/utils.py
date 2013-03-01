@@ -71,6 +71,18 @@ def raised(E, test, *args, **kwargs):
     except E:
         return False
 
+def disabled_field_or_widget(convert):
+
+    @wraps(convert)
+    def convert_(*args, **kwargs):
+        field_or_widget = convert(*args, **kwargs)
+        def __call__(self, field, **kwargs):
+            kwargs["disabled"] = True
+            return super(self.__class, self).__call__(field, **kwargs)
+        field_or_widget.__call__ = types.MethodType(__call__, field_or_widget, field_or_widget.__class__)
+        return field_or_widget
+
+    return convert_
 
 def fslice(iterable, predict):
     a = []
@@ -81,3 +93,4 @@ def fslice(iterable, predict):
         else:
             b.append(i)
     return a, b
+

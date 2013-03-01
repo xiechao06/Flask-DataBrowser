@@ -8,22 +8,7 @@ user_and_group_table = db.Table('TB_ASSOCIATION',
                                 db.Column('group_id', db.Integer,
                                           db.ForeignKey('TB_GROUP.id')))
 
-class NewObject(object):
-    """
-    example:
-        >> class A(object):
-                c = "c"
-        >> class B(NewObject):
-                a = A()
-        >> b= B()
-        >> getattr(b, "a.c") # same as b.a.c
-        will return "c"
-    """
-    def __getattr__(self, item):
-        import operator
-        return operator.attrgetter(item)(self)
-
-class User(db.Model, NewObject):
+class User(db.Model):
     __tablename__ = "TB_USER"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -43,11 +28,28 @@ class User(db.Model, NewObject):
     def roll_call(self):
         self.roll_called = True
 
+    @property
+    def good(self):
+        return (self.id & 1) == 0
+
+    @property
+    def avatar(self):
+        return "%d.jpg" % self.id
+
+    @property
+    def dogs(self):
+        from collections import namedtuple
+        Dog = namedtuple("Dog", ["name", "color", "age"])
+        a = Dog("a", "red", 1)
+        b = Dog("b", "black", 2)
+        c = Dog("c", "white", 3)
+        return [a, b, c]
+
 class Group(db.Model):
     __tablename__ = "TB_GROUP"
 
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(32), nullable=False, unique=True)
+    name = db.Column(db.String(32), nullable=False, unique=True, doc=u"用户组名称")
 
     def __unicode__(self):
         return u"<Group: %s>" % self.name

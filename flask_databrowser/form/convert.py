@@ -103,7 +103,6 @@ class InlineFormAdmin(object):
         """
         return form_class
 
-
 class AdminModelConverter(ModelConverterBase):
     """
         SQLAlchemy model to form converter
@@ -152,7 +151,6 @@ class AdminModelConverter(ModelConverterBase):
             'filters': []
         }
 
-
         class DisabledTextField(fields.TextField):
 
             def __call__(self, **kwargs):
@@ -194,6 +192,7 @@ class AdminModelConverter(ModelConverterBase):
                 self._get_label_func(prop.key, kwargs) or (
                 lambda x, model: unicode(x)),
                 model=model)
+            # TODO remove it
             if prop.key.find(".") > -1:
                 return DisabledTextField(**kwargs)
 
@@ -212,7 +211,6 @@ class AdminModelConverter(ModelConverterBase):
                 kwargs['allow_blank'] = local_column.nullable,
             if 'query_factory' not in kwargs:
                 kwargs['query_factory'] = lambda: self.session.query(remote_model)
-
 
             if prop.direction.name == 'MANYTOONE':
                 return QuerySelectField(widget=form.Select2Widget(),

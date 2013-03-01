@@ -130,7 +130,7 @@
                       -if v.link
                         %td -> %a href="{{ v.link }}" << {{ v.value }}
                       -else
-                        %td << {{ v|truncate(__max_col_len__, True) }}
+                        %td << {{ v() }}
             -from "__data_browser__/lib.haml" import render_pagination
             {{ render_pagination(__pagination__, __count__) }}
           -else
