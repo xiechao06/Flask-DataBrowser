@@ -49,17 +49,17 @@ def main():
 
         from flask.ext.databrowser.column_spec import ImageColumnSpec, TableColumnSpec
         __list_columns__ = ["id", "name", "group", "password", "roll_called", "group.name", "create_time", ImageColumnSpec("avatar", alt=u"头像", 
-            formatter=lambda v, model: "http://ts2.mm.bing.net/th?id=H.4886020105371813&pid=15.1"), "good"]
+            formatter=lambda v, model: "http://farm9.staticflickr.com/8522/8478415115_152c6f5e55_m.jpg"), "good"]
         __form_columns__ = ["id", "name", "group", "password", "roll_called", "good", 
                             ImageColumnSpec("avatar", alt=u"头像", 
-                                            formatter=lambda v, model: "http://ts2.mm.bing.net/th?id=H.4886020105371813&pid=15.1"), 
-                            TableColumnSpec("dogs")]
+                                            formatter=lambda v, model: "http://farm9.staticflickr.com/8522/8478415115_152c6f5e55_m.jpg"),
+                            TableColumnSpec("dogs", css_class="table table-striped table-hover table-condensed table-bordered")]
 
         __batch_form_columns__ = ["name", "group"]
 
         __column_formatters__ = {
             "create_time": lambda v, model: v.strftime("%Y-%m-%d %H") + u"点",
-            "avatar": lambda v, model: "http://ts2.mm.bing.net/th?id=H.4886020105371813&pid=15.1",
+            "avatar": lambda v, model: "http://farm9.staticflickr.com/8522/8478415115_152c6f5e55_m.jpg",
             "group": lambda v, model: v.name if v else "",
         }
 

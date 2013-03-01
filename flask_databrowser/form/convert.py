@@ -1,6 +1,5 @@
-import inspect
-import operator
 import functools
+import inspect
 
 from wtforms import fields, validators
 from sqlalchemy import Boolean, Column
@@ -103,6 +102,7 @@ class InlineFormAdmin(object):
         """
         return form_class
 
+
 class AdminModelConverter(ModelConverterBase):
     """
         SQLAlchemy model to form converter
@@ -151,32 +151,6 @@ class AdminModelConverter(ModelConverterBase):
             'filters': []
         }
 
-        class DisabledTextField(fields.TextField):
-
-            def __call__(self, **kwargs):
-                kwargs["disabled"] = True
-                return self.widget(self, **kwargs)
-
-            def __init__(self, label=None, validators=None,
-                         filters=tuple(),
-                         description='', id=None, default=None,
-                         widget=None,
-                         _form=None, _name=None, _prefix='',
-                         _translations=None, get_label=None):
-                if get_label is None:
-                    get_label = lambda x: x
-                elif isinstance(get_label, basestring):
-                    get_label = operator.attrgetter(get_label)
-                filters = list(filters)
-                filters.append(get_label)
-                super(DisabledTextField, self).__init__(label,
-                                                        validators,
-                                                        filters,
-                                                        description,
-                                                        id, default,
-                                                        widget, _form,
-                                                        _name, _prefix,
-                                                        _translations)
         if field_args:
             kwargs.update(field_args)
 
@@ -192,9 +166,6 @@ class AdminModelConverter(ModelConverterBase):
                 self._get_label_func(prop.key, kwargs) or (
                 lambda x, model: unicode(x)),
                 model=model)
-            # TODO remove it
-            if prop.key.find(".") > -1:
-                return DisabledTextField(**kwargs)
 
             if local_column.nullable:
                 kwargs['validators'].append(validators.Optional())
@@ -267,14 +238,6 @@ class AdminModelConverter(ModelConverterBase):
                             column))
                         unique = True
 
-                # Apply label and description if it isn't inline form field
-                if self.view.model == mapper.class_:
-                    kwargs['label'] = self._get_label(prop.key, kwargs)
-                    kwargs['description'] = self._get_description(prop.key, kwargs)
-
-                if prop.key.find(".") > -1:
-                    return DisabledTextField(**kwargs)
-
                 # If field is unique, validate it
                 if column.unique and not unique:
                     kwargs['validators'].append(Unique(self.session,
@@ -283,6 +246,11 @@ class AdminModelConverter(ModelConverterBase):
 
                 if not column.nullable and not isinstance(column.type, Boolean):
                     kwargs['validators'].append(validators.Required())
+
+                # Apply label and description if it isn't inline form field
+                if self.view.model == mapper.class_:
+                    kwargs['label'] = self._get_label(prop.key, kwargs)
+                    kwargs['description'] = self._get_description(prop.key, kwargs)
 
                 # Figure out default value
                 default = getattr(column, 'default', None)
@@ -463,16 +431,14 @@ def get_form(model, converter,
                 return p
 
             # If it is hybrid property or alias, look it up in a model itself
-            p = reduce(lambda x, y: getattr(x.mapper.class_, y) if hasattr(x, "mapper") else getattr(x, y),
-                       [model] + name.split("."))
+            p = getattr(model, name, None)
             if p is not None and hasattr(p, 'property'):
-                p.property.key = name
                 return p.property
 
-            return None
+            raise ValueError('Invalid model property name %s.%s' % (model, name))
 
         # Filter properties while maintaining property order in 'only' list
-        properties = ((x, find(x)) for x in only)
+        properties = ((x, find(x)) for x in only if x.find(".") == -1)
     elif exclude:
         properties = (x for x in properties if x[0] not in exclude)
 

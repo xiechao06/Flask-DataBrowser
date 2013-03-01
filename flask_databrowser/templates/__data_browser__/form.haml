@@ -4,10 +4,11 @@
   %div.container
     =lib.render_form(form, return_url, extra)
 
--block __data_browser__custom_external_block
-  %script
-    -if request.args.get("preview") == 'True'
-      $(function(){
-      $("input").attr("disabled", true);
-      $("select").select2("disable").attr("disabled", true);
-      });
+-block __data_browser__customized_head_block
+  %script type="text/javascript"
+    $(function(){
+      $(".fancybox").fancybox();
+      -if request.args.get("preview") == 'True'
+        $("input").attr("disabled", true);
+        $("select").select2("disable").attr("disabled", true);
+    });

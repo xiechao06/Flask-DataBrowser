@@ -7,6 +7,7 @@
 
     $(function(){
       $("select").select2();
+      $(".fancybox").fancybox();
       $("input[type=datetime]").each(function(){
         $(this).datepicker();
       });
@@ -161,7 +162,7 @@
                       %i << &nbsp;{{ filter.op.name }}&nbsp;&nbsp;
                     .controls
                       -if filter.options
-                        %select name="{{ filter.op.id }}" class="input-medium" 
+                        %select name="{{ filter.op.id }}" class="input-medium"
                           -for opt in filter.options:
                             %option value={{opt[0]}} << {{ opt[1] }}
                       -else

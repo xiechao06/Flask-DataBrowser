@@ -1,9 +1,7 @@
-
+# -*- coding: UTF-8 -*-
 import numbers
-from wtforms.fields import Field
 from flask.ext.databrowser import extra_widgets
-from flask.ext.databrowser.utils import disabled_field_or_widget
-from flask.ext.databrowser import column_spec 
+from flask.ext.databrowser import column_spec
 
 class ValueConverter(object):
     """
@@ -12,12 +10,13 @@ class ValueConverter(object):
     note, since python is a dynamic language, we can't get the return type of
     a property until we get the value of the property, the rule is as following:
     """
-    @disabled_field_or_widget
     def __call__(self, v, col_spec=None):
         old_v = v
+        css_class = None
         if col_spec:
             if col_spec.formatter:
                 v = col_spec.formatter(v, None)
+            css_class = col_spec.css_class
         w = None
         if isinstance(v, basestring) or isinstance(v, numbers.Number):
             if col_spec:
@@ -38,12 +37,16 @@ class ValueConverter(object):
             w = extra_widgets.PlainText(v)
 
         class FakeField(object):
-            def __init__(self, label, widget):
+            def __init__(self, label, widget, css_class=None):
                 self.label = label
                 self.widget = widget
                 self.type = "ReadOnlyField"
+                self.css_class = css_class
 
             def __call__(self, **kwargs):
+                #kwargs["disabled"] = True
+                if self.css_class:
+                    kwargs["class"] = self.css_class
                 return self.widget(self, **kwargs)
 
-        return FakeField(dict(text=col_spec.label if col_spec else ""), widget=w)
+        return FakeField(dict(text=col_spec.label if col_spec else ""), widget=w, css_class=css_class)
