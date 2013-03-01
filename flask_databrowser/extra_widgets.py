@@ -13,8 +13,11 @@ class Image(object):
 
     # field is used here to compatiple with wtform's widgets
     def __call__(self, field, **kwargs):
-
-        return HTMLString('<img %s/>' % html_params(src=self.src, alt=self.alt, **kwargs))
+        return HTMLString(
+            '<a href="%s" class="fancybox control-text" rel="group" title="%s"><img '
+            '%s /></a>' % (
+            self.src, self.alt,
+            html_params(src=self.src, alt=self.alt, **kwargs)))
 
 class Link(object):
 
@@ -32,7 +35,7 @@ class PlainText(object):
     
     def __call__(self, field, **kwargs):
 
-        return HTMLString(self.s)
+        return HTMLString('<span %s>%s</span>' % (html_params(**kwargs), self.s))
 
 class TableWidget(object):
 

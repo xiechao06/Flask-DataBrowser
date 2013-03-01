@@ -106,12 +106,13 @@ class ModelView(object):
                 formatter = lambda x, model: self.url_for_object_preview(id_=x, url=request.url)
             col_spec = LinkColumnSpec(col, doc=doc, anchor=lambda x: x,
                                       formatter=formatter, 
-                                      label=label)
+                                      label=label, css_class="control-text")
         else:
             formatter = self.__column_formatters__.get(col, lambda x, model: unicode(x))
             col_spec = ColumnSpec(col, doc=doc, 
                                   formatter=formatter,
-                                  label=label)
+                                  label=label,
+                                  css_class="control-text")
         return col_spec
 
     @property
@@ -400,7 +401,7 @@ class ModelView(object):
         for rpp in self.__render_preprocessors__:
             r = rpp(r)
         for col in self.__form_columns__:
-            if isinstance(col, basestring) and not "." in col:
+            if isinstance(col, basestring):
                 try: 
                     # if it is a models property, we yield from model_form
                     ret.append(model_form[col])
