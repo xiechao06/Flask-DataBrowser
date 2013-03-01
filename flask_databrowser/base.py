@@ -10,6 +10,8 @@ from flask.ext.principal import PermissionDenied
 from flask.ext.babel import gettext, ngettext
 from .utils import get_primary_key, named_actions
 from .action import DeleteAction
+from flask.ext.databrowser.convert import ValueConverter
+from flask.ext.databrowser.column_spec import LinkColumnSpec, ColumnSpec
 
 
 class ModelView(object):
@@ -49,6 +51,7 @@ class ModelView(object):
             fltr.model_view = self
         for action in self.__customized_actions__:
             action.model_view = self
+        self.__list_column_specs = []
 
     def render(self, template, **kwargs):
         kwargs['_gettext'] = gettext
@@ -71,23 +74,73 @@ class ModelView(object):
         """
         return name.replace('_', ' ').title()
 
-    @property
-    def normalized_list_columns(self):
-        if self.__list_columns__:
-            for col_name in self.__list_columns__:
-                doc = self.__column_docs__.get(col_name, "")
-                if not doc:
-                    try:
-                        doc = getattr(self.model.__table__.c,
-                                      col_name).doc or ""
-                    except AttributeError: # col may not be table's field
-                        pass
-                yield (
-                    col_name, self.__column_labels__.get(col_name, col_name),
-                    doc)
+    def _col_spec_from_str(self, col):
+        """
+        get column specification from string
+        """
+        # we get document from sqlalchemy models
+        attr_name_list = col.split('.')
+        last_model = self.model
+        for attr_name in attr_name_list[:-1]:
+            attr = getattr(last_model, attr_name)
+            if hasattr(attr, "property"):
+                last_model = attr.property.mapper.entity
+            else:
+                last_model = None
+                break
+        if last_model:
+            doc = getattr(getattr(last_model, attr_name_list[-1]), "doc", "")
+        label=self.__column_labels__.get(col, col)
+        if get_primary_key(self.model) == col:
+            # TODO add cross ref to registered model
+            # add link to object if it is primary key
+            if self.can_edit:
+                formatter = lambda x, model: self.url_for_object(id_=x, url=request.url)
+            else:
+                formatter = lambda x, model: self.url_for_object_preview(id_=x, url=request.url)
+            col_spec = LinkColumnSpec(col, doc=doc, anchor=lambda x: x,
+                                      formatter=formatter, 
+                                      label=label)
         else:
-            for k, c in enumerate(self.model.__table__.c):
-                yield (c.name, c.name, c.doc or "")
+            formatter = self.__column_formatters__.get(col, lambda x, model: unicode(x))
+            col_spec = ColumnSpec(col, doc=doc, 
+                                  formatter=formatter,
+                                  label=label)
+        return col_spec
+
+    @property
+    def list_column_specs(self):
+        if self.__list_column_specs:
+            return self.__list_column_specs
+        
+        list_columns = self.__list_columns__
+        if not list_columns:
+            list_columns = [col.name for k, col in enumerate(self.model.__table__.c)]
+        if list_columns:
+            for col in self.__list_columns__:
+                if isinstance(col, basestring):
+                    col_spec = self._col_spec_from_str(col)
+                else:
+                    assert isinstance(col, ColumnSpec)
+                    col_spec = col
+
+                self.__list_column_specs.append(col_spec)
+
+        return self.__list_column_specs
+            #for col_name in self.__list_columns__:
+                #doc = self.__column_docs__.get(col_name, "")
+                #if not doc:
+                    #try:
+                        #doc = getattr(self.model.__table__.c,
+                                      #col_name).doc or ""
+                    #except AttributeError: # col may not be table's field
+                        #pass
+                #yield (
+                    #col_name, self.__column_labels__.get(col_name, col_name),
+                    #doc)
+        #else:
+            #for k, c in enumerate(self.model.__table__.c):
+                #yield (c.name, c.name, c.doc or "")
 
     def generate_model_string(self, link):
         return re.sub(r"([A-Z])+", lambda m: link + m.group(0).lower(),
@@ -252,8 +305,11 @@ class ModelView(object):
             form = self.get_edit_form(obj=model)
 
             if form.validate_on_submit():
+                form = self.get_edit_form(obj=model)
                 if self.update_model(form, model):
                     return redirect(return_url)
+            else: # GET
+                form = self.get_compound_edit_form(obj=model)
         else:
             model_list = [self.get_one(id_) for id_ in id_list]
             model = None
@@ -268,7 +324,7 @@ class ModelView(object):
                         setattr(model, attr, default_value)
 
             form = self.get_batch_edit_form(obj=model)
-            if form.is_submitted() and self.edit_allowable:
+            if form.is_submitted():
                 if all(self.update_model(form, model) for model in model_list):
                     return redirect(return_url)
 
@@ -276,16 +332,17 @@ class ModelView(object):
                            form=form,
                            return_url=return_url)
 
-    def scaffold_form(self, list_columns):
+    def scaffold_form(self, columns):
         """
             Create form from the model.
         """
         from flask.ext.databrowser.form.convert import AdminModelConverter, get_form
 
         converter = AdminModelConverter(self.session, self)
-        form_class = get_form(self.model, converter, only=list_columns,
+        form_class = get_form(self.model, converter, only=columns,
                               exclude=None, field_args=None)
         return form_class
+
 
     def scaffold_inline_form_models(self, form_class):
         """
@@ -305,17 +362,52 @@ class ModelView(object):
 
         return form_class
 
+    def _model_columns(self, form_columns):
+        # select the model columns from form_columns
+        if not form_columns:
+            return [] 
+        model_clumns = [p.key for p in self.model.__mapper__.iterate_properties]
+        form_columns = set(c if isinstance(c, basestring) else c.col_name for c in form_columns)
+        return [c for c in model_clumns if c in form_columns]
+        
     def get_create_form(self):
         if self.__create_form__ is None:
             self.__create_form__ = self.scaffold_form(
                 list_columns=self.__create_columns__)
         return self.__create_form__()
+        
 
     def get_edit_form(self, obj=None):
         if self.__edit_form__ is None:
-            self.__edit_form__ = self.scaffold_form(
-                self.__form_columns__)
+            self.__edit_form__ = self.scaffold_form(self._model_columns(self.__form_columns__))
         return self.__edit_form__(obj=obj)
+
+    def get_compound_edit_form(self, obj=None):
+        model_form = self.get_edit_form(obj=obj)
+
+        if not self.__form_columns__:
+            return model_form
+
+        value_converter = ValueConverter()
+        ret = []
+        r = self.model
+        for rpp in self.__render_preprocessors__:
+            r = rpp(r)
+        for col in self.__form_columns__:
+            if isinstance(col, basestring) and not "." in col:
+                try: 
+                    # if it is a models property, we yield from model_form
+                    ret.append(model_form[col])
+                except KeyError:
+                    r = obj
+                    for rpp in self.__render_preprocessors__:
+                        r = rpp(r)
+                    col_spec = self._col_spec_from_str(col)
+                    widget = value_converter(operator.attrgetter(col)(r), col_spec)
+                    ret.append(widget)
+            else:
+                ret.append(value_converter(operator.attrgetter(col.col_name)(r), col))
+        return ret
 
     def get_batch_edit_form(self, obj=None):
         if self.__batch_edit_form__ is None:
@@ -483,12 +575,11 @@ class ModelView(object):
         """
         from flask import request, url_for
 
-        for c in self.normalized_list_columns:
-            if c[0] in self.__sortable_columns__:
+        for c in self.list_column_specs:
+            if c.col_name in self.__sortable_columns__:
                 args = request.args.copy()
-                args["order_by"] = c[0]
-                if order_by == c[
-                    0]: # the table is sorted by c, so revert the order
+                args["order_by"] = c.col_name
+                if order_by == c.col_name: # the table is sorted by c, so revert the order
                     if not desc:
                         args["desc"] = 1
                     else:
@@ -501,7 +592,7 @@ class ModelView(object):
                     **args)
             else:
                 sort_url = ""
-            yield dict(name=c[0], label=c[1], doc=c[2], sort_url=sort_url)
+            yield dict(name=c.col_name, label=c.label, doc=c.doc, sort_url=sort_url)
 
     def scaffold_filters(self):
         return [dict(label="a", op=dict(name="lt", id="a__lt"))]
@@ -547,6 +638,7 @@ class ModelView(object):
         return count, q.all()
 
     def scaffold_list(self, models):
+        converter = ValueConverter()
         from .utils import get_primary_key
 
         def g():
@@ -556,14 +648,9 @@ class ModelView(object):
                     r = rpp(r)
                 pk = self.scaffold_pk(r)
                 fields = []
-                for c in self.normalized_list_columns:
-                    raw_value = operator.attrgetter(c[0])(r)
-                    formatted_value = self.format_value(raw_value, c[0])
-                    # add link to object if it is primary key
-                    if get_primary_key(self.model) == c[0]:
-                        formatted_value = {"value": formatted_value,
-                                           "link": self.url_for_object_preview(
-                                               id_=raw_value, url=request.url)}
+                for c in self.list_column_specs:
+                    raw_value = operator.attrgetter(c.col_name)(r)
+                    formatted_value = converter(raw_value, c)
                     fields.append(formatted_value)
                 yield dict(pk=pk, fields=fields,
                            css=self.patch_row_css(cnter.next(), r) or "")
@@ -572,13 +659,6 @@ class ModelView(object):
 
     def patch_row_css(self, idx, row):
         return ""
-
-    def format_value(self, v, col_name):
-        try:
-            formatter = self.__column_formatters__[col_name]
-        except KeyError:
-            return unicode(v)
-        return formatter(v, self.model)
 
     def scaffold_pk(self, entry):
         from .utils import get_primary_key
