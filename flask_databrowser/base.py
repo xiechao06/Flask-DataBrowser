@@ -59,7 +59,7 @@ class ModelView(object):
         from . import helpers
 
         kwargs['h'] = helpers
-        list_kwargs = self.extra_params.get("list_view", {}):
+        list_kwargs = self.extra_params.get("list_view", {})
         for k, v in list_kwargs.items():
             if isinstance(v, types.FunctionType):
                 v = v(self)
@@ -758,6 +758,7 @@ class DataBrowser(object):
         app.register_blueprint(self.blueprint, url_prefix="/__data_browser__")
         self.page_size = page_size
 
+        self.__registered_view_map = {}
 
     def register_model(self, model, blueprint=None):
         return self.register_model_view(ModelView(model), blueprint)
@@ -779,3 +780,12 @@ class DataBrowser(object):
                                model_view.object_view_endpoint,
                                model_view.object_view,
                                methods=["GET", "POST"])
+        self.__registered_view_map[model_view.model] = model_view
+
+    def create_object_link_column_spec(model, pk, label=None):
+        try:
+            model_view = self.__registered_view_map[model]
+            return LinkColumnSpec(col_name=pk, formatter=lambda v, model_class: model_view.url_for_object(id_=v), label=label)
+        except KeyError:
+            return ColumnSpec(col_name=pk, label=label)
+        

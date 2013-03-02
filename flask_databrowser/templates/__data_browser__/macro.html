@@ -4,7 +4,7 @@
     {% for f in form if f.type != 'HiddenField' and f.type != 'CSRFTokenField' %}
         <div class="control-group{{ ' error' if f.errors }}">
             <div class="control-label">
-                {{ f.label.text }}
+                <strong>{{ f.label.text }}</strong>
                 {% if f.type != 'ReadOnlyField' and h.is_required_form_field(f) %}
                     <strong style="color: red">&#42;</strong>
                 {% else %}

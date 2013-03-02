@@ -378,7 +378,7 @@ class AdminModelConverter(ModelConverterBase):
         if column_formatters:
             return column_formatters.get(name)
 
-        return self.view.prettify_name(name)
+        return None
 
 # Get list of fields and generate form
 def get_form(model, converter,

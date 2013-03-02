@@ -13,28 +13,43 @@ class ValueConverter(object):
     def __call__(self, v, col_spec=None):
         old_v = v
         css_class = None
-        if col_spec:
+        if not col_spec:
+            w = extra_widgets.PlainText(unicode(v))
+        else:
             if col_spec.formatter:
                 v = col_spec.formatter(v, None)
             css_class = col_spec.css_class
-        w = None
-        if isinstance(v, basestring) or isinstance(v, numbers.Number):
-            if col_spec:
-                if col_spec.genre == column_spec.IMAGE:
-                    w = extra_widgets.Image(v, alt=col_spec.alt)
-                elif col_spec.genre == column_spec.LINK:
-                    w = extra_widgets.Link((col_spec.anchor if isinstance(col_spec.anchor, basestring) else col_spec.anchor(old_v)) or v, href=v)
-        elif hasattr(v, "__iter__") or isinstance(v, dict):
-            if isinstance(v, dict):
-                v = v.items()
-            if col_spec and col_spec.genre == column_spec.TABLE:
+
+            if col_spec.genre == column_spec.IMAGE:
+                w = extra_widgets.Image(v, alt=col_spec.alt)
+            elif col_spec.genre == column_spec.LINK:
+                w = extra_widgets.Link((col_spec.anchor if isinstance(col_spec.anchor, basestring) else col_spec.anchor(old_v)) or v, href=v)
+            elif col_spec.genre == column_spec.TABLE: 
                 # TODO if v is a registered model, then a link should generated 
                 w = extra_widgets.TableWidget(v, col_spec)
-            else:
+            elif col_spec.genre == column_spec.UNORDERED_LIST:
                 w = extra_widgets.ListWidget(extra_widgets.PlainText(unicode(i)) for i in v)
-        if not w:
-            # TODO if v is a registered model, then a link should be generated
-            w = extra_widgets.PlainText(v)
+            else:
+                w = extra_widgets.PlainText(unicode(v))
+
+        #w = None
+        #if isinstance(v, basestring) or isinstance(v, numbers.Number):
+            #if col_spec:
+                #if col_spec.genre == column_spec.IMAGE:
+                    #w = extra_widgets.Image(v, alt=col_spec.alt)
+                #elif col_spec.genre == column_spec.LINK:
+                    #w = extra_widgets.Link((col_spec.anchor if isinstance(col_spec.anchor, basestring) else col_spec.anchor(old_v)) or v, href=v)
+        #elif hasattr(v, "__iter__") or isinstance(v, dict):
+            #if isinstance(v, dict):
+                #v = v.items()
+            #if col_spec and col_spec.genre == column_spec.TABLE:
+                ## TODO if v is a registered model, then a link should generated 
+                #w = extra_widgets.TableWidget(v, col_spec)
+            #else:
+                #w = extra_widgets.ListWidget(extra_widgets.PlainText(unicode(i)) for i in v)
+        #if not w:
+            ## TODO if v is a registered model, then a link should be generated
+            #w = extra_widgets.PlainText(v)
 
         class FakeField(object):
             def __init__(self, label, widget, css_class=None):

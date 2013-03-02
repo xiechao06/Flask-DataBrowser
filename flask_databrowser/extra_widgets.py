@@ -39,26 +39,22 @@ class PlainText(object):
 
 class TableWidget(object):
 
-    def __init__(self, rows, col_spec=None):
+    def __init__(self, rows, col_specs=None):
         self.rows = rows
-        self.col_spec = col_spec
+        self.col_specs = col_specs
         from flask.ext.databrowser.convert import ValueConverter
         self.converter = ValueConverter()
 
     def __call__(self, field, **kwargs):
-        
         html = ['<table %s>\n' % html_params(**kwargs)]
         if self.rows:
-            column_specs = []
-            if self.col_spec:
-                column_spec = self.col_spec.col_specs
-            if not column_specs:
-                column_specs = list(ColumnSpec(col_name) for col_name in self.rows[0].__dict__.keys())
-            html.append('  <tr>\n%s\n  </tr>\n' % "\n".join(text_type(col.col_name).join(["    <th>", "</th>"]) for col in column_specs))
+            col_specs = self.col_specs or [ColumnSpec(col) for col in dir(self.rows[0]) if not col.startswith("_")]
+            col_specs = [ColumnSpec(col) if isinstance(col, basestring) else col for col in col_specs]
+            html.append('  <thead>\n%s\n  </thead>\n' % "\n".join(text_type(col.label).join(["    <th>", "</th>"]) for col in col_specs))
             # data rows
             for row in self.rows:
                 s = "  <tr>\n"
-                for sub_col_spec in column_specs:
+                for sub_col_spec in col_specs:
                     s += "    <td>%s</td>\n" % self.converter(operator.attrgetter(sub_col_spec.col_name)(row), sub_col_spec)()
                 s += "  </tr>\n"
                 html.append(s)
@@ -89,5 +85,5 @@ if __name__ == "__main__":
     from collections import namedtuple
     from flask.ext.databrowser.column_spec import LinkColumnSpec, ImageColumnSpec, ColumnSpec
     table_column_spec = [LinkColumnSpec("a", "some link"), ImageColumnSpec("b"), ColumnSpec("c")]
-    print TableWidget([namedtuple("A", ["a", "b", "c"])(i, i*2, i*3) for i in xrange(10)])(None)
+    print TableWidget([namedtuple("A", ["a", "b", "c"])(i, i*2, i*3) for i in xrange(10)], ["a", "b", "c"])(None)
     print ListWidget([1, 2, 3], LinkColumnSpec(""))(None)

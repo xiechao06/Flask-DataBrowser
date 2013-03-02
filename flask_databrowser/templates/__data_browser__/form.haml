@@ -1,5 +1,6 @@
 -extends "__data_browser__/layout.haml"
 -import '__data_browser__/macro.html' as lib with context
+
 -block body
   %div.container
     =lib.render_form(form, return_url, extra)
@@ -12,3 +13,5 @@
         $("input").attr("disabled", true);
         $("select").select2("disable").attr("disabled", true);
     });
+  
+
