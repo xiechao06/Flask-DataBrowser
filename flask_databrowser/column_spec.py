@@ -4,6 +4,8 @@ LINK = 2
 PLAIN_TEXT = 3
 TABLE = 4
 UNORDERED_LIST = 5
+INPUT = 6   # this is a special column type, the actual input type is determined
+            # by the column's type
 
 class ColumnSpec(object):
 
@@ -37,3 +39,14 @@ class TableColumnSpec(ColumnSpec):
     
     def __iter__(self):
         return iter(self.col_specs)
+
+
+class InputColumnSpec(ColumnSpec):
+
+    def __init__(self, col_name, group_by=None, doc="", formatter=None, label="", css_class=""):
+        super(InputColumnSpec, self).__init__(col_name, genre=INPUT, doc=doc, formatter=formatter, label=label, css_class=css_class)
+        self.group_by = group_by
+    
+    @property
+    def grouper_input_name(self):
+        return self.col_name + '.' +  self.group_by.property.mapper.entity.__name__

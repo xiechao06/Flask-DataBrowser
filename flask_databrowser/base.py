@@ -11,7 +11,7 @@ from flask.ext.babel import gettext, ngettext
 from .utils import get_primary_key, named_actions
 from .action import DeleteAction
 from flask.ext.databrowser.convert import ValueConverter
-from flask.ext.databrowser.column_spec import LinkColumnSpec, ColumnSpec
+from flask.ext.databrowser.column_spec import LinkColumnSpec, ColumnSpec, InputColumnSpec
 
 
 class ModelView(object):
@@ -335,8 +335,17 @@ class ModelView(object):
                 if all(self.update_model(form, model) for model in model_list):
                     return redirect(return_url)
 
+        grouper_info = {}
+        for col in self._model_columns():
+            grouper_2_cols = {}
+            if isinstance(col, InputColumnSpec) and col.group_by:
+                for row in self.session.query(getattr(self.model, col.col_name).property.mapper.entity).all():
+                    # should use pk here
+                    grouper_2_cols.setdefault(getattr(row, col.group_by.property.key).id, []).append(dict(id=row.id, text=unicode(row)))
+                grouper_info[col.grouper_input_name] = grouper_2_cols
         return self.render(self.edit_template,
                            form=form,
+                           grouper_info=grouper_info,
                            return_url=return_url)
 
     def scaffold_form(self, columns):
@@ -369,13 +378,22 @@ class ModelView(object):
 
         return form_class
 
-    def _model_columns(self, form_columns):
-        # select the model columns from form_columns
-        if not form_columns:
+    def _model_columns(self):
+        # select the model columns from __form_columns__
+        if not self.__form_columns__:
             return [] 
-        model_clumns = [p.key for p in self.model.__mapper__.iterate_properties]
-        form_columns = set(c if isinstance(c, basestring) else c.col_name for c in form_columns)
-        return [c for c in model_clumns if c in form_columns]
+        model_clumns = set([p.key for p in self.model.__mapper__.iterate_properties])
+        ret = []
+        for col in self.__form_columns__:
+            if isinstance(col, InputColumnSpec):
+                col_name = col.col_name
+            elif isinstance(col, basestring) and (not '.' in col):
+                col_name = col
+            else:
+                continue
+            if col_name in model_clumns:
+                ret.append(col)
+        return ret
         
     def get_create_form(self):
         if self.__create_form__ is None:
@@ -386,7 +404,7 @@ class ModelView(object):
 
     def get_edit_form(self, obj=None):
         if self.__edit_form__ is None:
-            self.__edit_form__ = self.scaffold_form(self._model_columns(self.__form_columns__))
+            self.__edit_form__ = self.scaffold_form(self._model_columns())
         return self.__edit_form__(obj=obj)
 
     def get_compound_edit_form(self, obj=None):
@@ -396,12 +414,26 @@ class ModelView(object):
             return model_form
 
         value_converter = ValueConverter()
+
+        # I fake a form since I wan't compose my fields and get the 
+        # hidden_tag (used to generate csrf) from model's form
+        class FakeForm(object):
+            def __init__(self, model_form, fields):
+                self.model_form = model_form
+                self.fields = fields
+            def __iter__(self):
+                return iter(self.fields)
+            def hidden_tag(self):
+                return self.model_form.hidden_tag()
+
         ret = []
         r = self.model
         for rpp in self.__render_preprocessors__:
             r = rpp(r)
         for col in self.__form_columns__:
-            if isinstance(col, basestring):
+            if isinstance(col, InputColumnSpec):
+                ret.append(model_form[col.col_name])
+            elif isinstance(col, basestring):
                 try: 
                     # if it is a models property, we yield from model_form
                     ret.append(model_form[col])
@@ -414,7 +446,7 @@ class ModelView(object):
                     ret.append(widget)
             else:
                 ret.append(value_converter(operator.attrgetter(col.col_name)(r), col))
-        return ret
+        return FakeForm(model_form, ret)
 
     def get_batch_edit_form(self, obj=None):
         if self.__batch_edit_form__ is None:

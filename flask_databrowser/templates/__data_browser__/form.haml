@@ -8,6 +8,21 @@
 -block __data_browser__customized_head_block
   %script type="text/javascript"
     $(function(){
+      grouper_info = {{ grouper_info|tojson|safe }};
+      for (var grouper_name in grouper_info) {
+        var grouper_e = $('[name="' + grouper_name + '"]');
+        var input_e = $('[name="' + grouper_name.split(".")[0] + '"]');
+
+        grouper_e.change((function (grouper_e, input_e) {
+          return function(ui) {
+            input_e.empty();
+            $.each(grouper_info[grouper_e.attr("name")][grouper_e.val()], function (idx, entry) {
+              input_e.append('<option value="' + entry.id + '">' + entry.text + "</option>");
+            });
+            input_e.select2()
+          }
+            })(grouper_e, input_e))
+      }
       $(".fancybox").fancybox();
       -if request.args.get("preview") == 'True'
         $("input").attr("disabled", true);

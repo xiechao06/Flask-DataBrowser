@@ -1,3 +1,4 @@
+import types
 import functools
 import inspect
 
@@ -7,6 +8,7 @@ from sqlalchemy import Boolean, Column
 from .import form
 from .validators import Unique
 from .fields import QuerySelectField, QuerySelectMultipleField
+from flask.ext.databrowser.column_spec import InputColumnSpec
 
 try:
     # Field has better input parsing capabilities.
@@ -145,7 +147,7 @@ class AdminModelConverter(ModelConverterBase):
 
         return None
 
-    def convert(self, model, mapper, prop, field_args, hidden_pk):
+    def convert(self, model, mapper, prop, field_args, hidden_pk, col_spec=None):
         kwargs = {
             'validators': [],
             'filters': []
@@ -184,6 +186,31 @@ class AdminModelConverter(ModelConverterBase):
                 kwargs['query_factory'] = lambda: self.session.query(remote_model)
 
             if prop.direction.name == 'MANYTOONE':
+                if col_spec and col_spec.group_by:
+                    session = self.session
+                    class QuerySelectField_(QuerySelectField):
+
+                        def __init__(self, col_spec, *args, **kwargs):
+                            super(QuerySelectField_, self).__init__(*args, **kwargs)
+                            self.col_spec = col_spec
+
+                        def __call__(self, **kwargs):
+                            grouper = form.Select2Widget()
+                            class FakeField(object):
+
+                                def __init__(self, name):
+                                    self.name = name
+                                    self.id = "_" + name
+
+                                def iter_choices(self):
+                                    for row in session.query(col_spec.group_by.property.mapper.entity).all():
+                                        # TODO should use pk
+                                        yield row.id, unicode(row), False
+
+                            s = grouper(FakeField(self.col_spec.grouper_input_name)) + "   -    "
+                            s += super(QuerySelectField_, self).__call__(**kwargs)
+                            return s
+                    return QuerySelectField_(col_spec, widget=form.Select2Widget(), **kwargs)
                 return QuerySelectField(widget=form.Select2Widget(),
                     **kwargs)
             elif prop.direction.name == 'ONETOMANY':
@@ -191,13 +218,36 @@ class AdminModelConverter(ModelConverterBase):
                 if not local_column.foreign_keys and getattr(self.view, 'column_hide_backrefs', False):
                     return None
 
-                return QuerySelectMultipleField(
+                if col_spec and col_spec.group_by:
+                    class QuerySelectMultipleField_(QuerySelectMultipleField):
+
+                        # TODO col_spec not bound
+                        def __call__(field, **kwargs):
+                            s = QuerySelectField(widget=form.Select2Widget(), 
+                                                 query_factory=lambda: self.session.query(group_by.property.mapper.entity))(field)
+                            s += super(QuerySelectMultipleField_, field)(**widget)
+                            return s
+
+                    return QuerySelectField_(widget=form.Select2Widget(), **kwargs)
+
+                ret = QuerySelectMultipleField(
                     widget=form.Select2Widget(multiple=True),
                     **kwargs)
             elif prop.direction.name == 'MANYTOMANY':
-                return QuerySelectMultipleField(
+                if col_spec and col_spec.group_by:
+                    class QuerySelectMultipleField_(QuerySelectMultipleField):
+
+                        def __call__(field, **kwargs):
+                            s = QuerySelectField(widget=form.Select2Widget(), 
+                                                 query_factory=lambda: self.session.query(group_by.property.mapper.entity))(field)
+                            s += super(QuerySelectMultipleField_, field)(**widget)
+                            return s
+
+                    return QuerySelectField_(widget=form.Select2Widget(), **kwargs)
+                ret = QuerySelectMultipleField(
                     widget=form.Select2Widget(multiple=True),
                     **kwargs)
+            
         else:
             # Ignore pk/fk
             if hasattr(prop, 'columns'):
@@ -415,10 +465,11 @@ def get_form(model, converter,
     mapper = model._sa_class_manager.mapper
     field_args = field_args or {}
 
-    properties = ((p.key, p) for p in mapper.iterate_properties)
+    # (property_name, property, column_spec)+
+    properties = ((p.key, p, None) for p in mapper.iterate_properties)
 
     if only:
-        props = dict(properties)
+        props = dict(prop[:2] for prop in properties)
 
         def find(name):
             # Try to look it up in properties list first
@@ -438,17 +489,22 @@ def get_form(model, converter,
             raise ValueError('Invalid model property name %s.%s' % (model, name))
 
         # Filter properties while maintaining property order in 'only' list
-        properties = ((x, find(x)) for x in only if x.find(".") == -1)
+        properties = []
+        for x in only:
+            if isinstance(x, InputColumnSpec):
+                properties.append((x.col_name, find(x.col_name), x))
+            else:
+                properties.append((x, find(x), None))
     elif exclude:
         properties = (x for x in properties if x[0] not in exclude)
 
     field_dict = {}
-    for name, prop in properties:
+    for name, prop, col_spec in properties:
         # Ignore protected properties
         if ignore_hidden and name.startswith('_'):
             continue
 
-        field = converter.convert(model, mapper, prop, field_args.get(name), hidden_pk)
+        field = converter.convert(model, mapper, prop, field_args.get(name), hidden_pk, col_spec)
         if field is not None:
             field_dict[name] = field
 
