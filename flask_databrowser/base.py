@@ -89,7 +89,7 @@ class ModelView(object):
         for attr_name in attr_name_list[:-1]:
             attr = getattr(last_model, attr_name)
             if hasattr(attr, "property"):
-                last_model = attr.property.mapper.entity
+                last_model = attr.property.mapper.class_
             else:
                 last_model = None
                 break
