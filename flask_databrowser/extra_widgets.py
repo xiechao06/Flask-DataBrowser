@@ -42,10 +42,9 @@ class TableWidget(object):
     def __init__(self, rows, col_specs=None):
         self.rows = rows
         self.col_specs = col_specs
-        from flask.ext.databrowser.convert import ValueConverter
-        self.converter = ValueConverter()
 
     def __call__(self, field, **kwargs):
+        from flask.ext.databrowser.convert import ValueConverter
         html = ['<table %s>\n' % html_params(**kwargs)]
         if self.rows:
             col_specs = self.col_specs or [ColumnSpec(col) for col in dir(self.rows[0]) if not col.startswith("_")]
@@ -55,7 +54,8 @@ class TableWidget(object):
             for row in self.rows:
                 s = "  <tr>\n"
                 for sub_col_spec in col_specs:
-                    s += "    <td>%s</td>\n" % self.converter(operator.attrgetter(sub_col_spec.col_name)(row), sub_col_spec)()
+                    converter = ValueConverter(row)
+                    s += "    <td>%s</td>\n" % converter(operator.attrgetter(sub_col_spec.col_name)(row), sub_col_spec)()
                 s += "  </tr>\n"
                 html.append(s)
         html.append('</table>')
@@ -67,14 +67,14 @@ class ListWidget(object):
         self.rows = rows
         self.col_spec = col_spec
         self.html_tag = html_tag
-        from flask.ext.databrowser.convert import ValueConverter
-        self.converter = ValueConverter()
 
     def __call__(self, field, **kwargs):
+        from flask.ext.databrowser.convert import ValueConverter
 
         html = ["<%s>\n" % self.html_tag]
         for row in self.rows:
-            html.append(" <li>%s</li>\n" % self.converter(row, self.col_spec)())
+            converter = ValueConverter(row)
+            html.append(" <li>%s</li>\n" % converter(row, self.col_spec)())
         html.append("</%s>" % self.html_tag)
         return HTMLString(''.join(html))
 

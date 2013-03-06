@@ -43,9 +43,10 @@ class TableColumnSpec(ColumnSpec):
 
 class InputColumnSpec(ColumnSpec):
 
-    def __init__(self, col_name, group_by=None, doc="", formatter=None, label="", css_class=""):
+    def __init__(self, col_name, group_by=None, read_only=False, doc="", formatter=None, label="", css_class=""):
         super(InputColumnSpec, self).__init__(col_name, genre=INPUT, doc=doc, formatter=formatter, label=label, css_class=css_class)
         self.group_by = group_by
+        self.read_only = read_only
     
     @property
     def grouper_input_name(self):

@@ -9,6 +9,7 @@ from .import form
 from .validators import Unique
 from .fields import QuerySelectField, QuerySelectMultipleField
 from flask.ext.databrowser.column_spec import InputColumnSpec
+from flask.ext.databrowser.utils import make_disabled_field
 
 try:
     # Field has better input parsing capabilities.
@@ -499,6 +500,7 @@ def get_form(model, converter,
         properties = (x for x in properties if x[0] not in exclude)
 
     field_dict = {}
+    read_only_fields = []
     for name, prop, col_spec in properties:
         # Ignore protected properties
         if ignore_hidden and name.startswith('_'):
@@ -506,8 +508,15 @@ def get_form(model, converter,
 
         field = converter.convert(model, mapper, prop, field_args.get(name), hidden_pk, col_spec)
         if field is not None:
+            if col_spec and col_spec.read_only:
+                # make column read only
+                class FakeField(field.field_class):
+                    def __call__(self, **kwargs):
+                        kwargs["disabled"] = "disabled"
+                        return super(FakeField, self).__call__(**kwargs)
+                field = make_disabled_field(field)
             field_dict[name] = field
-
+    
     return type(model.__name__ + 'Form', (base_class, ), field_dict)
 
 class InlineModelConverterBase(object):

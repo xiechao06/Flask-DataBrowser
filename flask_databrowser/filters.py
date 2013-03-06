@@ -70,7 +70,7 @@ class BaseFilter(TemplateParam):
             attrs = self.col_name.split(".")
             last_join_model = self.model
             for rel in attrs[:-1]:
-                last_join_model = getattr(last_join_model, rel).property.mapper.entity
+                last_join_model = getattr(last_join_model, rel).property.mapper.class_
             attr = getattr(last_join_model, attrs[-1])
             ret = []
             if hasattr(attr, 'property') and hasattr(attr.property, 'direction'):

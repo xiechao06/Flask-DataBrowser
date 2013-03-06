@@ -25,7 +25,6 @@ class ModelView(object):
     __default_order__ = None
     __batch_form_columns__ = []
     __form_columns__ = []
-    __render_preprocessors__ = []
     __customized_actions__ = []
     __create_columns__ = []
     __max_col_len__ = 255
@@ -52,6 +51,9 @@ class ModelView(object):
         for action in self.__customized_actions__:
             action.model_view = self
         self.__list_column_specs = []
+
+    def preprocess(self, obj):
+        return obj
 
     def render(self, template, **kwargs):
         kwargs['_gettext'] = gettext
@@ -413,7 +415,7 @@ class ModelView(object):
         if not self.__form_columns__:
             return model_form
 
-        value_converter = ValueConverter()
+        value_converter = ValueConverter(obj)
 
         # I fake a form since I wan't compose my fields and get the 
         # hidden_tag (used to generate csrf) from model's form
@@ -428,8 +430,6 @@ class ModelView(object):
 
         ret = []
         r = self.model
-        for rpp in self.__render_preprocessors__:
-            r = rpp(r)
         for col in self.__form_columns__:
             if isinstance(col, InputColumnSpec):
                 ret.append(model_form[col.col_name])
@@ -438,9 +438,7 @@ class ModelView(object):
                     # if it is a models property, we yield from model_form
                     ret.append(model_form[col])
                 except KeyError:
-                    r = obj
-                    for rpp in self.__render_preprocessors__:
-                        r = rpp(r)
+                    r = self.preprocess(obj)
                     col_spec = self._col_spec_from_str(col)
                     widget = value_converter(operator.attrgetter(col)(r), col_spec)
                     ret.append(widget)
@@ -483,6 +481,11 @@ class ModelView(object):
     def object_view_url(self):
         return "/" + re.sub(r"([A-Z])+", lambda m: "-" + m.groups()[0].lower(),
                             self.model.__name__).lstrip("-")
+
+    def url_for_list(self, *args, **kwargs):
+        return url_for(
+            ".".join([self.blueprint.name, self.list_view_endpoint]), *args,
+            **kwargs)
 
     def url_for_object(self, *args, **kwargs):
         return url_for(
@@ -574,8 +577,7 @@ class ModelView(object):
             try:
                 processed_models = []
                 for model in models:
-                    for rpp in self.__render_preprocessors__:
-                        model = rpp(model)
+                    model = self.preprocess(model)
                     processed_models.append(model)
                     action.op(model)
                 self.session.commit()
@@ -677,14 +679,13 @@ class ModelView(object):
         return count, q.all()
 
     def scaffold_list(self, models):
-        converter = ValueConverter()
         from .utils import get_primary_key
 
         def g():
             cnter = itertools.count()
             for r in models:
-                for rpp in self.__render_preprocessors__:
-                    r = rpp(r)
+                r = self.preprocess(r)
+                converter = ValueConverter(r)
                 pk = self.scaffold_pk(r)
                 fields = []
                 for c in self.list_column_specs:
@@ -722,16 +723,12 @@ class ModelView(object):
                 pass
         return shadow_column_filters
 
-    def _preprocess_model(self, model):
-        for rpp in self.__render_preprocessors__:
-            model = rpp(model)
-        return model
 
     def get_rows_action_desc(self, models):
         ret = {}
         for model in models:
             id = self.scaffold_pk(model)
-            preprocessed_model = self._preprocess_model(model)
+            preprocessed_model = self.preprocess(model)
             ret[id] = dict(name=unicode(model),
                            actions=dict((action.name, action.test_enabled(
                                preprocessed_model)) for action in self.__customized_actions__))
