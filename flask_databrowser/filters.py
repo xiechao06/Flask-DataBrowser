@@ -82,6 +82,8 @@ class BaseFilter(TemplateParam):
                 ret.insert(0, (",".join(unicode(r[0]) for r in ret), u'--%s--' % _(u"所有")))
             return ret
 
+    def unfiltered(self, arg):
+        return arg in (None, "") or arg == self.options[0][0]
 
     def has_value(self):
         return self.value not in (None, "") and any(

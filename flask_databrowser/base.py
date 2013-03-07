@@ -221,7 +221,7 @@ class ModelView(object):
         """
         try:
             for name, field in form._fields.iteritems():
-                if field.raw_data:
+                if field.raw_data is not None:
                     field.populate_obj(model, name)
             self.on_model_change(form, model)
             self.session.commit()
