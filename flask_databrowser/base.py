@@ -61,11 +61,6 @@ class ModelView(object):
         from . import helpers
 
         kwargs['h'] = helpers
-        list_kwargs = self.extra_params.get("list_view", {})
-        for k, v in list_kwargs.items():
-            if isinstance(v, types.FunctionType):
-                v = v(self)
-            kwargs[k] = v
         return render_template(template, **kwargs)
 
     # Various helpers
@@ -104,9 +99,9 @@ class ModelView(object):
             # TODO add cross ref to registered model
             # add link to object if it is primary key
             if self.can_edit:
-                formatter = lambda x, model: self.url_for_object(id_=x, url=request.url)
+                formatter = lambda x, model: self.url_for_object(model, url=request.url)
             else:
-                formatter = lambda x, model: self.url_for_object_preview(id_=x, url=request.url)
+                formatter = lambda x, model: self.url_for_object_preview(model, url=request.url)
             col_spec = LinkColumnSpec(col, doc=doc, anchor=lambda x: x,
                                       formatter=formatter, 
                                       label=label, css_class="control-text")
@@ -289,7 +284,7 @@ class ModelView(object):
             if self.create_model(form):
                 if '_add_another' in request.form:
                     flash(gettext('Model was successfully created.'))
-                    return redirect(self.url_for_object(url=return_url))
+                    return redirect(self.url_for_object(None, url=return_url))
                 else:
                     return redirect(return_url)
 
@@ -351,10 +346,16 @@ class ModelView(object):
                     # should use pk here
                     grouper_2_cols.setdefault(getattr(row, col.group_by.property.key).id, []).append(dict(id=row.id, text=unicode(row)))
                 grouper_info[col.grouper_input_name] = grouper_2_cols
+        kwargs = {}
+        form_kwargs = self.extra_params.get("form_view", {})
+        for k, v in form_kwargs.items():
+            if isinstance(v, types.FunctionType):
+                v = v(self)
+            kwargs[k] = v
         return self.render(self.edit_template,
                            form=form,
                            grouper_info=grouper_info,
-                           return_url=return_url)
+                           return_url=return_url, **form_kwargs)
 
     def scaffold_form(self, columns):
         """
@@ -495,15 +496,25 @@ class ModelView(object):
             ".".join([self.blueprint.name, self.list_view_endpoint]), *args,
             **kwargs)
 
-    def url_for_object(self, *args, **kwargs):
-        return url_for(
-            ".".join([self.blueprint.name, self.object_view_endpoint]), *args,
-            **kwargs)
+    def url_for_object(self, model, **kwargs):
+        if model:
+            return url_for(
+                ".".join([self.blueprint.name, self.object_view_endpoint]), id_=self.scaffold_pk(model),
+                **kwargs)
+        else:
+            return url_for(
+                ".".join([self.blueprint.name, self.object_view_endpoint]),
+                **kwargs)
 
-    def url_for_object_preview(self, *args, **kwargs):
-        return url_for(
-            ".".join([self.blueprint.name, self.object_view_endpoint]), *args,
-            preview=not self.edit_allowable, **kwargs)
+    def url_for_object_preview(self, model, **kwargs):
+        if model:
+            return url_for(
+                ".".join([self.blueprint.name, self.object_view_endpoint]), id_=self.scaffold_pk(model),
+                preview=True, **kwargs)
+        else:
+            return url_for(
+                ".".join([self.blueprint.name, self.object_view_endpoint]),
+                preview=True, **kwargs)
 
     @property
     def object_view_endpoint(self):
@@ -539,7 +550,7 @@ class ModelView(object):
             kwargs["__rows_action_desc__"] = self.get_rows_action_desc(data)
             kwargs["__count__"] = count
             kwargs["__data__"] = self.scaffold_list(data)
-            kwargs["__object_url__"] = self.url_for_object()
+            kwargs["__object_url__"] = self.url_for_object(None)
             kwargs["__order_by__"] = lambda col_name: col_name == order_by
             kwargs["__can_create__"] = self.creation_allowable
             kwargs["__can_edit__"] = self.edit_allowable
@@ -549,6 +560,11 @@ class ModelView(object):
             kwargs["__pagination__"] = Pagination(None, page,
                                                   self.data_browser.page_size,
                                                   count, kwargs["__data__"])
+            list_kwargs = self.extra_params.get("list_view", {})
+            for k, v in list_kwargs.items():
+                if isinstance(v, types.FunctionType):
+                    v = v(self)
+                kwargs[k] = v
             import posixpath
             # try user defined template
             if self.list_template and os.path.exists(
@@ -825,9 +841,9 @@ class DataBrowser(object):
             from .utils import get_primary_key
             pk = get_primary_key(model)
             if model_view.can_edit:
-                return LinkColumnSpec(col_name=pk, formatter=lambda v, model_class: model_view.url_for_object(id_=getattr(v, pk)), label=label, anchor=lambda v: unicode(v))
+                return LinkColumnSpec(col_name=pk, formatter=lambda v, obj: model_view.url_for_object(obj, label=label), anchor=lambda v: unicode(v))
             else:
-                return LinkColumnSpec(col_name=pk, formatter=lambda v, model_class: model_view.url_for_object_preview(id_=getattr(v, pk)), label=label, anchor=lambda v: unicode(v))
+                return LinkColumnSpec(col_name=pk, formatter=lambda v, obj: model_view.url_for_object_preview(obj, label=label), anchor=lambda v: unicode(v))
         except KeyError:
             return None
         
