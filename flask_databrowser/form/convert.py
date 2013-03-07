@@ -509,11 +509,6 @@ def get_form(model, converter,
         field = converter.convert(model, mapper, prop, field_args.get(name), hidden_pk, col_spec)
         if field is not None:
             if col_spec and col_spec.read_only:
-                # make column read only
-                class FakeField(field.field_class):
-                    def __call__(self, **kwargs):
-                        kwargs["disabled"] = "disabled"
-                        return super(FakeField, self).__call__(**kwargs)
                 field = make_disabled_field(field)
             field_dict[name] = field
     

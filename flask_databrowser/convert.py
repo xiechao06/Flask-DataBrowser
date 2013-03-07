@@ -10,8 +10,9 @@ class ValueConverter(object):
     note, since python is a dynamic language, we can't get the return type of
     a property until we get the value of the property, the rule is as following:
     """
-    def __init__(self, obj):
+    def __init__(self, obj, model_view=None):
         self.obj = obj
+        self.model_view = model_view
 
     def __call__(self, v, col_spec=None):
         old_v = v
@@ -19,6 +20,13 @@ class ValueConverter(object):
         if not col_spec:
             w = extra_widgets.PlainText(unicode(v))
         else:
+            if self.model_view and col_spec and hasattr(v, "__mapper__"):
+                from .utils import get_primary_key
+                ref_col_spec = self.model_view.data_browser.create_object_link_column_spec(
+                    v.__mapper__.class_, col_spec.label)
+                if ref_col_spec:
+                    col_spec = ref_col_spec
+
             if col_spec.formatter:
                 v = col_spec.formatter(v, self.obj)
             css_class = col_spec.css_class
@@ -29,11 +37,12 @@ class ValueConverter(object):
                 w = extra_widgets.Link((col_spec.anchor if isinstance(col_spec.anchor, basestring) else col_spec.anchor(old_v)) or v, href=v)
             elif col_spec.genre == column_spec.TABLE: 
                 # TODO if v is a registered model, then a link should generated 
-                w = extra_widgets.TableWidget(v, col_spec)
+                w = extra_widgets.TableWidget(v, col_spec, col_spec.sum_fields)
             elif col_spec.genre == column_spec.UNORDERED_LIST:
                 w = extra_widgets.ListWidget(extra_widgets.PlainText(unicode(i)) for i in v)
-            else:
-                w = extra_widgets.PlainText(unicode(v))
+            else: # plaintext
+                # we try to convert it to link
+                    w = extra_widgets.PlainText(unicode(v))
 
         class FakeField(object):
             def __init__(self, label, widget, css_class=None):

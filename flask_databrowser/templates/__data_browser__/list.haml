@@ -159,20 +159,21 @@
             %form
               %fieldset.pagination-centered
                 -for filter in __filters__
-                  .control-group
-                    %label.control-label 
-                      {{ filter.label }}
-                      %i << &nbsp;{{ filter.op.name }}&nbsp;&nbsp;
-                    .controls
-                      -if filter.options
-                        %select name="{{ filter.op.id }}" class="input-medium"
-                          -for opt in filter.options:
-                            %option value={{opt[0]}} << {{ opt[1] }}
-                      -else
-                        -for input_type in filter.input_type
-                          %input type="{{ input_type }}" name="{{ filter.op.id }}" class="{{ __css_classes__[filter.input_class] }}" min=0 placeholder="{{ _("请输入") + filter.label }}"
-                          -if not loop.last
-                            %span << {{ filter.sep }}
+                  -if not filter.hidden
+                    .control-group
+                      %label.control-label 
+                        {{ filter.label }}
+                        %i << &nbsp;{{ filter.op.name }}&nbsp;&nbsp;
+                      .controls
+                        -if filter.options
+                          %select name="{{ filter.op.id }}" class="input-medium"
+                            -for opt in filter.options:
+                              %option value={{opt[0]}} << {{ opt[1] }}
+                        -else
+                          -for input_type in filter.input_type
+                            %input type="{{ input_type }}" name="{{ filter.op.id }}" class="{{ __css_classes__[filter.input_class] }}" min=0 placeholder="{{ _("请输入") + filter.label }}"
+                            -if not loop.last
+                              %span << {{ filter.sep }}
               %hr
               .control-group.pagination-centered
                 .controls

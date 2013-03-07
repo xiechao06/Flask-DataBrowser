@@ -1,3 +1,4 @@
+# -*- coding: UTF-8 -*-
 """
 extra widgets beside wtform's widgets
 """
@@ -39,9 +40,12 @@ class PlainText(object):
 
 class TableWidget(object):
 
-    def __init__(self, rows, col_specs=None):
+    def __init__(self, rows, col_specs=None, sum_fields=[]):
         self.rows = rows
         self.col_specs = col_specs
+        self.sum_fields = sum_fields
+        if self.sum_fields:
+            self.sum_row = {}
 
     def __call__(self, field, **kwargs):
         from flask.ext.databrowser.convert import ValueConverter
@@ -49,13 +53,34 @@ class TableWidget(object):
         if self.rows:
             col_specs = self.col_specs or [ColumnSpec(col) for col in dir(self.rows[0]) if not col.startswith("_")]
             col_specs = [ColumnSpec(col) if isinstance(col, basestring) else col for col in col_specs]
-            html.append('  <thead>\n%s\n  </thead>\n' % "\n".join(text_type(col.label).join(["    <th>", "</th>"]) for col in col_specs))
+            html.append('  <thead>\n')
+            if self.sum_fields:
+                html.append("    <th></th>")
+            html.extend("    <th>%s</th>\n" % text_type(col.label) for col in col_specs)
+            html.append('  </thead>\n')
             # data rows
             for row in self.rows:
                 s = "  <tr>\n"
+                if self.sum_fields:
+                    s += "    <td></td>\n"
                 for sub_col_spec in col_specs:
                     converter = ValueConverter(row)
                     s += "    <td>%s</td>\n" % converter(operator.attrgetter(sub_col_spec.col_name)(row), sub_col_spec)()
+                    if sub_col_spec.col_name in self.sum_fields:
+                        try:
+                            self.sum_row[sub_col_spec.col_name] += operator.attrgetter(sub_col_spec.col_name)(row)
+                        except KeyError:
+                            self.sum_row[sub_col_spec.col_name] = operator.attrgetter(sub_col_spec.col_name)(row)
+                s += "  </tr>\n"
+                html.append(s)
+            if self.sum_fields:
+                s = "  <tr>\n"
+                s += u"    <td>总计</td>\n"
+                for sub_col_spec in col_specs:
+                    if sub_col_spec.col_name in self.sum_fields:
+                        s += "    <td>%s</td>" % converter(self.sum_row.get(sub_col_spec.col_name), sub_col_spec)()
+                    else:
+                        s += "    <td></td>"
                 s += "  </tr>\n"
                 html.append(s)
         html.append('</table>')

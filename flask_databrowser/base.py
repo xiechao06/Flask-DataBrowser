@@ -32,7 +32,7 @@ class ModelView(object):
     column_descriptions = None
     column_hide_backrefs = True
 
-    can_view = can_create = can_edit = can_delete = True
+    can_batchly_edit = can_view = can_create = can_edit = can_delete = True
 
     __create_form__ = __edit_form__ = __batch_edit_form__ = None
 
@@ -85,19 +85,20 @@ class ModelView(object):
         get column specification from string
         """
         # we get document from sqlalchemy models
-        doc = ""
-        attr_name_list = col.split('.')
-        last_model = self.model
-        for attr_name in attr_name_list[:-1]:
-            attr = getattr(last_model, attr_name)
-            if hasattr(attr, "property"):
-                last_model = attr.property.mapper.class_
-            else:
-                last_model = None
-                break
-        if last_model:
-            if hasattr(last_model, attr_name_list[-1]):
-                doc = getattr(getattr(last_model, attr_name_list[-1]), "doc", "")
+        doc = self.__column_docs__.get(col, "")
+        if not doc:
+            attr_name_list = col.split('.')
+            last_model = self.model
+            for attr_name in attr_name_list[:-1]:
+                attr = getattr(last_model, attr_name)
+                if hasattr(attr, "property"):
+                    last_model = attr.property.mapper.class_
+                else:
+                    last_model = None
+                    break
+            if last_model:
+                if hasattr(last_model, attr_name_list[-1]):
+                    doc = getattr(getattr(last_model, attr_name_list[-1]), "doc", "")
         label=self.__column_labels__.get(col, col)
         if get_primary_key(self.model) == col:
             # TODO add cross ref to registered model
@@ -256,6 +257,11 @@ class ModelView(object):
         return self.can_edit() if isinstance(self.can_edit,
                                              types.MethodType) else self.can_edit
 
+    @property
+    def batchly_edit_allowable(self):
+        return self.can_batchly_edit() if isinstance(self.can_batchly_edit,
+                                             types.MethodType) else self.can_batchly_edit
+
 
     def try_edit(self):
         pass
@@ -338,7 +344,7 @@ class ModelView(object):
                     return redirect(return_url)
 
         grouper_info = {}
-        for col in self._model_columns():
+        for col in self._model_columns(model):
             grouper_2_cols = {}
             if isinstance(col, InputColumnSpec) and col.group_by:
                 for row in self.session.query(getattr(self.model, col.col_name).property.mapper.entity).all():
@@ -380,7 +386,7 @@ class ModelView(object):
 
         return form_class
 
-    def _model_columns(self):
+    def _model_columns(self, obj):
         # select the model columns from __form_columns__
         if not self.__form_columns__:
             return [] 
@@ -389,6 +395,8 @@ class ModelView(object):
         for col in self.__form_columns__:
             if isinstance(col, InputColumnSpec):
                 col_name = col.col_name
+                if isinstance(col.read_only, types.FunctionType):
+                    col.read_only = col.read_only(obj)
             elif isinstance(col, basestring) and (not '.' in col):
                 col_name = col
             else:
@@ -406,7 +414,7 @@ class ModelView(object):
 
     def get_edit_form(self, obj=None):
         if self.__edit_form__ is None:
-            self.__edit_form__ = self.scaffold_form(self._model_columns())
+            self.__edit_form__ = self.scaffold_form(self._model_columns(obj))
         return self.__edit_form__(obj=obj)
 
     def get_compound_edit_form(self, obj=None):
@@ -415,7 +423,7 @@ class ModelView(object):
         if not self.__form_columns__:
             return model_form
 
-        value_converter = ValueConverter(obj)
+        value_converter = ValueConverter(obj, self)
 
         # I fake a form since I wan't compose my fields and get the 
         # hidden_tag (used to generate csrf) from model's form
@@ -522,7 +530,7 @@ class ModelView(object):
                                                                     desc)
             kwargs["__filters__"] = [
                 f.as_dict("op", "label", "input_type", "input_class", "value",
-                          "options", "sep") for f in column_filters]
+                          "options", "sep", "hidden") for f in column_filters]
             kwargs["__actions__"] = self.scaffold_actions()
             kwargs["__action_2_forbidden_message_formats__"] = dict(
                 (action["name"], action["forbidden_msg_formats"]) for action in
@@ -640,7 +648,7 @@ class ModelView(object):
 
     def scaffold_actions(self):
         l = []
-        if self.edit_allowable:
+        if self.edit_allowable and self.batchly_edit_allowable:
             l.append({"name": gettext(u"批量修改"), "forbidden_msg_formats": {}})
 
         l.extend(dict(name=action.name, value=action.name,
@@ -685,7 +693,7 @@ class ModelView(object):
             cnter = itertools.count()
             for r in models:
                 r = self.preprocess(r)
-                converter = ValueConverter(r)
+                converter = ValueConverter(r, self)
                 pk = self.scaffold_pk(r)
                 fields = []
                 for c in self.list_column_specs:
@@ -811,10 +819,15 @@ class DataBrowser(object):
                                methods=["GET", "POST"])
         self.__registered_view_map[model_view.model] = model_view
 
-    def create_object_link_column_spec(model, pk, label=None):
+    def create_object_link_column_spec(self, model, label=None):
         try:
             model_view = self.__registered_view_map[model]
-            return LinkColumnSpec(col_name=pk, formatter=lambda v, model_class: model_view.url_for_object(id_=v), label=label)
+            from .utils import get_primary_key
+            pk = get_primary_key(model)
+            if model_view.can_edit:
+                return LinkColumnSpec(col_name=pk, formatter=lambda v, model_class: model_view.url_for_object(id_=getattr(v, pk)), label=label, anchor=lambda v: unicode(v))
+            else:
+                return LinkColumnSpec(col_name=pk, formatter=lambda v, model_class: model_view.url_for_object_preview(id_=getattr(v, pk)), label=label, anchor=lambda v: unicode(v))
         except KeyError:
-            return ColumnSpec(col_name=pk, label=label)
+            return None
         

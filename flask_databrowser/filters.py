@@ -14,7 +14,7 @@ class BaseFilter(TemplateParam):
     __notation__ = ""
 
     def __init__(self, col_name, name="", options=None, opt_formatter=None,
-                 value=None, display_col_name=None):
+                 value=None, display_col_name=None, hidden=False):
         # TODO datetime unsupported
         self.op = namedtuple("op", ["name", "id"])(name, col_name + self.__notation__)
         self.col_name = col_name
@@ -25,6 +25,7 @@ class BaseFilter(TemplateParam):
         if self.__options and len(self.__options) > 1:
             self.__options.insert(0, (",".join(str(o[0]) for o in self.__options), u'--%s--' % _(u"所有")))
         self.opt_formatter = opt_formatter
+        self.hidden = hidden
 
     @property
     @_raised_when_model_unset
