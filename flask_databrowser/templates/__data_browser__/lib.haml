@@ -6,11 +6,15 @@
           %a << {{ _("上一页") }}
       -else:
         %li
-          %a href="{{ url_for_other_page(page=pagination.page-1 if pagination.page-1 else 1) }}" << {{ _("上一页") }}
+          %a href="{{ url_for_other_page(page=pagination.page-1 if pagination.page > 1 else 1) }}" << {{ _("上一页") }}
 
       -for page in pagination.iter_pages()
-        %li class="{% if page == pagination.page %}active{% endif %}"
-          %a href="{{ url_for_other_page(page=page) }}" << {{ page }}
+        -if page
+          %li class="{% if page == pagination.page %}active{% endif %}"
+            %a href="{{ url_for_other_page(page=page) }}" << {{ page }}
+        -else
+          %li class="disabled"
+           %a << ...
 
       -if __count__:
         %li class="disabled"
