@@ -692,7 +692,7 @@ class ModelView(object):
             order_criterion = getattr(last_join_model, order_by_list[-1])
             if hasattr(order_criterion.property, 'direction'):
                 #order_criterion = enumerate(order_criterion.property.local_columns).next()[1]
-                order_criterion = enumerate(order_criterion.property.local_side).next()[1]
+                order_criterion = order_criterion.property.local_remote_pairs[0][0]
             if desc:
                 order_criterion = order_criterion.desc()
             q = q.order_by(order_criterion)
