@@ -99,14 +99,14 @@ class ModelView(object):
             # TODO add cross ref to registered model
             # add link to object if it is primary key
             if self.can_edit:
-                formatter = lambda x, model: self.url_for_object(model, url=request.url)
+                formatter = lambda x, obj: self.url_for_object(obj, url=request.url)
             else:
-                formatter = lambda x, model: self.url_for_object_preview(model, url=request.url)
+                formatter = lambda x, obj: self.url_for_object_preview(obj, url=request.url)
             col_spec = LinkColumnSpec(col, doc=doc, anchor=lambda x: x,
                                       formatter=formatter, 
                                       label=label, css_class="control-text")
         else:
-            formatter = self.__column_formatters__.get(col, lambda x, model: unicode(x))
+            formatter = self.__column_formatters__.get(col, lambda x, obj: unicode(x))
             col_spec = ColumnSpec(col, doc=doc, 
                                   formatter=formatter,
                                   label=label,
@@ -691,7 +691,8 @@ class ModelView(object):
                 q = q.join(last_join_model)
             order_criterion = getattr(last_join_model, order_by_list[-1])
             if hasattr(order_criterion.property, 'direction'):
-                order_criterion = enumerate(order_criterion.property.local_columns).next()[1]
+                #order_criterion = enumerate(order_criterion.property.local_columns).next()[1]
+                order_criterion = enumerate(order_criterion.property.local_side).next()[1]
             if desc:
                 order_criterion = order_criterion.desc()
             q = q.order_by(order_criterion)
