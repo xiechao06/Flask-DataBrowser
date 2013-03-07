@@ -567,21 +567,8 @@ class ModelView(object):
                 kwargs[k] = v
             import posixpath
             # try user defined template
-            if self.list_template and os.path.exists(
-                    os.path.join(self.blueprint.template_folder,
-                                 self.list_template)):
+            if self.list_template:
                 return self.render(self.list_template, **kwargs)
-            # try html first
-            template_fname = self.blueprint.name + self.list_view_url + ".html"
-            if os.path.exists(os.path.join(self.blueprint.template_folder,
-                                           template_fname)):
-                return self.render(template_fname, **kwargs)
-            # then haml
-            template_fname = self.blueprint.name + self.list_view_url + ".haml"
-            if os.path.exists(os.path.join(self.blueprint.template_folder,
-                                           template_fname)):
-                return self.render(template_fname, **kwargs)
-                # finally using default
             #jinja分割模板是用"/"，在windows下，os.path.join是用"\\"，导致模板路径分割失败。所以一定要用posixpath.join
             template_fname = posixpath.join(self.data_browser.blueprint.name,
                                             "list.haml")
