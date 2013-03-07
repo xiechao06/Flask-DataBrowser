@@ -342,7 +342,7 @@ class ModelView(object):
         for col in self._model_columns(model):
             grouper_2_cols = {}
             if isinstance(col, InputColumnSpec) and col.group_by:
-                for row in self.session.query(getattr(self.model, col.col_name).property.mapper.entity).all():
+                for row in self.session.query(getattr(self.model, col.col_name).property.mapper.class_).all():
                     # should use pk here
                     grouper_2_cols.setdefault(getattr(row, col.group_by.property.key).id, []).append(dict(id=row.id, text=unicode(row)))
                 grouper_info[col.grouper_input_name] = grouper_2_cols
@@ -687,7 +687,7 @@ class ModelView(object):
             order_by_list = order_by.split(".")
             for order_by in order_by_list[:-1]:
                 last_join_model = getattr(last_join_model,
-                                          order_by).property.mapper.entity
+                                          order_by).property.mapper.class_
                 q = q.join(last_join_model)
             order_criterion = getattr(last_join_model, order_by_list[-1])
             if hasattr(order_criterion.property, 'direction'):
