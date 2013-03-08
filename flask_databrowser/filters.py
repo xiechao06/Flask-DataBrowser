@@ -24,7 +24,7 @@ class BaseFilter(TemplateParam):
         self.model_view = None
         self.__options = options or []
         if self.__options and len(self.__options) > 1:
-            self.__options.insert(0, md5(",".join(str(o[0]) for o in self.__options), u'--%s--' % _(u"所有")).hexdigest())
+            self.__options.insert(0, (md5(",".join(str(o[0]) for o in self.__options)).hexdigest(), u'--%s--' % _(u"所有")))
         self.opt_formatter = opt_formatter
         self.hidden = hidden
 
@@ -80,7 +80,7 @@ class BaseFilter(TemplateParam):
                 ret.extend((getattr(row, get_primary_key(model)), self.opt_formatter(row) if self.opt_formatter else row) 
                         for row in model.query.all())
             if len(ret) > 1:
-                ret.insert(0, md5(",".join(unicode(r[0]) for r in ret), u'--%s--' % _(u"所有")).hexdigest())
+                ret.insert(0, (md5(",".join(unicode(r[0]) for r in ret)).hexdigest(), u'--%s--' % _(u"所有")))
             return ret
 
     def unfiltered(self, arg):
