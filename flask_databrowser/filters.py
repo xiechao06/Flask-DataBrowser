@@ -2,6 +2,7 @@
 
 # TODO need refactoring
 
+from hashlib import md5
 from collections import namedtuple, Iterable
 import operator
 from .utils import TemplateParam, raised_when, get_primary_key
@@ -79,7 +80,7 @@ class BaseFilter(TemplateParam):
                 ret.extend((getattr(row, get_primary_key(model)), self.opt_formatter(row) if self.opt_formatter else row) 
                         for row in model.query.all())
             if len(ret) > 1:
-                ret.insert(0, (",".join(unicode(r[0]) for r in ret), u'--%s--' % _(u"所有")))
+                ret.insert(0, md5(",".join(unicode(r[0]) for r in ret), u'--%s--' % _(u"所有")).hexdigest())
             return ret
 
     def unfiltered(self, arg):
