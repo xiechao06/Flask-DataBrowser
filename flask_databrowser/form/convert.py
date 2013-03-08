@@ -204,7 +204,7 @@ class AdminModelConverter(ModelConverterBase):
                                     self.id = "_" + name
 
                                 def iter_choices(self):
-                                    for row in session.query(col_spec.group_by.property.mapper.entity).all():
+                                    for row in session.query(col_spec.group_by.property.mapper.class_).all():
                                         # TODO should use pk
                                         yield row.id, unicode(row), False
 
@@ -225,7 +225,7 @@ class AdminModelConverter(ModelConverterBase):
                         # TODO col_spec not bound
                         def __call__(field, **kwargs):
                             s = QuerySelectField(widget=form.Select2Widget(), 
-                                                 query_factory=lambda: self.session.query(group_by.property.mapper.entity))(field)
+                                                 query_factory=lambda: self.session.query(group_by.property.mapper.class_))(field)
                             s += super(QuerySelectMultipleField_, field)(**widget)
                             return s
 
@@ -240,7 +240,7 @@ class AdminModelConverter(ModelConverterBase):
 
                         def __call__(field, **kwargs):
                             s = QuerySelectField(widget=form.Select2Widget(), 
-                                                 query_factory=lambda: self.session.query(group_by.property.mapper.entity))(field)
+                                                 query_factory=lambda: self.session.query(group_by.property.mapper.class_))(field)
                             s += super(QuerySelectMultipleField_, field)(**widget)
                             return s
 

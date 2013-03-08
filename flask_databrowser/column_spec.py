@@ -52,4 +52,4 @@ class InputColumnSpec(ColumnSpec):
     
     @property
     def grouper_input_name(self):
-        return self.col_name + '.' +  self.group_by.property.mapper.entity.__name__
+        return self.col_name + '.' +  self.group_by.property.mapper.class_.__name__

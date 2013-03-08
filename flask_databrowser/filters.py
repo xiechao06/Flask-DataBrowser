@@ -97,7 +97,7 @@ class BaseFilter(TemplateParam):
         attrs = self.col_name.split(".")
         last_join_model = self.model
         for attr in attrs[:-1]:
-            last_join_model = getattr(last_join_model, attr).property.mapper.entity
+            last_join_model = getattr(last_join_model, attr).property.mapper.class_
             q = q.join(last_join_model)
 
         # convert attr to InstrumentedAttribute
