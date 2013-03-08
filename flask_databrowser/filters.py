@@ -23,7 +23,7 @@ class BaseFilter(TemplateParam):
         self.model_view = None
         self.__options = options or []
         if self.__options and len(self.__options) > 1:
-            self.__options.insert(0, (",".join(str(o[0]) for o in self.__options), u'--%s--' % _(u"所有")))
+            self.__options.insert(0, md5(",".join(str(o[0]) for o in self.__options), u'--%s--' % _(u"所有")).hexdigest())
         self.opt_formatter = opt_formatter
         self.hidden = hidden
 
