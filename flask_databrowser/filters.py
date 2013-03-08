@@ -104,7 +104,7 @@ class BaseFilter(TemplateParam):
         attr = getattr(last_join_model, attrs[-1])
         if hasattr(attr.property, 'direction'):
             # translate the relation
-            filter_criterion = self.__operator__(enumerate(attr.property.local_columns).next()[1], self.value)
+            filter_criterion = self.__operator__(attr.property.local_remote_pairs[0][0], self.value)
         else:
             filter_criterion = self.__operator__(attr, self.value)
         q = q.filter(filter_criterion)
@@ -116,7 +116,7 @@ class BaseFilter(TemplateParam):
         attr = getattr(self.model, self.col_name)
         if hasattr(attr.property, 'direction'):
             # translate the relation
-            return self.__operator__(enumerate(attr.property.local_columns).next()[1], self.value)
+            return self.__operator__(attr.property.local_remote_pairs[0][0], self.value)
         else:
             return self.__operator__(attr, self.value)
 
