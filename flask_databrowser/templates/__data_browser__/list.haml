@@ -157,6 +157,10 @@
             %h4 << {{ _("过滤条件") }}
             %hr
             %form
+              -for k, v in request.args.lists():
+                -if k=="order_by" or k=="desc":
+                  -for i in v:
+                    %input type=hidden name="{{k}}" value="{{i}}"
               %fieldset.pagination-centered
                 -for filter in __filters__
                   -if not filter.hidden
