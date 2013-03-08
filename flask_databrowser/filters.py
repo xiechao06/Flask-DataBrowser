@@ -2,7 +2,7 @@
 
 # TODO need refactoring
 
-from collections import namedtuple
+from collections import namedtuple, Iterable
 import operator
 from .utils import TemplateParam, raised_when, get_primary_key
 from flask.ext.babel import gettext as _
@@ -86,7 +86,7 @@ class BaseFilter(TemplateParam):
         return arg in (None, "") or arg == self.options[0][0]
 
     def has_value(self):
-        return self.value not in (None, "") and any(
+        return self.value not in (None, "") and any(isinstance(self.value, Iterable) and
             val not in (None, "") for val in self.value) and self.value != (
                self.options and self.options[0][0])
 
