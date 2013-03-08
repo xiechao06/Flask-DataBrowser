@@ -565,6 +565,8 @@ class ModelView(object):
                 if isinstance(v, types.FunctionType):
                     v = v(self)
                 kwargs[k] = v
+            for fltr in column_filters:
+                fltr.value = None
             import posixpath
             # try user defined template
             if self.list_template:
