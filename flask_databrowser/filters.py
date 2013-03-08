@@ -87,7 +87,7 @@ class BaseFilter(TemplateParam):
         return arg in (None, "") or arg == self.options[0][0]
 
     def has_value(self):
-        if isinstance(self.value, Iterable):
+        if isinstance(self.value, list) or isinstance(self.value, tuple):
             return any(val not in (None, "") for val in self.value)
         else:
             return self.value not in (None, "") and self.value != (
