@@ -87,8 +87,10 @@ class BaseFilter(TemplateParam):
         return arg in (None, "") or arg == self.options[0][0]
 
     def has_value(self):
-        return self.value not in (None, "") and any(isinstance(self.value, Iterable) and
-            val not in (None, "") for val in self.value) and self.value != (
+        if isinstance(self.value, Iterable):
+            return any(val not in (None, "") for val in self.value)
+        else:
+            return self.value not in (None, "") and self.value != (
                self.options and self.options[0][0])
 
     def set_sa_criterion(self, q):
