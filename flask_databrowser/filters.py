@@ -11,8 +11,10 @@ from flask.ext.babel import gettext as _
 _raised_when_model_unset = raised_when(lambda inst, *args, **kwargs: not inst.model_view, 
                                        RuntimeError(r'field "model view" unset, you should set it'))
 
+
 class BaseFilter(TemplateParam):
     __notation__ = ""
+    multiple = False
 
     def __init__(self, col_name, name="", options=None, opt_formatter=None,
                  value=None, display_col_name=None, hidden=False):
@@ -79,7 +81,7 @@ class BaseFilter(TemplateParam):
                 model = attr.property.mapper.class_
                 ret.extend((getattr(row, get_primary_key(model)), self.opt_formatter(row) if self.opt_formatter else row) 
                         for row in model.query.all())
-            if len(ret) > 1:
+            if len(ret) > 1 and not self.multiple:
                 ret.insert(0, (md5(",".join(unicode(r[0]) for r in ret)).hexdigest(), u'--%s--' % _(u"所有")))
             return ret
 
@@ -173,3 +175,12 @@ class Between(BaseFilter):
     @_raised_when_model_unset
     def input_class(self):
         return 'numeric-filter'
+
+
+class In_(BaseFilter):
+    __notation__ = "__in"
+
+    def __operator__(self, attr, value):
+        return attr.in_(set(value))
+
+    multiple = True

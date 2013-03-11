@@ -13,13 +13,16 @@
       });
       -for filter in __filters__:
          var filter_values = {{ filter.value|tojson }};
-         $("[name='{{ filter.op.id }}']").each(function(idx, val) {
-          var val = filter_values
-          if ($.isArray(filter_values)){
-            val = filter_values[idx]
-          }
-          $(this).val(val).trigger("change");
-         })
+         -if filter.multiple:
+           $("[name='{{ filter.op.id }}']").val(filter_values).trigger("change");
+         -else:
+           $("[name='{{ filter.op.id }}']").each(function(idx, val) {
+            var val = filter_values
+            if ($.isArray(filter_values)){
+              val = filter_values[idx]
+            }
+            $(this).val(val).trigger("change");
+           })
       $("input[name=rowtoggle]").click(function () {
         if ($(this).attr('checked')) {
           $("#list-table tbody input[type=checkbox]").attr("checked", "checked");
@@ -170,7 +173,7 @@
                         %i << &nbsp;{{ filter.op.name }}&nbsp;&nbsp;
                       .controls
                         -if filter.options
-                          %select name="{{ filter.op.id }}" class="input-medium"
+                          %select name="{{ filter.op.id }}" class="input-medium" -if filter.multiple: multiple="multiple"
                             -for opt in filter.options:
                               %option value={{opt[0]}} << {{ opt[1] }}
                         -else

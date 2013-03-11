@@ -541,7 +541,7 @@ class ModelView(object):
                                                                     desc)
             kwargs["__filters__"] = [
                 f.as_dict("op", "label", "input_type", "input_class", "value",
-                          "options", "sep", "hidden") for f in column_filters]
+                          "options", "sep", "hidden", "multiple") for f in column_filters]
             kwargs["__actions__"] = self.scaffold_actions()
             kwargs["__action_2_forbidden_message_formats__"] = dict(
                 (action["name"], action["forbidden_msg_formats"]) for action in

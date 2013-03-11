@@ -87,7 +87,7 @@ def main():
         _30days_ago = (today - timedelta(days=30)).date()
 
 
-        __column_filters__ = [filters.EqualTo("group", name=u"是", opt_formatter=lambda opt: opt.name),
+        __column_filters__ = [filters.In_("group", name=u"是", opt_formatter=lambda opt: opt.name),
                              filters.BiggerThan("create_time", name=u"在", 
                                                 options=[(yesterday, u'一天内'),
                                                         (week_ago, u'一周内'), 
