@@ -693,7 +693,6 @@ class ModelView(object):
         return count, q.all()
 
     def scaffold_list(self, models):
-        from .utils import get_primary_key
 
         def g():
             cnter = itertools.count()
@@ -706,8 +705,12 @@ class ModelView(object):
                     raw_value = operator.attrgetter(c.col_name)(r)
                     formatted_value = converter(raw_value, c)
                     fields.append(formatted_value)
+
+                idx = cnter.next()
                 yield dict(pk=pk, fields=fields,
-                           css=self.patch_row_css(cnter.next(), r) or "")
+                           css=self.patch_row_css(idx, r) or "",
+                           attrs=self.patch_row_attr(idx, r)
+                           )
 
         return None if not models else g()
 
@@ -748,6 +751,8 @@ class ModelView(object):
                                preprocessed_model)) for action in self.__customized_actions__))
         return ret
 
+    def patch_row_attr(self, idx, row):
+        return ""
 
 class DataBrowser(object):
     def __init__(self, app, db, page_size=16):

@@ -127,6 +127,10 @@ def main():
                 return {-3: "[%s]是我的偶像, 不要删除他们", 
                         -2: "[%s]是好狗，不要伤害他们"}
 
+        def patch_row_attr(self, idx, row):
+            if row.name == "Tyde":
+                return {"title": u"测试"}
+
         __customized_actions__ = [MyDeleteAction(u"删除", admin_permission), RollCall(u"点名")]
 
     browser.register_model_view(UserModelView(User, u"用户"), accounts_bp)
