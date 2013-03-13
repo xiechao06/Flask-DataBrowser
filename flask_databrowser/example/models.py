@@ -57,3 +57,11 @@ class Group(db.Model):
 
     def __repr__(self):
         return unicode(self).encode("utf-8")
+
+class Car(db.Model):
+    __tablename__ = "TB_CAR"
+
+    id = db.Column(db.Integer, primary_key=True)
+    model = db.Column(db.String(32))
+    owner_id = db.Column(db.Integer, db.ForeignKey("TB_USER.id"))
+    owner = db.relationship(User, backref="car_list")

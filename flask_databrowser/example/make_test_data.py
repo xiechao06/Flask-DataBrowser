@@ -1,7 +1,7 @@
 # -*- coding: UTF-8 -*-
 import types
 from basemain import db
-from models import User, Group
+from models import User, Group, Car
 
 def do_commit(obj, action="add"):
     if action == "add":
@@ -17,7 +17,7 @@ def do_commit(obj, action="add"):
 db.create_all()
 
 group = do_commit(Group(name="Tom&Jerry"))
-do_commit(User(name="Tom Cat", password="tc", group=group))
+tom = do_commit(User(name="Tom Cat", password="tc", group=group))
 do_commit(User(name="Jerry Mouse", password="jm", group=group))
 do_commit(User(name="Spike", password="s", group=group))
 do_commit(User(name="Tyde", password="t", group=group))
@@ -32,3 +32,6 @@ do_commit(User(name='Pavel Chekov', password="pc", group=group))
 do_commit(User(name='Nyota Uhura', password="nu", group=group))
 do_commit(User(name='Christine Chapel', password="cc", group=group))
 do_commit(User(name='Janice Rand', password="jr", group=group))
+
+car = do_commit(Car(model="BMW 3li", owner=tom))
+car = do_commit(Car(model="Benz S600", owner=tom))

@@ -40,8 +40,9 @@ class PlainText(object):
 
 class TableWidget(object):
 
-    def __init__(self, rows, col_specs=None, sum_fields=[]):
+    def __init__(self, rows, col_specs=None, model_view=None, sum_fields=[]):
         self.rows = rows
+        self.model_view = model_view
         self.col_specs = col_specs
         self.sum_fields = sum_fields
         if self.sum_fields:
@@ -52,7 +53,14 @@ class TableWidget(object):
         html = ['<table %s>\n' % html_params(**kwargs)]
         if self.rows:
             col_specs = self.col_specs or [ColumnSpec(col) for col in dir(self.rows[0]) if not col.startswith("_")]
-            col_specs = [ColumnSpec(col) if isinstance(col, basestring) else col for col in col_specs]
+            from .utils import get_primary_key
+            for i in xrange(len(col_specs)):
+                if isinstance(col_specs[i], basestring):
+                    if self.model_view and get_primary_key(self.rows[0].__class__) == col_specs[i]:
+                        col_specs[i] = self.model_view.data_browser.create_object_link_column_spec(self.rows[0].__class__, "") or ColumnSpec(col_specs[i])
+                    else:
+                        col_specs[i] = ColumnSpec(col_specs[i])
+            #col_specs = [ColumnSpec(col) if isinstance(col, basestring) else col for col in col_specs]
             html.append('  <thead>\n')
             if self.sum_fields:
                 html.append("    <th></th>")
