@@ -40,6 +40,8 @@ class ValueConverter(object):
                 w = extra_widgets.TableWidget(v, col_spec, col_spec.sum_fields)
             elif col_spec.genre == column_spec.UNORDERED_LIST:
                 w = extra_widgets.ListWidget(extra_widgets.PlainText(unicode(i)) for i in v)
+            elif col_spec.genre == column_spec.PLACE_HOLDER:
+                w = extra_widgets.PlaceHolder(col_spec.template_fname, v, self.obj)
             else: # plaintext
                 # we try to convert it to link
                     w = extra_widgets.PlainText(unicode(v))
@@ -52,7 +54,6 @@ class ValueConverter(object):
                 self.css_class = css_class
 
             def __call__(self, **kwargs):
-                #kwargs["disabled"] = True
                 if self.css_class:
                     kwargs["class"] = self.css_class
                 return self.widget(self, **kwargs)

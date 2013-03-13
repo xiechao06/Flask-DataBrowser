@@ -11,7 +11,8 @@ from flask.ext.babel import gettext, ngettext
 from .utils import get_primary_key, named_actions
 from .action import DeleteAction
 from flask.ext.databrowser.convert import ValueConverter
-from flask.ext.databrowser.column_spec import LinkColumnSpec, ColumnSpec, InputColumnSpec
+from flask.ext.databrowser.column_spec import LinkColumnSpec, ColumnSpec, InputColumnSpec, PLACE_HOLDER
+from flask.ext.databrowser.extra_widgets import PlaceHolder
 
 
 class ModelView(object):
@@ -352,6 +353,10 @@ class ModelView(object):
             if isinstance(v, types.FunctionType):
                 v = v(self)
             kwargs[k] = v
+        
+        for f in form:
+            if isinstance(f.widget, PlaceHolder):
+                f.widget.set_args(**form_kwargs)
         return self.render(self.edit_template,
                            form=form,
                            grouper_info=grouper_info,

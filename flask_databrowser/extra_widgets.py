@@ -103,6 +103,20 @@ class ListWidget(object):
         html.append("</%s>" % self.html_tag)
         return HTMLString(''.join(html))
 
+class PlaceHolder(object):
+    def __init__(self, template_fname, field_value, obj):
+        self.template_fname = template_fname
+        self.obj = obj
+        self.field_value = field_value
+        self.kwargs = {}
+
+    def set_args(self, **kwargs):
+        self.kwargs = kwargs
+    
+    def __call__(self, field, **kwargs):
+        from flask import render_template
+        return render_template(self.template_fname, field_value=self.field_value, obj=self.obj, **self.kwargs)
+
 if __name__ == "__main__":
     print Image("http://a.com/a.jpg", "an image")(None)
     print Link("a.com", "http://a.com")(None)

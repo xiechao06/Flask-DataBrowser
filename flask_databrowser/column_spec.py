@@ -6,6 +6,8 @@ TABLE = 4
 UNORDERED_LIST = 5
 INPUT = 6   # this is a special column type, the actual input type is determined
             # by the column's type
+PLACE_HOLDER = 7
+
 
 class ColumnSpec(object):
 
@@ -53,3 +55,9 @@ class InputColumnSpec(ColumnSpec):
     @property
     def grouper_input_name(self):
         return self.col_name + '.' +  self.group_by.property.mapper.class_.__name__
+
+class PlaceHolderColumnSpec(ColumnSpec):
+
+    def __init__(self, col_name, label, template_fname):
+        super(PlaceHolderColumnSpec, self).__init__(col_name, genre=PLACE_HOLDER, label=label)
+        self.template_fname = template_fname
