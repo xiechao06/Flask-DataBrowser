@@ -356,6 +356,8 @@ class AdminModelConverter(ModelConverterBase):
             def __call__(self, **kwargs):
                 if column.type.length:
                     kwargs["maxlength"] = column.type.length
+                if column.default is not None:
+                    kwargs['value'] = column.default.arg
                 return super(MyTextField, self).__call__(**kwargs)
         return MyTextField(**field_args)
 
@@ -388,7 +390,14 @@ class AdminModelConverter(ModelConverterBase):
         unsigned = getattr(column.type, 'unsigned', False)
         if unsigned:
             field_args['validators'].append(validators.NumberRange(min=0))
-        return fields.IntegerField(**field_args)
+        class MyIntegerField(fields.IntegerField):
+            def __call__(self, **kwargs):
+                kwargs['type'] = 'number'
+                if column.default is not None:
+                    kwargs['value'] = column.default.arg
+                return super(MyIntegerField, self).__call__(**kwargs)
+        return MyIntegerField(**field_args)
+        #return fields.IntegerField(**field_args)
 
     @converts('Numeric', 'Float')
     def handle_decimal_types(self, column, field_args, **extra):
