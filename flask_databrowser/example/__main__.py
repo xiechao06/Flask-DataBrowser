@@ -5,6 +5,7 @@
 """
 
 from flask.ext.principal import Permission, RoleNeed, PermissionDenied
+from flask.ext.databrowser import filters
 
 admin_permission = Permission(RoleNeed("Admin"))
 
@@ -79,7 +80,7 @@ def main():
 
         __default_order__ = ("name", "desc")
 
-        from flask.ext.databrowser import filters
+
         from datetime import datetime, timedelta
         today = datetime.today()
         yesterday = today.date()
@@ -96,7 +97,8 @@ def main():
                              filters.Contains("name", name=u"包含")
                              ]
 
-        __list_filters__ = [filters.NotEqualTo("name", value=u"Type")]
+        def __list_filters__(self):
+            return [filters.NotEqualTo("name", value=u"Type")]
 
 
         from flask.ext.databrowser.action import BaseAction
