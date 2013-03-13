@@ -172,7 +172,7 @@
                         %i << &nbsp;{{ filter.op.name }}&nbsp;&nbsp;
                       .controls
                         -if filter.options
-                          %select name="{{ filter.op.id }}" class="input-medium" -if filter.multiple: multiple="multiple"
+                          %select name="{{ filter.op.id }}" class="input-medium" {% if filter.multiple %} multiple="multiple" {% endif %}
                             -for opt in filter.options:
                               %option value={{opt[0]}} << {{ opt[1] }}
                         -else

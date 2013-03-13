@@ -45,13 +45,14 @@ class ModelView(object):
         self.data_browser = None
         self.extra_params = {}
         self.__model_name = model_name
-        for fltr in self.__list_filters__:
-            fltr.model_view = self
         for fltr in self.__column_filters__:
             fltr.model_view = self
         for action in self.__customized_actions__:
             action.model_view = self
         self.__list_column_specs = []
+
+    def __list_filters__(self):
+        return []
 
     def preprocess(self, obj):
         return obj
@@ -669,7 +670,9 @@ class ModelView(object):
 
         q = self.model.query
 
-        for filter_ in self.__list_filters__:
+        for filter_ in self.__list_filters__():
+            if not filter_.model_view:
+                filter_.model_view = self
             q = filter_.set_sa_criterion(q)
 
         for filter_ in filters:
