@@ -352,7 +352,12 @@ class AdminModelConverter(ModelConverterBase):
             field_args['choices'] = [(f,f) for f in column.type.enums]
             return form.Select2Field(**field_args)
         self._string_common(column=column, field_args=field_args, **extra)
-        return fields.TextField(**field_args)
+        class MyTextField(fields.TextField):
+            def __call__(self, **kwargs):
+                if column.type.length:
+                    kwargs["maxlength"] = column.type.length
+                return super(MyTextField, self).__call__(**kwargs)
+        return MyTextField(**field_args)
 
     @converts('Text', 'UnicodeText',
         'sqlalchemy.types.LargeBinary', 'sqlalchemy.types.Binary')
