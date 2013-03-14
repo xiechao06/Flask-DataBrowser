@@ -11,7 +11,8 @@ from flask.ext.babel import gettext, ngettext
 from .utils import get_primary_key, named_actions
 from .action import DeleteAction
 from flask.ext.databrowser.convert import ValueConverter
-from flask.ext.databrowser.column_spec import LinkColumnSpec, ColumnSpec, InputColumnSpec
+from flask.ext.databrowser.column_spec import LinkColumnSpec, ColumnSpec, InputColumnSpec, PLACE_HOLDER
+from flask.ext.databrowser.extra_widgets import PlaceHolder
 
 
 class ModelView(object):
@@ -294,7 +295,7 @@ class ModelView(object):
                     return redirect(return_url)
 
         return self.render(self.create_template, form=form,
-                           return_url=return_url, extra="create")
+                           return_url=return_url, extra="create", hint_message=gettext(u"正在创建%(model_name)s", model_name=self.model_name))
 
     def edit_view(self, id_):
         """
@@ -328,6 +329,7 @@ class ModelView(object):
                     return redirect(return_url)
             else: # GET
                 form = self.get_compound_edit_form(obj=model)
+            hint_message = gettext(u"正在编辑%(model_name)s-%(obj)s", model_name=self.model_name, obj=unicode(model))
         else:
             model_list = [self.get_one(id_) for id_ in id_list]
             model = None
@@ -348,6 +350,7 @@ class ModelView(object):
                         gettext('Model was successfully updated.'),
                         extra={"class":self.model, "obj":model_list})
                     return redirect(return_url)
+            hint_message = gettext(u"正在编辑%(model_name)s-%(objs)s", model_name=self.model_name, objs=",".join(unicode(model) for model in model_list))
 
         grouper_info = {}
         for col in self._model_columns(model):
@@ -363,10 +366,14 @@ class ModelView(object):
             if isinstance(v, types.FunctionType):
                 v = v(self)
             kwargs[k] = v
+        
+        for f in form:
+            if isinstance(f.widget, PlaceHolder):
+                f.widget.set_args(**form_kwargs)
         return self.render(self.edit_template,
                            form=form,
                            grouper_info=grouper_info,
-                           return_url=return_url, **form_kwargs)
+                           return_url=return_url, hint_message=hint_message, **form_kwargs)
 
     def scaffold_form(self, columns):
         """

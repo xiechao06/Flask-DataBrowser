@@ -35,7 +35,7 @@ def main():
     from flask.ext import databrowser
     from flask.ext.databrowser.action import DeleteAction
 
-    from models import User
+    from models import User, Car
     accounts_bp = Blueprint("accounts", __name__, static_folder="static", 
                             template_folder="templates")
     browser = databrowser.DataBrowser(app, db, page_size=4)
@@ -48,13 +48,16 @@ def main():
             if row.roll_called == 1:
                 return "box warning"
 
-        from flask.ext.databrowser.column_spec import ImageColumnSpec, TableColumnSpec
+        from flask.ext.databrowser.column_spec import ImageColumnSpec, TableColumnSpec, PlaceHolderColumnSpec
         __list_columns__ = ["id", "name", "group", "password", "roll_called", "group.name", "create_time", ImageColumnSpec("avatar", alt=u"头像", 
             formatter=lambda v, model: "http://farm9.staticflickr.com/8522/8478415115_152c6f5e55_m.jpg"), "good"]
-        __form_columns__ = ["id", "name", "group", "password", "roll_called", "good", 
+        __form_columns__ = ["id", "name", "group", "password", "roll_called", "good", "age", 
                             ImageColumnSpec("avatar", alt=u"头像", 
                                             formatter=lambda v, model: "http://farm9.staticflickr.com/8522/8478415115_152c6f5e55_m.jpg"),
-                            TableColumnSpec("dogs", css_class="table table-striped table-hover table-condensed table-bordered")]
+                            PlaceHolderColumnSpec("dogs", "dogs", "accounts/dogs.html"),
+                            TableColumnSpec("dogs", css_class="table table-striped table-hover table-condensed table-bordered"), 
+                            TableColumnSpec("car_list", css_class="table table-striped table-hover table-condensed table-bordered", col_specs=["id", "model"])
+                            ]
 
         __batch_form_columns__ = ["name", "group"]
 
@@ -135,13 +138,18 @@ def main():
 
         __customized_actions__ = [MyDeleteAction(u"删除", admin_permission), RollCall(u"点名")]
 
-    browser.register_model_view(UserModelView(User, u"用户"), accounts_bp)
+    browser.register_model_view(UserModelView(User, u"用户"), accounts_bp, extra_params={"form_view": {"company": "xc"}})
+
+    class CarModelView(databrowser.ModelView):
+
+        __form_columns__ = ["id", "model"]
+
+    browser.register_model_view(CarModelView(Car, u"汽车"), accounts_bp, extra_params={"form_view": {"company": "xc"}})
     app.register_blueprint(accounts_bp, url_prefix="/accounts")
     app.config["SECRET_KEY"] = "JHdkj1;"
     app.config["CSRF_ENABLED"] = False
 
     app.run(debug=True, port=5001, host="0.0.0.0")
-
 
 if __name__ == "__main__":
     main()

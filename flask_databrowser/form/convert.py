@@ -352,7 +352,14 @@ class AdminModelConverter(ModelConverterBase):
             field_args['choices'] = [(f,f) for f in column.type.enums]
             return form.Select2Field(**field_args)
         self._string_common(column=column, field_args=field_args, **extra)
-        return fields.TextField(**field_args)
+        class MyTextField(fields.TextField):
+            def __call__(self, **kwargs):
+                if column.type.length:
+                    kwargs["maxlength"] = column.type.length
+                if column.default is not None:
+                    kwargs['value'] = column.default.arg
+                return super(MyTextField, self).__call__(**kwargs)
+        return MyTextField(**field_args)
 
     @converts('Text', 'UnicodeText',
         'sqlalchemy.types.LargeBinary', 'sqlalchemy.types.Binary')
@@ -383,7 +390,14 @@ class AdminModelConverter(ModelConverterBase):
         unsigned = getattr(column.type, 'unsigned', False)
         if unsigned:
             field_args['validators'].append(validators.NumberRange(min=0))
-        return fields.IntegerField(**field_args)
+        class MyIntegerField(fields.IntegerField):
+            def __call__(self, **kwargs):
+                kwargs['type'] = 'number'
+                if column.default is not None:
+                    kwargs['value'] = column.default.arg
+                return super(MyIntegerField, self).__call__(**kwargs)
+        return MyIntegerField(**field_args)
+        #return fields.IntegerField(**field_args)
 
     @converts('Numeric', 'Float')
     def handle_decimal_types(self, column, field_args, **extra):
