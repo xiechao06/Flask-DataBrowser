@@ -329,7 +329,10 @@ class ModelView(object):
                     return redirect(return_url)
             else: # GET
                 form = self.get_compound_edit_form(obj=model)
-            hint_message = gettext(u"正在编辑%(model_name)s-%(obj)s", model_name=self.model_name, obj=unicode(model))
+            hint_message = gettext(u"正在%(action)s%(model_name)s-%(obj)s",
+                                   action=u"编辑" if self.can_edit else u"查看",
+                                   model_name=self.model_name,
+                                   obj=unicode(model))
         else:
             model_list = [self.get_one(id_) for id_ in id_list]
             model = None
@@ -350,7 +353,10 @@ class ModelView(object):
                         gettext('Model was successfully updated.'),
                         extra={"class":self.model, "obj":model_list})
                     return redirect(return_url)
-            hint_message = gettext(u"正在编辑%(model_name)s-%(objs)s", model_name=self.model_name, objs=",".join(unicode(model) for model in model_list))
+            hint_message = gettext(u"正在%(action)s%(model_name)s-%(objs)s",
+                                   action=u"编辑" if self.can_edit else u"查看",
+                                   model_name=self.model_name, objs=",".join(
+                    unicode(model) for model in model_list))
 
         grouper_info = {}
         for col in self._model_columns(model):
@@ -612,9 +618,9 @@ class ModelView(object):
                     processed_models.append(model)
                     action.op(model)
                 self.session.commit()
-                self.data_browser.app.logger.debug(
-                    action.success_message(processed_models),
-                    extra={"class":self.model, "obj":models})
+                self.data_browser.app.logger.debug(action.name,
+                                                   extra={"class": self.model,
+                                                          "obj": models})
                 flash(action.success_message(processed_models), 'success')
             except Exception, ex:
                 flash(u"%s(%s)" % (action.error_message(models), ex.message),
