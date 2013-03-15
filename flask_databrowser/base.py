@@ -416,8 +416,7 @@ class ModelView(object):
         
     def get_create_form(self):
         if self.__create_form__ is None:
-            self.__create_form__ = self.scaffold_form(
-                list_columns=self.__create_columns__)
+            self.__create_form__ = self.scaffold_form(self.__create_columns__)
         return self.__create_form__()
         
 
@@ -743,6 +742,10 @@ class ModelView(object):
 
         op_id_2_filter = dict(
             (fltr.op.id, fltr) for fltr in shadow_column_filters)
+        # initialize filter's value with default value
+        for op_id, filter in op_id_2_filter.items():
+            if filter.default_value is not None:
+                filter.value = filter.default_value
         for k, v in request.args.lists():
             try:
                 op_id_2_filter[k].value = (v[0] if len(v) == 1 else v)

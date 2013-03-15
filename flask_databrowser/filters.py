@@ -17,7 +17,7 @@ class BaseFilter(TemplateParam):
     multiple = False
 
     def __init__(self, col_name, name="", options=None, opt_formatter=None,
-                 value=None, display_col_name=None, hidden=False):
+                 value=None, display_col_name=None, hidden=False, default_value=None):
         # TODO datetime unsupported
         self.op = namedtuple("op", ["name", "id"])(name, col_name + self.__notation__)
         self.col_name = col_name
@@ -29,6 +29,7 @@ class BaseFilter(TemplateParam):
             self.__options.insert(0, (md5(",".join(str(o[0]) for o in self.__options)).hexdigest(), u'--%s--' % _(u"所有")))
         self.opt_formatter = opt_formatter
         self.hidden = hidden
+        self.default_value = default_value
 
     @property
     @_raised_when_model_unset
