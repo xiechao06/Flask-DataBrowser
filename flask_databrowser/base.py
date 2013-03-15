@@ -200,12 +200,12 @@ class ModelView(object):
             self.session.add(model)
             self.on_model_change(form, model)
             self.session.commit()
-            return True
+            return model
         except Exception, ex:
             flash(gettext('Failed to create model. %(error)s', error=str(ex)),
                   'error')
             self.session.rollback()
-            return False
+            return None
 
     def update_model(self, form, model):
         """
@@ -283,7 +283,11 @@ class ModelView(object):
         form = self.get_create_form()
 
         if form.validate_on_submit():
-            if self.create_model(form):
+            model = self.create_model(form)
+            if model:
+                self.data_browser.app.logger.debug(
+                    gettext('Model was successfully created.'),
+                    extra={"class":self.model, "obj":model})
                 if '_add_another' in request.form:
                     flash(gettext('Model was successfully created.'))
                     return redirect(self.url_for_object(None, url=return_url))
@@ -319,10 +323,16 @@ class ModelView(object):
             if form.validate_on_submit():
                 form = self.get_edit_form(obj=model)
                 if self.update_model(form, model):
+                    self.data_browser.app.logger.debug(
+                        gettext('Model was successfully updated.'),
+                        extra={"class":self.model, "obj":model})
                     return redirect(return_url)
             else: # GET
                 form = self.get_compound_edit_form(obj=model)
-            hint_message = gettext(u"正在编辑%(model_name)s-%(obj)s", model_name=self.model_name, obj=unicode(model))
+            hint_message = gettext(u"正在%(action)s%(model_name)s-%(obj)s",
+                                   action=u"编辑" if self.can_edit else u"查看",
+                                   model_name=self.model_name,
+                                   obj=unicode(model))
         else:
             model_list = [self.get_one(id_) for id_ in id_list]
             model = None
@@ -339,8 +349,14 @@ class ModelView(object):
             form = self.get_batch_edit_form(obj=model)
             if form.is_submitted():
                 if all(self.update_model(form, model) for model in model_list):
+                    self.data_browser.app.logger.debug(
+                        gettext('Model was successfully updated.'),
+                        extra={"class":self.model, "obj":model_list})
                     return redirect(return_url)
-            hint_message = gettext(u"正在编辑%(model_name)s-%(objs)s", model_name=self.model_name, objs=",".join(unicode(model) for model in model_list))
+            hint_message = gettext(u"正在%(action)s%(model_name)s-%(objs)s",
+                                   action=u"编辑" if self.can_edit else u"查看",
+                                   model_name=self.model_name, objs=",".join(
+                    unicode(model) for model in model_list))
 
         grouper_info = {}
         for col in self._model_columns(model):
@@ -601,6 +617,9 @@ class ModelView(object):
                     processed_models.append(model)
                     action.op(model)
                 self.session.commit()
+                self.data_browser.app.logger.debug(action.name,
+                                                   extra={"class": self.model,
+                                                          "obj": models})
                 flash(action.success_message(processed_models), 'success')
             except Exception, ex:
                 flash(u"%s(%s)" % (action.error_message(models), ex.message),
