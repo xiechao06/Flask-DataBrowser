@@ -9,13 +9,19 @@ def get_primary_key(model):
         :param model:
             Model class
     """
-    props = model._sa_class_manager.mapper.iterate_properties
+    from sqlalchemy.schema import Table
+    if isinstance(model, Table):
+        for idx, c in enumerate(model.columns):
+            if c.primary_key:
+                return c.key
+    else:
+        props = model._sa_class_manager.mapper.iterate_properties
 
-    for p in props:
-        if hasattr(p, 'columns'):
-            for c in p.columns:
-                if c.primary_key:
-                    return p.key
+        for p in props:
+            if hasattr(p, 'columns'):
+                for c in p.columns:
+                    if c.primary_key:
+                        return p.key
 
     return None
 

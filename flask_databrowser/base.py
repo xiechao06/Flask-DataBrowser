@@ -295,8 +295,14 @@ class ModelView(object):
                     return redirect(self.url_for_object(None, url=return_url))
                 else:
                     return redirect(return_url)
-
-        return self.render(self.create_template, form=form,
+        create_url_map = {}
+        converter = ValueConverter(self.model)
+        for col in self.__create_columns__:
+            attr = getattr(self.model, col if isinstance(col, basestring) else col.col_name)
+            if hasattr(attr.property, "direction"):
+                remote_side = attr.property.local_remote_pairs[0][1].table
+                create_url_map[col] = self.data_browser.get_create_url(remote_side)
+        return self.render(self.create_template, form=form, create_url_map=create_url_map,
                            return_url=return_url, extra="create", hint_message=gettext(u"正在创建%(model_name)s", model_name=self.model_name))
 
     def edit_view(self, id_):
@@ -863,12 +869,13 @@ class DataBrowser(object):
                                model_view.object_view_endpoint,
                                model_view.object_view,
                                methods=["GET", "POST"])
-        self.__registered_view_map[model_view.model] = model_view
+        self.__registered_view_map[model_view.model.__tablename__] = model_view
 
     def create_object_link_column_spec(self, model, label=None):
         try:
-            model_view = self.__registered_view_map[model]
+            model_view = self.__registered_view_map[model.__tablename__]
             from .utils import get_primary_key
+             
             pk = get_primary_key(model)
             if model_view.can_edit:
                 return LinkColumnSpec(col_name=pk, formatter=lambda v, obj: model_view.url_for_object(obj, label=label), anchor=lambda v: unicode(v))
@@ -876,4 +883,13 @@ class DataBrowser(object):
                 return LinkColumnSpec(col_name=pk, formatter=lambda v, obj: model_view.url_for_object_preview(obj, label=label), anchor=lambda v: unicode(v))
         except KeyError:
             return None
-        
+
+    def get_create_url(self, model):
+        try:
+            if isinstance(model, self.db.Model):
+                model_view = self.__registered_view_map[model.__tablename__]
+            else:
+                model_view = self.__registered_view_map[model.name]
+            return model_view.url_for_object(None, url=request.url)
+        except KeyError:
+            return None

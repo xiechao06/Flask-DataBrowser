@@ -250,7 +250,6 @@ class AdminModelConverter(ModelConverterBase):
                 ret = QuerySelectMultipleField(
                     widget=form.Select2Widget(multiple=True),
                     **kwargs)
-            
         else:
             # Ignore pk/fk
             if hasattr(prop, 'columns'):

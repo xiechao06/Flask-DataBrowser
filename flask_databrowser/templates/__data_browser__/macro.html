@@ -48,6 +48,9 @@
                         {% else %}
                             {{ f()|safe }}
                         {% endif %}
+                        {% if f.name in create_url_map %}
+                        <a href="{{ create_url_map[f.name] }}" class="btn btn-primary">新建</a>
+                        {% endif %}
                     {% endif %}
                 </div>
                 {% if f.description %}
