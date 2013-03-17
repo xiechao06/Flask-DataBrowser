@@ -21,7 +21,11 @@
             if ($.isArray(filter_values)){
               val = filter_values[idx]
             }
-            $(this).val(val).trigger("change");
+            -if filter.input_type[0] == 'checkbox'
+              -if filter.value:
+                $(this).attr("checked", "true")
+            -else
+              $(this).val(val).trigger("change");
            })
       $("input[name=rowtoggle]").click(function () {
         if ($(this).attr('checked')) {
@@ -115,7 +119,10 @@
               %thead
                 %tr.row-fluid
                   -if __actions__
-                    %th.span1 -> %input type="checkbox" name="rowtoggle"
+                    -if not model_view.as_radio_group
+                      %th.span1 -> %input type="checkbox" name="rowtoggle"
+                    -else
+                      %th
                   -for c in __list_columns__
                     %th title={% if c.doc %} {{c.doc}} {% endif %}
                       -if c.sort_url
@@ -132,7 +139,10 @@
                 -for row in __data__
                   %tr class="{{row.css}} row-fluid"
                     -if __actions__
-                      %td.span1 -> %input type="checkbox" value="{{ row.pk }}" name="selected-ids"
+                      -if model_view.as_radio_group
+                        %td.span1 -> %input type="radio" value="{{ row.pk }}" name="selected-ids"
+                      -else
+                        %td.span1 -> %input type="checkbox" value="{{ row.pk }}" name="selected-ids"
                     -for v in row.fields:
                       -if v.link
                         %td {%if row.attrs %} {%for k,v in row.attrs.items() %}{{ k }}="{{ v }}"{% endfor %}{% endif %} -> %a href="{{ v.link }}" << {{ v.value }}
@@ -167,19 +177,24 @@
                 -for filter in __filters__
                   -if not filter.hidden
                     .control-group
-                      %label.control-label 
-                        {{ filter.label }}
-                        %i << &nbsp;{{ filter.op.name }}&nbsp;&nbsp;
-                      .controls
-                        -if filter.options
-                          %select name="{{ filter.op.id }}" class="input-medium" {% if filter.multiple %} multiple="multiple" {% endif %}
-                            -for opt in filter.options:
-                              %option value={{opt[0]}} << {{ opt[1] }}
-                        -else
-                          -for input_type in filter.input_type
-                            %input type="{{ input_type }}" name="{{ filter.op.id }}" class="{{ __css_classes__[filter.input_class] }}" min=0 placeholder="{{ _("请输入") + filter.label }}"
-                            -if not loop.last
-                              %span << {{ filter.sep }}
+                      -if filter.input_type[0] == "checkbox":
+                        %label.control-label 
+                          {{ filter.label }}
+                          %input type="checkbox" name="{{filter.op.id}}" class="{{ __css_classes__[filter.input_class] }}"
+                      -else
+                        %label.control-label 
+                          {{ filter.label }}
+                          %i << &nbsp;{{ filter.op.name }}&nbsp;&nbsp;
+                        .controls
+                          -if filter.options
+                            %select name="{{ filter.op.id }}" class="input-medium" {% if filter.multiple %} multiple="multiple" {% endif %}
+                              -for opt in filter.options:
+                                %option value={{opt[0]}} << {{ opt[1] }}
+                          -else
+                            -for input_type in filter.input_type
+                              %input type="{{ input_type }}" name="{{ filter.op.id }}" class="{{ __css_classes__[filter.input_class] }}" min=0 placeholder="{{ _("请输入") + filter.label }}"
+                              -if not loop.last
+                                %span << {{ filter.sep }}
               %hr
               .control-group.pagination-centered
                 .controls

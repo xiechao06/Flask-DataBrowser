@@ -39,6 +39,8 @@ class ModelView(object):
 
     list_template = create_template = edit_template = None
 
+    as_radio_group = False
+
     def __init__(self, model, model_name=""):
         self.model = model
         self.blueprint = None
@@ -578,6 +580,7 @@ class ModelView(object):
             kwargs["__can_create__"] = self.creation_allowable
             kwargs["__can_edit__"] = self.edit_allowable
             kwargs["__max_col_len__"] = self.__max_col_len__
+            kwargs["model_view"] = self
             if desc:
                 kwargs["__desc__"] = desc
             kwargs["__pagination__"] = Pagination(None, page,

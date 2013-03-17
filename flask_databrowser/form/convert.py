@@ -116,7 +116,7 @@ class AdminModelConverter(ModelConverterBase):
         self.session = session
         self.view = view
 
-    def _get_label(self, name, field_args):
+    def _get_label(self, name, field_args, col_spec):
         """
             Label for field name. If it is not specified explicitly,
             then the views prettify_name method is used to find it.
@@ -124,6 +124,8 @@ class AdminModelConverter(ModelConverterBase):
             :param field_args:
                 Dictionary with additional field arguments
         """
+        if col_spec and col_spec.label:
+            return col_spec.label
         if 'label' in field_args:
             return field_args['label']
 
@@ -162,7 +164,7 @@ class AdminModelConverter(ModelConverterBase):
             remote_model = prop.mapper.class_
             local_column = prop.local_remote_pairs[0][0]
 
-            kwargs['label'] = self._get_label(prop.key, kwargs)
+            kwargs['label'] = self._get_label(prop.key, kwargs, col_spec)
             kwargs['description'] = self._get_description(prop.key, kwargs)
 
             kwargs['get_label'] = functools.partial(
@@ -300,7 +302,7 @@ class AdminModelConverter(ModelConverterBase):
 
                 # Apply label and description if it isn't inline form field
                 if self.view.model == mapper.class_:
-                    kwargs['label'] = self._get_label(prop.key, kwargs)
+                    kwargs['label'] = self._get_label(prop.key, kwargs, col_spec)
                     kwargs['description'] = self._get_description(prop.key, kwargs)
 
                 # Figure out default value
