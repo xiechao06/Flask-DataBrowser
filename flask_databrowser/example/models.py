@@ -65,3 +65,25 @@ class Car(db.Model):
     model = db.Column(db.String(32))
     owner_id = db.Column(db.Integer, db.ForeignKey("TB_USER.id"))
     owner = db.relationship(User, backref="car_list")
+
+class Log(db.Model):
+
+    __tablename__ = "TB_LOG"
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String)
+    level = db.Column(db.String)
+    module = db.Column(db.String)
+    func_name = db.Column(db.String)
+    line_no = db.Column(db.Integer)
+    thread = db.Column(db.Integer)
+    thread_name = db.Column(db.String)
+    process = db.Column(db.Integer)
+    message = db.Column(db.String)
+    args = db.Column(db.String)
+    actor_id = db.Column(db.Integer, db.ForeignKey("TB_USER.id"))
+    actor = db.relationship("User")
+    obj = db.Column(db.String(256))
+    action = db.Column(db.String(256))
+    extra = db.Column(db.String(256))
+    create_time = db.Column(db.DateTime, default=datetime.now)

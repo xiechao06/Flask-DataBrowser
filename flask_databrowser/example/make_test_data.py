@@ -1,7 +1,7 @@
 # -*- coding: UTF-8 -*-
 import types
 from basemain import db
-from models import User, Group, Car
+from models import User, Group, Car, Log
 
 def do_commit(obj, action="add"):
     if action == "add":
