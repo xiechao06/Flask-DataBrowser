@@ -29,7 +29,6 @@ class DBHandler(logging.Handler):
         if obj:
             log.obj = repr(obj)
         log.actor = getattr(record, "actor", None)
-        log.create_time = datetime.now()
         log.name = record.name
         log.level = record.levelname
         log.module = record.module

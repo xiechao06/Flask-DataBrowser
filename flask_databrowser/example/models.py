@@ -86,4 +86,4 @@ class Log(db.Model):
     obj = db.Column(db.String(256))
     action = db.Column(db.String(256))
     extra = db.Column(db.String(256))
-    create_time = db.Column(db.DateTime, default=datetime.now())
+    create_time = db.Column(db.DateTime, default=datetime.now)
