@@ -36,7 +36,7 @@
       });
       $("#main-form #actions input[name=action]").click(function(){
           var list_val = "";
-          $("#list-table tbody input[type=checkbox]:checked").each(function(){
+          $("#list-table tbody input:checked").each(function(){
             list_val += $(this).val() +",";
           });
           if (list_val == ""){
