@@ -12,7 +12,7 @@ class BaseAction(object):
         self.name = name
         self.model_view = None
 
-    def op(self, model):
+    def op(self, obj):
         return ""
 
     @property
@@ -33,7 +33,7 @@ class BaseAction(object):
         will be called when operations break
         """
         return self.model_name + ','.join(unicode(model) for model in models).join(
-            ['[', ']']) + gettext(u"%(name))s失败", name=self.name)
+            ['[', ']']) + gettext(u"%(name)s失败", name=self.name)
 
     def try_(self):
         pass
@@ -55,8 +55,9 @@ class DeleteAction(BaseAction):
         super(DeleteAction, self).__init__(name)
         self.permission = permission
 
-    def op(self, model):
-        self.model_view.session.delete(self.model_view.model)
+    def op(self, obj):
+        # even a model-like object could be deleted
+        self.model_view.session.delete(obj)
 
     def try_(self):
         if self.permission is not None:
