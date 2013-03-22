@@ -787,9 +787,14 @@ class ModelView(object):
         for model in models:
             id = self.scaffold_pk(model)
             preprocessed_model = self.preprocess(model)
-            ret[id] = dict(name=unicode(model),
-                           actions=dict((action.name, action.test_enabled(
-                               preprocessed_model)) for action in self.__customized_actions__))
+            d = {}
+            d["name"] = unicode(model)
+            d["actions"] = {}
+            for action in self.__customized_actions__:
+                error_code = action.test_enabled(preprocessed_model)
+                if error_code is not None:
+                    d["actions"][action.name] = error_code
+            ret[id] = d
         return ret
 
     def patch_row_attr(self, idx, row):

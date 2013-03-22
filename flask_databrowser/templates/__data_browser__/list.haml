@@ -59,9 +59,9 @@
       -if __rows_action_desc__
         var rows_action_desc = {{ __rows_action_desc__|tojson|safe }}; // row -> (name: row.name, actions: action_name-> forbidden_code)
         var actions = {{ __action_2_forbidden_message_formats__ | tojson | safe }}; // action_name -> ()
-        $("input[type='checkbox']").click(function () {
+        $("#list-table tbody input").click(function () {
           var action_2_rows = {}; // action -> (forbidden_code -> [rows])
-          $("#list-table tbody input[type=checkbox]:checked").each(function () {
+          $("#list-table tbody input:checked").each(function () {
             var model_repr = rows_action_desc[$(this).val()].name;
             var action_2_forbidden_code = rows_action_desc[$(this).val()].actions;
             for (var action_name in action_2_forbidden_code) {
