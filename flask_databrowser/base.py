@@ -291,7 +291,7 @@ class ModelView(object):
                     gettext('Model was successfully created.'),
                     extra={"class":self.model, "obj":model})
                 if '_add_another' in request.form:
-                    flash(gettext('Model was successfully created.'))
+                    flash(gettext(gettext(u'成功创建' + unicode(model))))
                     return redirect(self.url_for_object(None, url=return_url))
                 else:
                     return redirect(return_url)
@@ -384,8 +384,15 @@ class ModelView(object):
         for f in form:
             if isinstance(f.widget, PlaceHolder):
                 f.widget.set_args(**form_kwargs)
+        create_url_map = {}
+        converter = ValueConverter(self.model)
+        for col in self.__form_columns__:
+            attr = getattr(self.model, col if isinstance(col, basestring) else col.col_name)
+            if hasattr(attr.property, "direction"):
+                remote_side = attr.property.local_remote_pairs[0][1].table
+                create_url_map[col] = self.data_browser.get_create_url(remote_side)
         return self.render(self.edit_template,
-                           form=form,
+                           form=form, create_url_map=create_url_map,
                            grouper_info=grouper_info,
                            return_url=return_url, hint_message=hint_message, **form_kwargs)
 
