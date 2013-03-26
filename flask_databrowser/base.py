@@ -49,8 +49,6 @@ class ModelView(object):
         self.__model_name = model_name
         for fltr in self.__column_filters__:
             fltr.model_view = self
-        for action in self.__customized_actions__:
-            action.model_view = self
         self.__list_column_specs = []
 
     def __list_filters__(self):
@@ -209,6 +207,16 @@ class ModelView(object):
             self.session.rollback()
             return None
 
+    def get_customized_actions(self, obj=None):
+        return self.__customized_actions__
+
+    def _get_customized_actions(self, obj=None):
+        ret = []
+        for action in self.get_customized_actions(obj):
+            action.model_view = self
+            ret.append(action)
+        return ret
+
     def update_model(self, form, model):
         """
             Update model from form.
@@ -218,6 +226,22 @@ class ModelView(object):
             :param model:
                 Model instance
         """
+        action_name = request.form["action"]
+
+        for action in self._get_customized_actions(model):
+            if action.name == action_name:
+                action.try_()
+                try:
+                    model = self.preprocess(model)
+                    action.op(model)
+                    self.session.commit()
+                    flash(action.success_message([model]), 'success')
+                    return True
+                except Exception, ex:
+                    flash(gettext('Failed to update model. %(error)s', error=str(ex)),
+                          'error')
+                    self.session.rollback()
+                    return False
         try:
             for name, field in form._fields.iteritems():
                 if field.raw_data is not None:
@@ -341,6 +365,7 @@ class ModelView(object):
                                    action=u"编辑" if self.can_edit else u"查看",
                                    model_name=self.model_name,
                                    obj=unicode(model))
+            actions = self._get_customized_actions(self.preprocess(model))
         else:
             model_list = [self.get_one(id_) for id_ in id_list]
             model = None
@@ -365,6 +390,7 @@ class ModelView(object):
                                    action=u"编辑" if self.can_edit else u"查看",
                                    model_name=self.model_name, objs=",".join(
                     unicode(model) for model in model_list))
+            actions = self._get_customized_actions()
 
         grouper_info = {}
         for col in self._model_columns(model):
@@ -387,13 +413,17 @@ class ModelView(object):
         create_url_map = {}
         converter = ValueConverter(self.model)
         for col in self.__form_columns__:
-            attr = getattr(self.model, col if isinstance(col, basestring) else col.col_name)
-            if hasattr(attr.property, "direction"):
-                remote_side = attr.property.local_remote_pairs[0][1].table
-                create_url_map[col] = self.data_browser.get_create_url(remote_side)
+            try:
+                attr = getattr(self.model, col if isinstance(col, basestring) else col.col_name)
+                if hasattr(attr.property, "direction"):
+                    remote_side = attr.property.local_remote_pairs[0][1].table
+                    create_url_map[col] = self.data_browser.get_create_url(remote_side)
+            except AttributeError:
+                pass
         return self.render(self.edit_template,
                            form=form, create_url_map=create_url_map,
                            grouper_info=grouper_info,
+                           actions=actions,
                            return_url=return_url, hint_message=hint_message, **form_kwargs)
 
     def scaffold_form(self, columns):
@@ -476,7 +506,7 @@ class ModelView(object):
                 return self.model_form.hidden_tag()
 
         ret = []
-        r = self.model
+        r = self.preprocess(obj)
         for col in self.__form_columns__:
             if isinstance(col, InputColumnSpec):
                 ret.append(model_form[col.col_name])
@@ -485,7 +515,6 @@ class ModelView(object):
                     # if it is a models property, we yield from model_form
                     ret.append(model_form[col])
                 except KeyError:
-                    r = self.preprocess(obj)
                     col_spec = self._col_spec_from_str(col)
                     widget = value_converter(operator.attrgetter(col)(r), col_spec)
                     ret.append(widget)
@@ -619,7 +648,7 @@ class ModelView(object):
             models = self.model.query.filter(
                 getattr(self.model, get_primary_key(self.model)).in_(
                     request.form.getlist('selected-ids'))).all()
-            for action in self.__customized_actions__:
+            for action in self._get_customized_actions():
                 if action.name == action_name:
                     break
             else:
@@ -699,7 +728,7 @@ class ModelView(object):
             l.append({"name": gettext(u"批量修改"), "forbidden_msg_formats": {}})
 
         l.extend(dict(name=action.name, value=action.name,
-                      forbidden_msg_formats=action.get_forbidden_msg_formats()) for action in self.__customized_actions__)
+                      forbidden_msg_formats=action.get_forbidden_msg_formats()) for action in self._get_customized_actions())
         return l
 
     def query_data(self, page, order_by, desc, filters):
@@ -797,7 +826,7 @@ class ModelView(object):
             d = {}
             d["name"] = unicode(model)
             d["actions"] = {}
-            for action in self.__customized_actions__:
+            for action in self._get_customized_actions():
                 error_code = action.test_enabled(preprocessed_model)
                 if error_code is not None:
                     d["actions"][action.name] = error_code

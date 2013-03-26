@@ -56,6 +56,12 @@ class InputColumnSpec(ColumnSpec):
     def grouper_input_name(self):
         return self.col_name + '.' +  self.group_by.property.mapper.class_.__name__
 
+class ListColumnSpec(ColumnSpec):
+
+    def __init__(self, col_name, item_col_spec=None, doc="", formatter=None, label="", css_class=""):
+        super(ListColumnSpec, self).__init__(col_name, genre=UNORDERED_LIST, doc=doc, formatter=formatter, label=label, css_class=css_class)
+        self.item_col_spec = item_col_spec
+
 class PlaceHolderColumnSpec(ColumnSpec):
 
     def __init__(self, col_name, label, template_fname):

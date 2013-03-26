@@ -83,13 +83,18 @@
 {% macro render_form_buttons(cancel_url, extra=None) %}
     <div class="control-group">
         <div class="controls">
-            <input type="submit" class="btn btn-primary btn-large" value="{{ _gettext('提交') }}" />
-            {% if extra == "create" %}
-                {{ create() }}
-            {% endif %}
+            <input name="action" type="submit" class="btn btn-primary btn-large" value="{{ _gettext('提交') }}" />
             {% if cancel_url %}
                 <a href="{{ cancel_url }}" class="btn btn-large">{{ _gettext('返回') }}</a>
             {% endif %}
+            {% if extra == "create" %}
+                {{ create() }}
+            {% else %}
+              {% for action in actions %}
+                <input name="action" value="{{action.name}}" type="submit" name="action" class="btn btn-info btn-large"/>
+              {% endfor %}
+            {% endif %}
+
         </div>
     </div>
 {% endmacro %}

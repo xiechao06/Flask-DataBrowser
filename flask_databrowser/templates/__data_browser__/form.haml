@@ -33,6 +33,9 @@
       -if request.args.get("preview") == 'True'
         $("input").attr("disabled", true);
         $("select").select2("disable").attr("disabled", true);
+      $("input[name='action']").click(function (ui) {
+        return confirm('您确认要' + $(this).attr("value") + '本条数据吗?'); 
+      });
     });
   
 

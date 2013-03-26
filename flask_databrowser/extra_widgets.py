@@ -96,9 +96,9 @@ class TableWidget(object):
 
 class ListWidget(object):
 
-    def __init__(self, rows, col_spec, html_tag="ul"):
+    def __init__(self, rows, item_col_spec, html_tag="ul"):
         self.rows = rows
-        self.col_spec = col_spec
+        self.item_col_spec = item_col_spec
         self.html_tag = html_tag
 
     def __call__(self, field, **kwargs):
@@ -107,7 +107,7 @@ class ListWidget(object):
         html = ["<%s>\n" % self.html_tag]
         for row in self.rows:
             converter = ValueConverter(row)
-            html.append(" <li>%s</li>\n" % converter(row, self.col_spec)())
+            html.append(" <li>%s</li>\n" % converter(row, self.item_col_spec)())
         html.append("</%s>" % self.html_tag)
         return HTMLString(''.join(html))
 
@@ -133,4 +133,3 @@ if __name__ == "__main__":
     from flask.ext.databrowser.column_spec import LinkColumnSpec, ImageColumnSpec, ColumnSpec
     table_column_spec = [LinkColumnSpec("a", "some link"), ImageColumnSpec("b"), ColumnSpec("c")]
     print TableWidget([namedtuple("A", ["a", "b", "c"])(i, i*2, i*3) for i in xrange(10)], ["a", "b", "c"])(None)
-    print ListWidget([1, 2, 3], LinkColumnSpec(""))(None)
