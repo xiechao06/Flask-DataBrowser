@@ -916,14 +916,15 @@ class DataBrowser(object):
 
     def create_object_link_column_spec(self, model, label=None):
         try:
+            current_url = request.url
             model_view = self.__registered_view_map[model.__tablename__]
             from .utils import get_primary_key
              
             pk = get_primary_key(model)
             if model_view.can_edit:
-                return LinkColumnSpec(col_name=pk, formatter=lambda v, obj: model_view.url_for_object(obj, label=label), anchor=lambda v: unicode(v))
+                return LinkColumnSpec(col_name=pk, formatter=lambda v, obj: model_view.url_for_object(obj, label=label, url=current_url), anchor=lambda v: unicode(v))
             else:
-                return LinkColumnSpec(col_name=pk, formatter=lambda v, obj: model_view.url_for_object_preview(obj, label=label), anchor=lambda v: unicode(v))
+                return LinkColumnSpec(col_name=pk, formatter=lambda v, obj: model_view.url_for_object_preview(obj, label=label, url=current_url), anchor=lambda v: unicode(v))
         except KeyError:
             return None
 
