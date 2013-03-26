@@ -233,7 +233,7 @@ class ModelView(object):
                 action.try_()
                 ret_code = action.test_enabled(model)
                 if ret_code != 0:
-                    flash(gettext(u"不能执行操作%s, 原因是: %s" %(action.name, action.get_forbidden_msg_formats()[ret_code] % unicode(model))))
+                    flash(gettext(u"不能执行操作%s, 原因是: %s" %(action.name, action.get_forbidden_msg_formats()[ret_code] % unicode(model))), 'error')
                     return False
                 try:
                     model = self.preprocess(model)
@@ -670,9 +670,8 @@ class ModelView(object):
                                                           "obj": models})
                 flash(action.success_message(processed_models), 'success')
             except Exception, ex:
-                flash(u"%s(%s)" % (action.error_message(models), ex.message),
-                      'error')
                 self.session.rollback()
+                raise
 
             return redirect(url_for(
                 ".".join([self.blueprint.name, self.list_view_endpoint]),
