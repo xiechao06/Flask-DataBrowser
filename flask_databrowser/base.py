@@ -231,6 +231,10 @@ class ModelView(object):
         for action in self._get_customized_actions(model):
             if action.name == action_name:
                 action.try_()
+                ret_code = action.test_enabled(model)
+                if ret_code != 0:
+                    flash(gettext(u"不能执行操作%s, 原因是: %s" %(action.name, action.get_forbidden_msg_formats()[ret_code] % unicode(model))))
+                    return False
                 try:
                     model = self.preprocess(model)
                     action.op(model)
@@ -359,8 +363,7 @@ class ModelView(object):
                         gettext('Model was successfully updated.'),
                         extra={"class":self.model, "obj":model})
                     return redirect(return_url)
-            else: # GET
-                form = self.get_compound_edit_form(obj=model)
+            form = self.get_compound_edit_form(obj=model)
             hint_message = gettext(u"正在%(action)s%(model_name)s-%(obj)s",
                                    action=u"编辑" if self.can_edit else u"查看",
                                    model_name=self.model_name,
@@ -919,9 +922,9 @@ class DataBrowser(object):
              
             pk = get_primary_key(model)
             if model_view.can_edit:
-                return LinkColumnSpec(col_name=pk, formatter=lambda v, obj: model_view.url_for_object(obj, label=label), anchor=lambda v: unicode(v))
+                return LinkColumnSpec(col_name=pk, formatter=lambda v, obj: model_view.url_for_object(v, label=label), anchor=lambda v: unicode(v))
             else:
-                return LinkColumnSpec(col_name=pk, formatter=lambda v, obj: model_view.url_for_object_preview(obj, label=label), anchor=lambda v: unicode(v))
+                return LinkColumnSpec(col_name=pk, formatter=lambda v, obj: model_view.url_for_object_preview(v, label=label), anchor=lambda v: unicode(v))
         except KeyError:
             return None
 
