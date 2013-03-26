@@ -105,7 +105,6 @@ class InlineFormAdmin(object):
         """
         return form_class
 
-
 class AdminModelConverter(ModelConverterBase):
     """
         SQLAlchemy model to form converter
@@ -388,14 +387,13 @@ class AdminModelConverter(ModelConverterBase):
 
     @converts('Integer', 'SmallInteger')
     def handle_integer_types(self, column, field_args, **extra):
+        
         unsigned = getattr(column.type, 'unsigned', False)
         if unsigned:
             field_args['validators'].append(validators.NumberRange(min=0))
         class MyIntegerField(fields.IntegerField):
             def __call__(self, **kwargs):
                 kwargs['type'] = 'number'
-                if column.default is not None:
-                    kwargs['value'] = column.default.arg
                 return super(MyIntegerField, self).__call__(**kwargs)
         return MyIntegerField(**field_args)
         #return fields.IntegerField(**field_args)

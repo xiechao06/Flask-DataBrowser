@@ -338,7 +338,10 @@ class ModelView(object):
             Edit model view
         """
         self.try_view()
-        id_list = [int(i) for i in id_.split(",") if i]
+        if isinstance(id_, int):
+            id_list = [id_]
+        else:
+            id_list = [int(i) for i in id_.split(",") if i]
         if self.edit_template is None:
             import posixpath
 
@@ -908,7 +911,7 @@ class DataBrowser(object):
                                model_view.object_view_endpoint,
                                model_view.object_view,
                                methods=["GET", "POST"])
-        blueprint.add_url_rule(model_view.object_view_url + "/<string:id_>",
+        blueprint.add_url_rule(model_view.object_view_url + "/<id_>",
                                model_view.object_view_endpoint,
                                model_view.object_view,
                                methods=["GET", "POST"])
