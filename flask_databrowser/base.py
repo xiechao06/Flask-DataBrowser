@@ -921,9 +921,9 @@ class DataBrowser(object):
              
             pk = get_primary_key(model)
             if model_view.can_edit:
-                return LinkColumnSpec(col_name=pk, formatter=lambda v, obj: model_view.url_for_object(v, label=label), anchor=lambda v: unicode(v))
+                return LinkColumnSpec(col_name=pk, formatter=lambda v, obj: model_view.url_for_object(obj, label=label), anchor=lambda v: unicode(v))
             else:
-                return LinkColumnSpec(col_name=pk, formatter=lambda v, obj: model_view.url_for_object_preview(v, label=label), anchor=lambda v: unicode(v))
+                return LinkColumnSpec(col_name=pk, formatter=lambda v, obj: model_view.url_for_object_preview(obj, label=label), anchor=lambda v: unicode(v))
         except KeyError:
             return None
 

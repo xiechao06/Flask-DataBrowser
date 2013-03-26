@@ -44,7 +44,6 @@ class TableColumnSpec(ColumnSpec):
     def __iter__(self):
         return iter(self.col_specs)
 
-
 class InputColumnSpec(ColumnSpec):
 
     def __init__(self, col_name, group_by=None, read_only=False, doc="", formatter=None, label="", css_class=""):

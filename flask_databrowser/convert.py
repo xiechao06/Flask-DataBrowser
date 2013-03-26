@@ -20,15 +20,17 @@ class ValueConverter(object):
         if not col_spec:
             w = extra_widgets.PlainText(unicode(v))
         else:
+            obj = self.obj
             if self.model_view and col_spec and hasattr(v, "__mapper__"):
                 from .utils import get_primary_key
                 ref_col_spec = self.model_view.data_browser.create_object_link_column_spec(
                     v.__mapper__.class_, col_spec.label)
                 if ref_col_spec:
+                    obj = v
                     col_spec = ref_col_spec
 
             if col_spec.formatter:
-                v = col_spec.formatter(v, self.obj)
+                v = col_spec.formatter(v, obj)
             css_class = col_spec.css_class
 
             if col_spec.genre == column_spec.IMAGE:
