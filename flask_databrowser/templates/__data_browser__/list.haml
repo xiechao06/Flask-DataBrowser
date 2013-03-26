@@ -168,7 +168,7 @@
           %div class="{{ __css_classes__.filters_class }} span2"
             %h4 << {{ _("过滤条件") }}
             %hr
-            %form
+            %form.form-inline
               -for k, v in request.args.lists():
                 -if k=="order_by" or k=="desc":
                   -for i in v:
@@ -178,9 +178,10 @@
                   -if not filter.hidden
                     .control-group
                       -if filter.input_type[0] == "checkbox":
-                        %label.control-label 
-                          {{ filter.label }}
+                        %label.checkbox
                           %input type="checkbox" name="{{filter.op.id}}" class="{{ __css_classes__[filter.input_class] }}"
+                          {{ filter.label }}
+
                       -else
                         %label.control-label 
                           {{ filter.label }}
