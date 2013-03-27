@@ -47,8 +47,6 @@ class ModelView(object):
         self.data_browser = None
         self.extra_params = {}
         self.__model_name = model_name
-        for fltr in self.__column_filters__:
-            fltr.model_view = self
         self.__list_column_specs = []
 
     def __list_filters__(self):
@@ -206,6 +204,16 @@ class ModelView(object):
                   'error')
             self.session.rollback()
             return None
+
+    def get_column_filters(self):
+        return self.__column_filters__
+
+    def _get_column_filters(self):
+        ret = []
+        for fltr in self.get_column_filters():
+            fltr.model_view = self
+            ret.append(fltr)
+        return ret
 
     def get_customized_actions(self, obj=None):
         return self.__customized_actions__
@@ -817,7 +825,7 @@ class ModelView(object):
         """
         from flask import request
 
-        shadow_column_filters = copy.copy(self.__column_filters__)
+        shadow_column_filters = copy.copy(self._get_column_filters())
         #如果不用copy的话，会修改原来的filter
 
         op_id_2_filter = dict(

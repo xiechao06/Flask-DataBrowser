@@ -232,7 +232,7 @@ class AdminModelConverter(ModelConverterBase):
 
                     return QuerySelectField_(widget=form.Select2Widget(), **kwargs)
 
-                ret = QuerySelectMultipleField(
+                return QuerySelectMultipleField(
                     widget=form.Select2Widget(multiple=True),
                     **kwargs)
             elif prop.direction.name == 'MANYTOMANY':
@@ -246,7 +246,7 @@ class AdminModelConverter(ModelConverterBase):
                             return s
 
                     return QuerySelectField_(widget=form.Select2Widget(), **kwargs)
-                ret = QuerySelectMultipleField(
+                return QuerySelectMultipleField(
                     widget=form.Select2Widget(multiple=True),
                     **kwargs)
         else:
