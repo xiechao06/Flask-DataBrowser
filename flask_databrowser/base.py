@@ -315,9 +315,7 @@ class ModelView(object):
         if form.validate_on_submit():
             model = self.create_model(form)
             if model:
-                self.data_browser.app.logger.debug(
-                    gettext('Model was successfully created.'),
-                    extra={"class":self.model, "obj":model})
+                self.do_create_log(model)
                 if '_add_another' in request.form:
                     flash(gettext(gettext(u'成功创建' + unicode(model))))
                     return redirect(self.url_for_object(None, url=return_url))
@@ -332,6 +330,12 @@ class ModelView(object):
                 create_url_map[col] = self.data_browser.get_create_url(remote_side)
         return self.render(self.create_template, form=form, create_url_map=create_url_map,
                            return_url=return_url, extra="create", hint_message=gettext(u"正在创建%(model_name)s", model_name=self.model_name))
+
+    def do_create_log(self, obj):
+        from flask.ext.login import current_user
+        self.data_browser.logger.debug(
+            gettext('Model was successfully created.'),
+            extra={"obj": obj, "obj_pk": self.scaffold_pk(obj), "action": gettext(u"create"), "actor": current_user})
 
     def edit_view(self, id_):
         """
@@ -362,7 +366,7 @@ class ModelView(object):
             if form.validate_on_submit():
                 form = self.get_edit_form(obj=model)
                 if self.update_model(form, model):
-                    self.data_browser.app.logger.debug(
+                    self.data_browser.app.debug(
                         gettext('Model was successfully updated.'),
                         extra={"class":self.model, "obj":model})
                     return redirect(return_url)
@@ -388,7 +392,7 @@ class ModelView(object):
             form = self.get_batch_edit_form(obj=model)
             if form.is_submitted():
                 if all(self.update_model(form, model) for model in model_list):
-                    self.data_browser.app.logger.debug(
+                    self.data_browser.app.debug(
                         gettext('Model was successfully updated.'),
                         extra={"class":self.model, "obj":model_list})
                     return redirect(return_url)
@@ -668,7 +672,7 @@ class ModelView(object):
                     processed_models.append(model)
                     action.op(model)
                 self.session.commit()
-                self.data_browser.app.logger.debug(action.name,
+                self.data_browser.app.debug(action.name,
                                                    extra={"class": self.model,
                                                           "obj": models})
                 flash(action.success_message(processed_models), 'success')
@@ -842,9 +846,10 @@ class ModelView(object):
         return ""
 
 class DataBrowser(object):
-    def __init__(self, app, db, page_size=16):
+    def __init__(self, app, db, page_size=16, logger=None):
         self.app = app
         self.db = db
+        self.logger = logger or app.logger
         from hamlish_jinja import HamlishExtension
         from . import utils
 
@@ -940,3 +945,5 @@ class DataBrowser(object):
             return model_view.url_for_object(None, url=request.url)
         except KeyError:
             return None
+    
+
