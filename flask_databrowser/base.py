@@ -239,17 +239,19 @@ class ModelView(object):
                     model = self.preprocess(model)
                     action.op(model)
                     self.session.commit()
+                    self.do_update_log(model, action.name)
                     flash(action.success_message([model]), 'success')
                     return True
                 except Exception, ex:
                     flash(gettext('Failed to update model. %(error)s', error=str(ex)),
                           'error')
                     self.session.rollback()
-                    return False
+                    raise
         try:
             for name, field in form._fields.iteritems():
                 if field.raw_data is not None:
                     field.populate_obj(model, name)
+            self.do_update_log(model, "update")
             self.on_model_change(form, model)
             self.session.commit()
             return True
@@ -331,6 +333,13 @@ class ModelView(object):
         return self.render(self.create_template, form=form, create_url_map=create_url_map,
                            return_url=return_url, extra="create", hint_message=gettext(u"正在创建%(model_name)s", model_name=self.model_name))
 
+    def do_update_log(self, obj, action):
+        from flask.ext.login import current_user
+        self.data_browser.logger.debug(
+            gettext(unicode(current_user) + ' performed ' + action),
+            extra={"obj": obj, "obj_pk": self.scaffold_pk(obj), "action": action, "actor": current_user})
+
+
     def do_create_log(self, obj):
         from flask.ext.login import current_user
         self.data_browser.logger.debug(
@@ -366,9 +375,9 @@ class ModelView(object):
             if form.validate_on_submit():
                 form = self.get_edit_form(obj=model)
                 if self.update_model(form, model):
-                    self.data_browser.app.debug(
-                        gettext('Model was successfully updated.'),
-                        extra={"class":self.model, "obj":model})
+                    #self.data_browser.app.debug(
+                        #gettext('Model was successfully updated.'),
+                        #extra={"class":self.model, "obj":model})
                     return redirect(return_url)
             form = self.get_compound_edit_form(obj=model)
             hint_message = gettext(u"正在%(action)s%(model_name)s-%(obj)s",
@@ -671,10 +680,8 @@ class ModelView(object):
                     model = self.preprocess(model)
                     processed_models.append(model)
                     action.op(model)
+                    self.do_update_log(model, action.name)
                 self.session.commit()
-                self.data_browser.app.debug(action.name,
-                                                   extra={"class": self.model,
-                                                          "obj": models})
                 flash(action.success_message(processed_models), 'success')
             except Exception, ex:
                 self.session.rollback()
