@@ -336,8 +336,10 @@ class ModelView(object):
         for col in [f.name for f in form if f.name != "csrf_token"]:
             attr = getattr(self.model, col if isinstance(col, basestring) else col.col_name)
             if hasattr(attr.property, "direction"):
-                remote_side = attr.property.local_remote_pairs[0][1].table
-                create_url_map[col] = self.data_browser.get_create_url(remote_side)
+                remote_side = attr.property.mapper.class_
+                create_url = self.data_browser.get_create_url(remote_side)
+                if create_url:
+                    create_url_map[col] = create_url
         return self.render(self.create_template, form=form, create_url_map=create_url_map,
                            return_url=return_url, extra="create", hint_message=gettext(u"正在创建%(model_name)s", model_name=self.model_name))
 
@@ -443,8 +445,10 @@ class ModelView(object):
             try:
                 attr = getattr(self.model, col if isinstance(col, basestring) else col.col_name)
                 if hasattr(attr.property, "direction"):
-                    remote_side = attr.property.local_remote_pairs[0][1].table
-                    create_url_map[col] = self.data_browser.get_create_url(remote_side)
+                    remote_side = attr.property.mapper.class_
+                    create_url = self.data_browser.get_create_url(remote_side)
+                    if create_url:
+                        create_url_map[col] = create_url
             except AttributeError:
                 pass
         return self.render(self.edit_template,
@@ -953,10 +957,7 @@ class DataBrowser(object):
 
     def get_create_url(self, model):
         try:
-            if isinstance(model, self.db.Model):
-                model_view = self.__registered_view_map[model.__tablename__]
-            else:
-                model_view = self.__registered_view_map[model.name]
+            model_view = self.__registered_view_map[model.__tablename__]
             return model_view.url_for_object(None, url=request.url)
         except KeyError:
             return None
