@@ -333,7 +333,7 @@ class ModelView(object):
                     return redirect(return_url)
         create_url_map = {}
         converter = ValueConverter(self.model)
-        for col in self.__create_columns__:
+        for col in [f.name for f in form if f.name != "csrf_token"]:
             attr = getattr(self.model, col if isinstance(col, basestring) else col.col_name)
             if hasattr(attr.property, "direction"):
                 remote_side = attr.property.local_remote_pairs[0][1].table
@@ -439,7 +439,7 @@ class ModelView(object):
                 f.widget.set_args(**form_kwargs)
         create_url_map = {}
         converter = ValueConverter(self.model)
-        for col in self.__form_columns__:
+        for col in [f.name for f in form if f.name != "csrf_token"]:
             try:
                 attr = getattr(self.model, col if isinstance(col, basestring) else col.col_name)
                 if hasattr(attr.property, "direction"):
