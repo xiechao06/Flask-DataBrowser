@@ -8,7 +8,7 @@ import operator
 from flask import render_template, flash, request, url_for, redirect
 from flask.ext.principal import PermissionDenied
 from flask.ext.babel import gettext, ngettext
-from .utils import get_primary_key, named_actions
+from .utils import get_primary_key, named_actions, get_doc_from_table_def
 from .action import DeleteAction
 from flask.ext.databrowser.convert import ValueConverter
 from flask.ext.databrowser.column_spec import LinkColumnSpec, ColumnSpec, InputColumnSpec, PLACE_HOLDER
@@ -30,7 +30,6 @@ class ModelView(object):
     __create_columns__ = []
     __max_col_len__ = 255
 
-    column_descriptions = None
     column_hide_backrefs = True
 
     can_batchly_edit = can_view = can_create = can_edit = can_delete = True
@@ -82,18 +81,7 @@ class ModelView(object):
         # we get document from sqlalchemy models
         doc = self.__column_docs__.get(col, "")
         if not doc:
-            attr_name_list = col.split('.')
-            last_model = self.model
-            for attr_name in attr_name_list[:-1]:
-                attr = getattr(last_model, attr_name)
-                if hasattr(attr, "property"):
-                    last_model = attr.property.mapper.class_
-                else:
-                    last_model = None
-                    break
-            if last_model:
-                if hasattr(last_model, attr_name_list[-1]):
-                    doc = getattr(getattr(last_model, attr_name_list[-1]), "doc", "")
+            doc = get_doc_from_table_def(self, col)
         label=self.__column_labels__.get(col, col)
         if get_primary_key(self.model) == col:
             # TODO add cross ref to registered model
@@ -332,7 +320,7 @@ class ModelView(object):
                 else:
                     return redirect(return_url)
         create_url_map = {}
-        converter = ValueConverter(self.model)
+        converter = ValueConverter(self.model, self)
         for col in [f.name for f in form if f.name != "csrf_token"]:
             attr = getattr(self.model, col if isinstance(col, basestring) else col.col_name)
             if hasattr(attr.property, "direction"):
@@ -389,7 +377,7 @@ class ModelView(object):
                         #gettext('Model was successfully updated.'),
                         #extra={"class":self.model, "obj":model})
                     return redirect(return_url)
-            form = self.get_compound_edit_form(obj=model)
+            compound_form = self.get_compound_edit_form(obj=model)
             hint_message = gettext(u"正在%(action)s%(model_name)s-%(obj)s",
                                    action=u"编辑" if self.can_edit else u"查看",
                                    model_name=self.model_name,
@@ -440,7 +428,7 @@ class ModelView(object):
             if isinstance(f.widget, PlaceHolder):
                 f.widget.set_args(**form_kwargs)
         create_url_map = {}
-        converter = ValueConverter(self.model)
+        converter = ValueConverter(self.model, self)
         for col in [f.name for f in form if f.name != "csrf_token"]:
             try:
                 attr = getattr(self.model, col if isinstance(col, basestring) else col.col_name)
@@ -452,7 +440,7 @@ class ModelView(object):
             except AttributeError:
                 pass
         return self.render(self.edit_template,
-                           form=form, create_url_map=create_url_map,
+                           form=compound_form, create_url_map=create_url_map,
                            grouper_info=grouper_info,
                            actions=actions,
                            return_url=return_url, hint_message=hint_message, **form_kwargs)

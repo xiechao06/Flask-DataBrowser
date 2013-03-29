@@ -2,6 +2,7 @@
 import numbers
 from flask.ext.databrowser import extra_widgets
 from flask.ext.databrowser import column_spec
+from flask.ext.databrowser.utils import get_description
 
 class ValueConverter(object):
     """
@@ -10,7 +11,7 @@ class ValueConverter(object):
     note, since python is a dynamic language, we can't get the return type of
     a property until we get the value of the property, the rule is as following:
     """
-    def __init__(self, obj, model_view=None):
+    def __init__(self, obj, model_view):
         self.obj = obj
         self.model_view = model_view
 
@@ -41,7 +42,7 @@ class ValueConverter(object):
                 # TODO if v is a registered model, then a link should generated 
                 w = extra_widgets.TableWidget(v, col_specs=col_spec.col_specs, model_view=self.model_view, sum_fields=col_spec.sum_fields)
             elif col_spec.genre == column_spec.UNORDERED_LIST:
-                w = extra_widgets.ListWidget(v, item_col_spec=col_spec.item_col_spec)
+                w = extra_widgets.ListWidget(v, item_col_spec=col_spec.item_col_spec, model_view=self.model_view)
             elif col_spec.genre == column_spec.PLACE_HOLDER:
                 w = extra_widgets.PlaceHolder(col_spec.template_fname, v, self.obj)
             else: # plaintext
@@ -49,15 +50,17 @@ class ValueConverter(object):
                     w = extra_widgets.PlainText(unicode(v))
 
         class FakeField(object):
-            def __init__(self, label, widget, css_class=None):
+            def __init__(self, label, widget, css_class=None, description=None):
                 self.label = label
                 self.widget = widget
                 self.type = "ReadOnlyField"
                 self.css_class = css_class
+                self.description = description
 
             def __call__(self, **kwargs):
                 if self.css_class:
                     kwargs["class"] = self.css_class
                 return self.widget(self, **kwargs)
 
-        return FakeField(dict(text=col_spec.label if col_spec else ""), widget=w, css_class=css_class)
+        description = get_description(self.model_view, col_spec.col_name, col_spec) if col_spec else ""
+        return FakeField(dict(text=col_spec.label if col_spec else ""), widget=w, css_class=css_class, description=description)

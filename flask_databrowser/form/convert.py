@@ -9,7 +9,8 @@ from .import form
 from .validators import Unique
 from .fields import QuerySelectField, QuerySelectMultipleField
 from flask.ext.databrowser.column_spec import InputColumnSpec
-from flask.ext.databrowser.utils import make_disabled_field
+from flask.ext.databrowser.utils import make_disabled_field, get_description
+
 
 try:
     # Field has better input parsing capabilities.
@@ -135,11 +136,6 @@ class AdminModelConverter(ModelConverterBase):
 
         return self.view.prettify_name(name)
 
-    def _get_description(self, name, field_args):
-        if 'description' in field_args:
-            return field_args['description']
-        if self.view.column_descriptions:
-            return self.view.column_descriptions.get(name)
 
     def _get_field_override(self, name):
         form_overrides = getattr(self.view, 'form_overrides', None)
@@ -164,7 +160,7 @@ class AdminModelConverter(ModelConverterBase):
             local_column = prop.local_remote_pairs[0][0]
 
             kwargs['label'] = self._get_label(prop.key, kwargs, col_spec)
-            kwargs['description'] = self._get_description(prop.key, kwargs)
+            kwargs['description'] = get_description(self.view, prop.key, col_spec)
 
             kwargs['get_label'] = functools.partial(
                 self._get_label_func(prop.key, kwargs) or (
@@ -301,7 +297,7 @@ class AdminModelConverter(ModelConverterBase):
                 # Apply label and description if it isn't inline form field
                 if self.view.model == mapper.class_:
                     kwargs['label'] = self._get_label(prop.key, kwargs, col_spec)
-                    kwargs['description'] = self._get_description(prop.key, kwargs)
+                    kwargs['description'] = get_description(self.view, prop.key, col_spec)
 
                 # Figure out default value
                 default = getattr(column, 'default', None)

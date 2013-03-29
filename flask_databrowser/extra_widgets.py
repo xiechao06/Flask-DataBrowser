@@ -40,7 +40,7 @@ class PlainText(object):
 
 class TableWidget(object):
 
-    def __init__(self, rows, col_specs=None, model_view=None, sum_fields=[]):
+    def __init__(self, rows, model_view, col_specs=None, sum_fields=[]):
         self.rows = rows
         self.model_view = model_view
         self.col_specs = col_specs
@@ -72,7 +72,7 @@ class TableWidget(object):
                 if self.sum_fields:
                     s += "    <td></td>\n"
                 for sub_col_spec in col_specs:
-                    converter = ValueConverter(row)
+                    converter = ValueConverter(row, self.model_view)
                     s += "    <td>%s</td>\n" % converter(operator.attrgetter(sub_col_spec.col_name)(row), sub_col_spec)()
                     if sub_col_spec.col_name in self.sum_fields:
                         try:
@@ -96,17 +96,18 @@ class TableWidget(object):
 
 class ListWidget(object):
 
-    def __init__(self, rows, item_col_spec, html_tag="ul"):
+    def __init__(self, rows, item_col_spec, html_tag="ul", model_view=None):
         self.rows = rows
         self.item_col_spec = item_col_spec
         self.html_tag = html_tag
+        self.model_view = model_view
 
     def __call__(self, field, **kwargs):
         from flask.ext.databrowser.convert import ValueConverter
 
         html = ["<%s>\n" % self.html_tag]
         for row in self.rows:
-            converter = ValueConverter(row)
+            converter = ValueConverter(row, self.model_view)
             html.append(" <li>%s</li>\n" % converter(row, self.item_col_spec)())
         html.append("</%s>" % self.html_tag)
         return HTMLString(''.join(html))
