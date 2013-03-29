@@ -328,8 +328,14 @@ class ModelView(object):
                 create_url = self.data_browser.get_create_url(remote_side)
                 if create_url:
                     create_url_map[col] = create_url
+        kwargs = {}
+        form_kwargs = self.extra_params.get("create_view", {})
+        for k, v in form_kwargs.items():
+            if isinstance(v, types.FunctionType):
+                v = v(self)
+            kwargs[k] = v
         return self.render(self.create_template, form=form, create_url_map=create_url_map,
-                           return_url=return_url, extra="create", hint_message=gettext(u"正在创建%(model_name)s", model_name=self.model_name))
+                           return_url=return_url, extra="create", hint_message=gettext(u"正在创建%(model_name)s", model_name=self.model_name), **kwargs)
 
     def do_update_log(self, obj, action):
         from flask.ext.login import current_user
