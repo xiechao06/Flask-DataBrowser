@@ -82,7 +82,9 @@ class BaseFilter(TemplateParam):
                 model = attr.property.mapper.class_
                 ret.extend((getattr(row, get_primary_key(model)), self.opt_formatter(row) if self.opt_formatter else row) 
                         for row in model.query.all())
-            if len(ret) > 1 and not self.multiple:
+            if not ret:
+                ret = [("", u'--%s--' % _(u"所有"))]
+            elif not self.multiple:
                 ret.insert(0, (md5(",".join(unicode(r[0]) for r in ret)).hexdigest(), u'--%s--' % _(u"所有")))
             return ret
 
