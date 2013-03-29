@@ -265,19 +265,13 @@ class AdminModelConverter(ModelConverterBase):
 
                 unique = False
 
-                if column.primary_key:
+                if column.primary_key and type(column.type).__name__ == "Integer":
                     if hidden_pk:
                         # If requested to add hidden field, show it
                         return fields.HiddenField()
                     else:
-                        # By default, don't show primary keys either
-                        form_columns = getattr(self.view, 'form_columns', None)
-
-                        if form_columns is None:
-                            return None
-
                         # If PK is not explicitly allowed, ignore it
-                        if prop.key not in form_columns:
+                        if prop.key not in self.view.__form_columns__:
                             return None
 
                         kwargs['validators'].append(Unique(self.session,
@@ -520,6 +514,7 @@ def get_form(model, converter,
             if col_spec and col_spec.read_only:
                 field = make_disabled_field(field)
             field_dict[name] = field
+    
     
     return type(model.__name__ + 'Form', (base_class, ), field_dict)
 
