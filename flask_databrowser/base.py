@@ -121,7 +121,7 @@ class ModelView(object):
         if not list_columns:
             list_columns = [col.name for k, col in enumerate(self.model.__table__.c)]
         if list_columns:
-            for col in self.__list_columns__:
+            for col in list_columns:
                 if isinstance(col, basestring):
                     col_spec = self._col_spec_from_str(col)
                 else:
@@ -732,9 +732,13 @@ class ModelView(object):
         collect columns displayed in table
         """
         from flask import request, url_for
+            
+
+        sortable_columns = self.__sortable_columns__ or get_primary_key(self.model)
+
 
         for c in self.list_column_specs:
-            if c.col_name in self.__sortable_columns__:
+            if c.col_name in sortable_columns:
                 args = request.args.copy()
                 args["order_by"] = c.col_name
                 if order_by == c.col_name: # the table is sorted by c, so revert the order
@@ -824,7 +828,6 @@ class ModelView(object):
         return ""
 
     def scaffold_pk(self, entry):
-        from .utils import get_primary_key
 
         return getattr(entry, get_primary_key(self.model))
 
@@ -950,7 +953,6 @@ class DataBrowser(object):
         try:
             current_url = request.url
             model_view = self.__registered_view_map[model.__tablename__]
-            from .utils import get_primary_key
              
             pk = get_primary_key(model)
             if model_view.can_edit:
