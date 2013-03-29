@@ -18,7 +18,6 @@ from flask.ext.databrowser.extra_widgets import PlaceHolder
 class ModelView(object):
     __column_formatters__ = {}
     __list_columns__ = {}
-    __list_filters__ = {}
     __sortable_columns__ = []
     __column_labels__ = {}
     __column_docs__ = {}
@@ -47,6 +46,18 @@ class ModelView(object):
         self.extra_params = {}
         self.__model_name = model_name
         self.__list_column_specs = []
+
+    def within_domain(self, url, bp_name):
+        pb_name = bp_name.lower()
+        url = url.lower()
+        import urlparse, posixpath
+        path_ = urlparse.urlparse(url).path
+        segs = path_.split("/")[1:]
+        if len(segs) < 2:
+            return False
+        if segs[0] != bp_name:
+            return False
+        return any("/"+seg in {self.object_view_url, self.list_view_url} for seg in segs[1:]) 
 
     def __list_filters__(self):
         return []
