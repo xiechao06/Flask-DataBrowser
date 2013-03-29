@@ -369,7 +369,7 @@ class ModelView(object):
         if isinstance(id_, int):
             id_list = [id_]
         else:
-            id_list = [int(i) for i in id_.split(",") if i]
+            id_list = [i for i in id_.split(",") if i]
         if self.edit_template is None:
             import posixpath
 
