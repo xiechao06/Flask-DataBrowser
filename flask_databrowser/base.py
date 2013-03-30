@@ -309,6 +309,7 @@ class ModelView(object):
         """
             Create model view
         """
+        self.try_view()
         self.try_create()
         if self.create_template is None:
             import posixpath
