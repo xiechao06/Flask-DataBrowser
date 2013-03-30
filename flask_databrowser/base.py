@@ -13,6 +13,7 @@ from .action import DeleteAction
 from flask.ext.databrowser.convert import ValueConverter
 from flask.ext.databrowser.column_spec import LinkColumnSpec, ColumnSpec, InputColumnSpec, PLACE_HOLDER
 from flask.ext.databrowser.extra_widgets import PlaceHolder
+from flask.ext.databrowser.form import form
 
 
 class ModelView(object):
@@ -38,6 +39,8 @@ class ModelView(object):
     list_template = create_template = edit_template = None
 
     as_radio_group = False
+
+    form_class = form.BaseForm
 
     def __init__(self, model, model_name=""):
         self.model = model
@@ -469,7 +472,7 @@ class ModelView(object):
         from flask.ext.databrowser.form.convert import AdminModelConverter, get_form
 
         converter = AdminModelConverter(self.session, self)
-        form_class = get_form(self.model, converter, only=columns,
+        form_class = get_form(self.model, converter, base_class=self.form_class, only=columns,
                               exclude=None, field_args=None)
         return form_class
 

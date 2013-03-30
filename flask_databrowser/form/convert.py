@@ -181,7 +181,10 @@ class AdminModelConverter(ModelConverterBase):
             if 'allow_blank' not in kwargs:
                 kwargs['allow_blank'] = local_column.nullable,
             if 'query_factory' not in kwargs:
-                kwargs['query_factory'] = lambda: self.session.query(remote_model)
+                if col_spec and col_spec.filter_:
+                    kwargs['query_factory'] = lambda: col_spec.filter_(self.session.query(remote_model))
+                else:
+                    kwargs['query_factory'] = lambda: self.session.query(remote_model)
 
             if prop.direction.name == 'MANYTOONE':
                 if col_spec and col_spec.group_by:
