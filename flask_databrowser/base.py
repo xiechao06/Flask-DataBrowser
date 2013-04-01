@@ -394,9 +394,6 @@ class ModelView(object):
             if form.validate_on_submit():
                 form = self.get_edit_form(obj=model)
                 if self.update_model(form, model):
-                    #self.data_browser.app.debug(
-                        #gettext('Model was successfully updated.'),
-                        #extra={"class":self.model, "obj":model})
                     return redirect(return_url)
             compound_form = self.get_compound_edit_form(obj=model)
             hint_message = gettext(u"正在%(action)s%(model_name)s-%(obj)s",
@@ -420,9 +417,6 @@ class ModelView(object):
             form = self.get_batch_edit_form(obj=model)
             if form.is_submitted():
                 if all(self.update_model(form, model) for model in model_list):
-                    self.data_browser.app.debug(
-                        gettext('Model was successfully updated.'),
-                        extra={"class":self.model, "obj":model_list})
                     return redirect(return_url)
             hint_message = gettext(u"正在%(action)s%(model_name)s-%(objs)s",
                                    action=u"编辑" if self.can_edit else u"查看",
