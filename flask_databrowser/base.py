@@ -30,16 +30,12 @@ class ModelView(object):
     __create_columns__ = []
     __max_col_len__ = 255
 
+    language = "en"
     column_hide_backrefs = True
-
     can_batchly_edit = can_view = can_create = can_edit = can_delete = True
-
     __create_form__ = __edit_form__ = __batch_edit_form__ = None
-
     list_template = create_template = edit_template = None
-
     as_radio_group = False
-
     form_class = form.BaseForm
 
     def __init__(self, model, model_name=""):

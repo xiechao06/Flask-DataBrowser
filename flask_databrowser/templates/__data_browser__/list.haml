@@ -9,7 +9,9 @@
       $("select").select2();
       $(".fancybox").fancybox();
       $("input[type=datetime]").each(function(){
-        $(this).datepicker();
+        $(this).datetimepicker({
+            language: {{ model_view.language }},
+        });
       });
       -for filter in __filters__:
          var filter_values = {{ filter.value|tojson }};
