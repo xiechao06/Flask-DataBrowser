@@ -302,7 +302,7 @@ class ModelView(object):
             import posixpath
 
             self.create_template = posixpath.join(
-                self.data_browser.blueprint.name, "form.haml")
+                self.data_browser.blueprint.name, "form.html")
 
         return_url = request.args.get('url') or url_for(
             '.' + self.list_view_endpoint)
@@ -350,7 +350,7 @@ class ModelView(object):
             import posixpath
 
             self.edit_template = posixpath.join(
-                self.data_browser.blueprint.name, "form.haml")
+                self.data_browser.blueprint.name, "form.html")
 
         return_url = request.args.get('url') or url_for(
             '.' + self.list_view_endpoint)
@@ -366,7 +366,7 @@ class ModelView(object):
             if form.validate_on_submit():
                 form = self.get_edit_form(obj=model)
                 if self.update_model(form, model):
-                    self.data_browser.app.debug(
+                    self.data_browser.logger.debug(
                         gettext('Model was successfully updated.'),
                         extra={"class":self.model, "obj":model})
                     return redirect(return_url)
@@ -392,7 +392,7 @@ class ModelView(object):
             form = self.get_batch_edit_form(obj=model)
             if form.is_submitted():
                 if all(self.update_model(form, model) for model in model_list):
-                    self.data_browser.app.debug(
+                    self.data_browser.logger.debug(
                         gettext('Model was successfully updated.'),
                         extra={"class":self.model, "obj":model_list})
                     return redirect(return_url)
@@ -672,7 +672,7 @@ class ModelView(object):
                     processed_models.append(model)
                     action.op(model)
                 self.session.commit()
-                self.data_browser.app.debug(action.name,
+                self.data_browser.logger.debug(action.name,
                                                    extra={"class": self.model,
                                                           "obj": models})
                 flash(action.success_message(processed_models), 'success')

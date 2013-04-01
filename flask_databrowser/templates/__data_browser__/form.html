@@ -1,0 +1,51 @@
+{% extends "__data_browser__/layout.html" %}
+{% import '__data_browser__/lib.html' as lib with context %}
+
+
+{% block body %}
+  {% block __data_browser__hint_block %}
+    {% if hint_message %}
+      <div class="alert alert-info">
+        * {{ hint_message }}
+      </div>
+    {% endif %}
+  {% endblock %}
+  <div class="container">
+    {{ lib.render_form(form, return_url, extra) }}
+  </div>
+{% endblock %}
+
+{% block __data_browser__customized_head_block %}
+  <script type="text/javascript">
+    $(function () {
+      {% if grouper_info %}
+        var grouper_info = {{ grouper_info|tojson|safe }};
+        for (var grouper_name in grouper_info) {
+          var grouper_e = $('[name="' + grouper_name + '"]');
+          var input_e = $('[name="' + grouper_name.split(".")[0] + '"]');
+
+          grouper_e.change((function (grouper_e, input_e) {
+            return function (ui) {
+              input_e.empty();
+              $.each(grouper_info[grouper_e.attr("name")][grouper_e.val()], function (idx, entry) {
+                input_e.append('<option value="' + entry.id + '">' + entry.text + "</option>");
+              });
+              input_e.select2()
+            }
+          })(grouper_e, input_e))
+        }
+      {% endif %}
+
+      {% if request.args.get("preview") == 'True'  %}
+        $("input").attr("disabled", true);
+      {% endif %}
+      $(".fancybox").fancybox();
+      $("select").select2("disable").attr("disabled", true);
+      $("input[name='action']").click(function (ui) {
+        return confirm('您确认要' + $(this).attr("value") + '本条数据吗?');
+      });
+    });
+  </script>
+{% endblock %}
+  
+

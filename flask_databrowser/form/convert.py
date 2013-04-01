@@ -220,33 +220,11 @@ class AdminModelConverter(ModelConverterBase):
                 if not local_column.foreign_keys and getattr(self.view, 'column_hide_backrefs', False):
                     return None
 
-                if col_spec and col_spec.group_by:
-                    class QuerySelectMultipleField_(QuerySelectMultipleField):
-
-                        # TODO col_spec not bound
-                        def __call__(field, **kwargs):
-                            s = QuerySelectField(widget=form.Select2Widget(), 
-                                                 query_factory=lambda: self.session.query(group_by.property.mapper.class_))(field)
-                            s += super(QuerySelectMultipleField_, field)(**widget)
-                            return s
-
-                    return QuerySelectField_(widget=form.Select2Widget(), **kwargs)
-
-                ret = QuerySelectMultipleField(
+                return QuerySelectMultipleField(
                     widget=form.Select2Widget(multiple=True),
                     **kwargs)
             elif prop.direction.name == 'MANYTOMANY':
-                if col_spec and col_spec.group_by:
-                    class QuerySelectMultipleField_(QuerySelectMultipleField):
-
-                        def __call__(field, **kwargs):
-                            s = QuerySelectField(widget=form.Select2Widget(), 
-                                                 query_factory=lambda: self.session.query(group_by.property.mapper.class_))(field)
-                            s += super(QuerySelectMultipleField_, field)(**widget)
-                            return s
-
-                    return QuerySelectField_(widget=form.Select2Widget(), **kwargs)
-                ret = QuerySelectMultipleField(
+                return QuerySelectMultipleField(
                     widget=form.Select2Widget(multiple=True),
                     **kwargs)
         else:
@@ -513,7 +491,6 @@ def get_form(model, converter,
         properties = (x for x in properties if x[0] not in exclude)
 
     field_dict = {}
-    read_only_fields = []
     for name, prop, col_spec in properties:
         # Ignore protected properties
         if ignore_hidden and name.startswith('_'):
