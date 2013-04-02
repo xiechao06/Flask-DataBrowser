@@ -186,6 +186,9 @@ class AdminModelConverter(ModelConverterBase):
                 else:
                     kwargs['query_factory'] = lambda: self.session.query(remote_model)
 
+            if col_spec and col_spec.opt_filter:
+                kwargs['opt_filter'] = col_spec.opt_filter
+
             if prop.direction.name == 'MANYTOONE':
                 if col_spec and col_spec.group_by:
                     session = self.session
