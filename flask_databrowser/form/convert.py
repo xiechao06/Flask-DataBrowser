@@ -222,32 +222,10 @@ class AdminModelConverter(ModelConverterBase):
                 if not local_column.foreign_keys and getattr(self.view, 'column_hide_backrefs', False):
                     return None
 
-                if col_spec and col_spec.group_by:
-                    class QuerySelectMultipleField_(QuerySelectMultipleField):
-
-                        # TODO col_spec not bound
-                        def __call__(field, **kwargs):
-                            s = QuerySelectField(widget=form.Select2Widget(), 
-                                                 query_factory=lambda: self.session.query(group_by.property.mapper.class_))(field)
-                            s += super(QuerySelectMultipleField_, field)(**widget)
-                            return s
-
-                    return QuerySelectField_(widget=form.Select2Widget(), **kwargs)
-
                 return QuerySelectMultipleField(
                     widget=form.Select2Widget(multiple=True),
                     **kwargs)
             elif prop.direction.name == 'MANYTOMANY':
-                if col_spec and col_spec.group_by:
-                    class QuerySelectMultipleField_(QuerySelectMultipleField):
-
-                        def __call__(field, **kwargs):
-                            s = QuerySelectField(widget=form.Select2Widget(), 
-                                                 query_factory=lambda: self.session.query(group_by.property.mapper.class_))(field)
-                            s += super(QuerySelectMultipleField_, field)(**widget)
-                            return s
-
-                    return QuerySelectField_(widget=form.Select2Widget(), **kwargs)
                 return QuerySelectMultipleField(
                     widget=form.Select2Widget(multiple=True),
                     **kwargs)
@@ -520,7 +498,6 @@ def get_form(model, converter,
             if col_spec and col_spec.read_only:
                 field = make_disabled_field(field)
             field_dict[name] = field
-    
     
     return type(model.__name__ + 'Form', (base_class, ), field_dict)
 

@@ -311,7 +311,7 @@ class ModelView(object):
             import posixpath
 
             self.create_template = posixpath.join(
-                self.data_browser.blueprint.name, "form.haml")
+                self.data_browser.blueprint.name, "form.html")
 
         return_url = request.args.get('url') or url_for(
             '.' + self.list_view_endpoint)
@@ -374,7 +374,7 @@ class ModelView(object):
             import posixpath
 
             self.edit_template = posixpath.join(
-                self.data_browser.blueprint.name, "form.haml")
+                self.data_browser.blueprint.name, "form.html")
 
         return_url = request.args.get('url') or url_for(
             '.' + self.list_view_endpoint)
@@ -390,6 +390,9 @@ class ModelView(object):
             if form.validate_on_submit():
                 form = self.get_edit_form(obj=model)
                 if self.update_model(form, model):
+                    self.data_browser.app.debug(
+                        gettext('Model was successfully updated.'),
+                        extra={"class":self.model, "obj":model})
                     return redirect(return_url)
             compound_form = self.get_compound_edit_form(obj=model)
             hint_message = gettext(u"正在%(action)s%(model_name)s-%(obj)s",
@@ -726,7 +729,6 @@ class ModelView(object):
         collect columns displayed in table
         """
         from flask import request, url_for
-            
 
         sortable_columns = self.__sortable_columns__ or get_primary_key(self.model)
 
@@ -822,6 +824,7 @@ class ModelView(object):
         return ""
 
     def scaffold_pk(self, entry):
+        from .utils import get_primary_key
 
         return getattr(entry, get_primary_key(self.model))
 
@@ -831,7 +834,7 @@ class ModelView(object):
         """
         from flask import request
 
-        shadow_column_filters = copy.copy(self._get_column_filters())
+        shadow_column_filters = copy.copy(self.__column_filters__)
         #如果不用copy的话，会修改原来的filter
 
         op_id_2_filter = dict(
@@ -947,6 +950,7 @@ class DataBrowser(object):
         try:
             current_url = request.url
             model_view = self.__registered_view_map[model.__tablename__]
+            from .utils import get_primary_key
              
             pk = get_primary_key(model)
             if model_view.can_edit:

@@ -42,7 +42,7 @@ def main():
 
     class UserModelView(databrowser.ModelView):
 
-        list_template = "accounts/list.haml"
+        list_template = "accounts/list.html"
 
         def patch_row_css(self, idx, row):
             if row.roll_called == 1:

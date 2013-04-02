@@ -77,7 +77,6 @@ def raised(E, test, *args, **kwargs):
     except E:
         return False
 
-from wtforms import Field
 
 def make_disabled_field(field):
     class FakeField(field.field_class):
