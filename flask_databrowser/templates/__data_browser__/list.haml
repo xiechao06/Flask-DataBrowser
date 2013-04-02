@@ -161,7 +161,7 @@
               %input value="{{ request.url }}" type="hidden" name="url"
               %span#actions
                 -for action in __actions__:
-                  %input value="{{action.name}}" type="submit" name="action" class="btn btn-info"
+                  %input value="{{action.name}}" type="submit" name="action" class="{{action.css_class}}"
               %span#action-fillings
                 -block action_fillings
 

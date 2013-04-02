@@ -91,7 +91,7 @@
                 {{ create() }}
             {% else %}
               {% for action in actions %}
-                <input name="action" value="{{action.name}}" type="submit" name="action" class="btn btn-info btn-large"/>
+              <input name="action" value="{{action.name}}" type="submit" name="action" class="{{action.css_class}} btn-large"/>
               {% endfor %}
             {% endif %}
 

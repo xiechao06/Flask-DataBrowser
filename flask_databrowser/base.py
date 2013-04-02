@@ -758,7 +758,7 @@ class ModelView(object):
         if self.edit_allowable and self.batchly_edit_allowable:
             l.append({"name": gettext(u"批量修改"), "forbidden_msg_formats": {}})
 
-        l.extend(dict(name=action.name, value=action.name,
+        l.extend(dict(name=action.name, value=action.name, css_class=action.css_class,
                       forbidden_msg_formats=action.get_forbidden_msg_formats()) for action in self._get_customized_actions())
         return l
 
