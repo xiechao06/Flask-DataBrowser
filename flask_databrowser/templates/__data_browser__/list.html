@@ -6,11 +6,8 @@
   <script type="text/javascript">
     $(function () {
       $(".fancybox").fancybox();
-      $("input[type=datetime]").each(function () {
-        $(this).datepicker();
-      });
-      {% for filter in __filters__%}
-        var filter_values ={{ filter.value|tojson }};
+      {% for filter in __filters__ %}
+        var filter_values ={{ filter.value|tojson|safe }};
         {% if filter.mulitiple%}
           $("[name='{{ filter.op.id }}']").val(filter_values).trigger("change");
         {% else %}
@@ -54,7 +51,7 @@
         $("select").select2("val", "");
       });
       setTimeout(function () {
-        $("#flash").fadeOut("slow")
+        $("#flash").fadeOut("slow");
       }, 3000);
       {% if __row_action__desc %}
         var rows_action_desc = {{ __rows_action_desc__|tojson|safe }};
@@ -112,7 +109,7 @@
         <form class="span10" id="main-form" method="POST">
           {% if __can_create__ %}
             <a class="btn btn-success" href="{{ "?url=".join([__object_url__, request.url|urlencode]) }}">
-                <i class="add-on icon-plus icon-white"></i> {{ _("新建") }}
+              <i class="add-on icon-plus icon-white"></i> {{ _("新建") }}
             </a>
           {% endif %}
           {% block __data_browser__hint_block %}
@@ -133,16 +130,16 @@
                 {% for c in __list_columns__ %}
                   <th title={% if c.doc %} {{ c.doc }}{% endif %}>
                     {% if c.sort_url %}
-                        <a href="{{ c.sort_url }}">
-                          {{ c.label }}
-                          {% if __order_by__(c.name) %}
-                            {% if __desc__ %}
-                                <i class="icon-chevron-down"></i>
-                            {% else %}
-                                <i class="icon-chevron-up"></i>
-                            {% endif %}
+                      <a href="{{ c.sort_url }}">
+                        {{ c.label }}
+                        {% if __order_by__(c.name) %}
+                          {% if __desc__ %}
+                            <i class="icon-chevron-down"></i>
+                          {% else %}
+                            <i class="icon-chevron-up"></i>
                           {% endif %}
-                        </a>
+                        {% endif %}
+                      </a>
                     {% else %}
                       {{ c.label }}
                     {% endif %}
@@ -166,12 +163,14 @@
                   {% endif %}
                   {% for v in row.fields %}
                     {% if v.link %}
-                      <td {% if row.attrs %}{% for k,v in row.attrs.items() %}{{ k }}="{{ v }}"{% endfor %}{% endif %}>
-                        <a href="{{ v.link }}">{{ v.value }}</a>
+                      <td{% if row.attrs %}{% for k,v in row.attrs.items() %}
+                      {{ k }}="{{ v }}"{% endfor %}{% endif %}>
+                      <a href="{{ v.link }}">{{ v.value }}</a>
                       </td>
                     {% else %}
-                      <td {% if row.attrs %}{% for k,v in row.attrs.items() %}{{ k }}="{{ v }}"{% endfor %}{% endif %}>
-                        {{ v() }}
+                      <td{% if row.attrs %}{% for k,v in row.attrs.items() %}
+                      {{ k }}="{{ v }}"{% endfor %}{% endif %}>
+                      {{ v() }}
                       </td>
                     {% endif %}
                   {% endfor %}
@@ -205,7 +204,7 @@
       {% endblock %}
 
       {% block filters %}
-        {% if filters %}
+        {% if __filters__ %}
           <div class="{{ __css_classes__.filters_class }} span2">
             <h4>{{ _("过滤条件") }}</h4>
             <hr>

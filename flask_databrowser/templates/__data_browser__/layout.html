@@ -13,15 +13,28 @@
     <link rel="stylesheet" href="{{ url_for('__data_browser__.static', filename='css/bootstrap/css/bootstrap-responsive.min.css') }}" media="screen">
     <link rel="stylesheet" href="{{ url_for('__data_browser__.static', filename='select2/select2.css') }}">
     <link rel="stylesheet" href="{{ url_for('__data_browser__.static', filename='css/admin.css') }}">
-    <link rel="stylesheet" href="{{ url_for('__data_browser__.static', filename='css/datepicker.css') }}">
-    <link rel="stylesheet" href="{{ url_for('__data_browser__.static',filename="js/fancybox/source/jquery.fancybox.css") }}" media="screen"/>
+    <link rel="stylesheet" href="{{ url_for('__data_browser__.static', filename='css/bootstrap-datetimepicker.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('__data_browser__.static', filename="js/fancybox/source/jquery.fancybox.css") }}" media="screen"/>
     <script type="text/javascript" src="{{ url_for('__data_browser__.static', filename='js/jquery-1.8.2.min.js') }}"></script>
     <script type="text/javascript" src="{{ url_for('__data_browser__.static', filename='select2/select2.js') }}"></script>
     <script type="text/javascript" src="{{ url_for('__data_browser__.static', filename='css/bootstrap/js/bootstrap.min.js') }}"></script>
-    <script type="text/javascript" src="{{ url_for('__data_browser__.static',filename="js/fancybox/lib/jquery.mousewheel-3.0.6.pack.js") }}"></script>
-    <script type="text/javascript" src="{{ url_for('__data_browser__.static',filename="js/fancybox/source/jquery.fancybox.js") }}"></script>
-    <script type="text/javascript" src="{{ url_for('__data_browser__.static', filename='js/bootstrap-datepicker.js') }}"></script>
+    <script type="text/javascript" src="{{ url_for('__data_browser__.static', filename="js/fancybox/lib/jquery.mousewheel-3.0.6.pack.js") }}"></script>
+    <script type="text/javascript" src="{{ url_for('__data_browser__.static', filename="js/fancybox/source/jquery.fancybox.js") }}"></script>
+    <script type="text/javascript" src="{{ url_for('__data_browser__.static', filename='js/bootstrap-datetimepicker.min.js') }}"></script>
     <script type="text/javascript" src="{{ url_for('__data_browser__.static', filename='js/form.js') }}"></script>
+    <script type="text/javascript" src="{{ url_for('__data_browser__.static', filename="js/JSPinYin.js") }}"></script>
+
+    <script type="text/javascript">
+      $(function () {
+        $("select").select2({
+          width: "element",
+          placeholder: "请选择",
+          matcher: function (term, text) {
+            return pinyin.getCamelChars(text).toUpperCase().indexOf(term.toUpperCase()) >= 0;
+          }
+        });
+      });
+    </script>
   {% endblock %}
   {% block __data_browser__customized_head_block %}
   {% endblock %}
