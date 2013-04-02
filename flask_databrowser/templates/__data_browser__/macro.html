@@ -52,10 +52,10 @@
                         <a href="{{ create_url_map[f.name] }}" class="btn btn-primary">新建</a>
                         {% endif %}
                     {% endif %}
+                    {% if f.description %}
+                      <span class="help-inline">* <i class="text-info">{{ f.description }}</i></span>
+                    {% endif %}
                 </div>
-                {% if f.description %}
-                    <p class="help-block">{{ f.description }}</p>
-                {% endif %}
                 {% if f.errors %}
                     <ul>
                         {% for e in f.errors if e is string %}
@@ -91,7 +91,7 @@
                 {{ create() }}
             {% else %}
               {% for action in actions %}
-                <input name="action" value="{{action.name}}" type="submit" name="action" class="btn btn-info btn-large"/>
+              <input name="action" value="{{action.name}}" type="submit" name="action" class="{{action.css_class}} btn-large"/>
               {% endfor %}
             {% endif %}
 

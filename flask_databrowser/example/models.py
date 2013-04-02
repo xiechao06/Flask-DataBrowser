@@ -16,7 +16,7 @@ class User(db.Model):
     password = db.Column(db.String(128), nullable=False)
     group_id = db.Column(db.Integer, db.ForeignKey("TB_GROUP.id"))
     group = db.relationship("Group", backref="users")
-    create_time = db.Column(db.DateTime, default=datetime.now)
+    create_time = db.Column(db.DateTime, default=datetime.now, doc=u"创建于")
     roll_called = db.Column(db.Boolean, default=False)
     age = db.Column(db.Integer)
 

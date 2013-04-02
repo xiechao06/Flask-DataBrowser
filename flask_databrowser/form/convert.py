@@ -9,7 +9,8 @@ from .import form
 from .validators import Unique
 from .fields import QuerySelectField, QuerySelectMultipleField
 from flask.ext.databrowser.column_spec import InputColumnSpec
-from flask.ext.databrowser.utils import make_disabled_field
+from flask.ext.databrowser.utils import make_disabled_field, get_description
+
 
 try:
     # Field has better input parsing capabilities.
@@ -135,11 +136,6 @@ class AdminModelConverter(ModelConverterBase):
 
         return self.view.prettify_name(name)
 
-    def _get_description(self, name, field_args):
-        if 'description' in field_args:
-            return field_args['description']
-        if self.view.column_descriptions:
-            return self.view.column_descriptions.get(name)
 
     def _get_field_override(self, name):
         form_overrides = getattr(self.view, 'form_overrides', None)
@@ -164,7 +160,7 @@ class AdminModelConverter(ModelConverterBase):
             local_column = prop.local_remote_pairs[0][0]
 
             kwargs['label'] = self._get_label(prop.key, kwargs, col_spec)
-            kwargs['description'] = self._get_description(prop.key, kwargs)
+            kwargs['description'] = get_description(self.view, prop.key, col_spec)
 
             kwargs['get_label'] = functools.partial(
                 self._get_label_func(prop.key, kwargs) or (
@@ -185,7 +181,13 @@ class AdminModelConverter(ModelConverterBase):
             if 'allow_blank' not in kwargs:
                 kwargs['allow_blank'] = local_column.nullable,
             if 'query_factory' not in kwargs:
-                kwargs['query_factory'] = lambda: self.session.query(remote_model)
+                if col_spec and col_spec.filter_:
+                    kwargs['query_factory'] = lambda: col_spec.filter_(self.session.query(remote_model))
+                else:
+                    kwargs['query_factory'] = lambda: self.session.query(remote_model)
+
+            if col_spec and col_spec.opt_filter:
+                kwargs['opt_filter'] = col_spec.opt_filter
 
             if prop.direction.name == 'MANYTOONE':
                 if col_spec and col_spec.group_by:
@@ -247,19 +249,13 @@ class AdminModelConverter(ModelConverterBase):
 
                 unique = False
 
-                if column.primary_key:
+                if column.primary_key and type(column.type).__name__ == "Integer":
                     if hidden_pk:
                         # If requested to add hidden field, show it
                         return fields.HiddenField()
                     else:
-                        # By default, don't show primary keys either
-                        form_columns = getattr(self.view, 'form_columns', None)
-
-                        if form_columns is None:
-                            return None
-
                         # If PK is not explicitly allowed, ignore it
-                        if prop.key not in form_columns:
+                        if prop.key not in self.view.__form_columns__:
                             return None
 
                         kwargs['validators'].append(Unique(self.session,
@@ -279,7 +275,7 @@ class AdminModelConverter(ModelConverterBase):
                 # Apply label and description if it isn't inline form field
                 if self.view.model == mapper.class_:
                     kwargs['label'] = self._get_label(prop.key, kwargs, col_spec)
-                    kwargs['description'] = self._get_description(prop.key, kwargs)
+                    kwargs['description'] = get_description(self.view, prop.key, col_spec)
 
                 # Figure out default value
                 default = getattr(column, 'default', None)
@@ -491,6 +487,7 @@ def get_form(model, converter,
         properties = (x for x in properties if x[0] not in exclude)
 
     field_dict = {}
+    read_only_fields = []
     for name, prop, col_spec in properties:
         # Ignore protected properties
         if ignore_hidden and name.startswith('_'):

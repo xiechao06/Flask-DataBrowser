@@ -98,3 +98,33 @@ def fslice(iterable, predict):
             b.append(i)
     return a, b
 
+
+def get_description(view, col_name, col_spec=None):
+    if col_spec and col_spec.doc:
+            return col_spec.doc
+    if view.__column_docs__:
+        ret = view.__column_docs__.get(col_name)
+        if ret:
+            return ret
+    return get_doc_from_table_def(view, col_name)
+
+
+def get_doc_from_table_def(view, col_name):
+    doc = ""
+    attr_name_list = col_name.split('.')
+    last_model = view.model
+    for attr_name in attr_name_list[:-1]:
+        attr = getattr(last_model, attr_name)
+        if hasattr(attr, "property"):
+            last_model = attr.property.mapper.class_
+        else:
+            last_model = None
+            break
+    if last_model:
+        if hasattr(last_model, attr_name_list[-1]):
+            from operator import attrgetter
+            try:
+                doc = attrgetter(attr_name_list[-1] + ".property.doc")(last_model)
+            except AttributeError:
+                pass
+    return doc

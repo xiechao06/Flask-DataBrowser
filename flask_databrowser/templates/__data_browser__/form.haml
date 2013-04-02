@@ -37,6 +37,10 @@
       $("input[name='action']").click(function (ui) {
         return confirm('您确认要' + $(this).attr("value") + '本条数据吗?'); 
       });
+      setTimeout(function () {
+          $("#flash").fadeOut("slow")
+      }, 3000);
+
     });
   
 

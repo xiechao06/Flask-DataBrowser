@@ -53,7 +53,7 @@ class QuerySelectField(SelectFieldBase):
 
     def __init__(self, label=None, validators=None, query_factory=None,
                  get_pk=None, get_label=None, allow_blank=False,
-                 blank_text=u'', **kwargs):
+                 blank_text=u'', opt_filter=None, **kwargs):
         super(QuerySelectField, self).__init__(label, validators, **kwargs)
         self.query_factory = query_factory
 
@@ -75,6 +75,7 @@ class QuerySelectField(SelectFieldBase):
         self.blank_text = blank_text
         self.query = None
         self._object_list = None
+        self.opt_filter = opt_filter or (lambda obj: True)
 
     def _get_data(self):
         if self._formdata is not None:
@@ -94,7 +95,7 @@ class QuerySelectField(SelectFieldBase):
         if self._object_list is None:
             query = self.query or self.query_factory()
             get_pk = self.get_pk
-            self._object_list = list((unicode(get_pk(obj)), obj) for obj in query)
+            self._object_list = list((unicode(get_pk(obj)), obj) for obj in query if self.opt_filter(obj))
         return self._object_list
 
     def iter_choices(self):
@@ -132,10 +133,10 @@ class QuerySelectMultipleField(QuerySelectField):
     """
     widget = widgets.Select(multiple=True)
 
-    def __init__(self, label=None, validators=None, default=None, **kwargs):
+    def __init__(self, label=None, validators=None, default=None, opt_filter=None, **kwargs):
         if default is None:
             default = []
-        super(QuerySelectMultipleField, self).__init__(label, validators, default=default, **kwargs)
+        super(QuerySelectMultipleField, self).__init__(label, validators, default=default, opt_filter=opt_filter, **kwargs)
         self._invalid_formdata = False
 
     def _get_data(self):

@@ -8,17 +8,17 @@ import operator
 from flask import render_template, flash, request, url_for, redirect
 from flask.ext.principal import PermissionDenied
 from flask.ext.babel import gettext, ngettext
-from .utils import get_primary_key, named_actions
+from .utils import get_primary_key, named_actions, get_doc_from_table_def
 from .action import DeleteAction
 from flask.ext.databrowser.convert import ValueConverter
 from flask.ext.databrowser.column_spec import LinkColumnSpec, ColumnSpec, InputColumnSpec, PLACE_HOLDER
 from flask.ext.databrowser.extra_widgets import PlaceHolder
+from flask.ext.databrowser.form import form
 
 
 class ModelView(object):
     __column_formatters__ = {}
     __list_columns__ = {}
-    __list_filters__ = {}
     __sortable_columns__ = []
     __column_labels__ = {}
     __column_docs__ = {}
@@ -30,16 +30,13 @@ class ModelView(object):
     __create_columns__ = []
     __max_col_len__ = 255
 
-    column_descriptions = None
+    language = "en"
     column_hide_backrefs = True
-
     can_batchly_edit = can_view = can_create = can_edit = can_delete = True
-
     __create_form__ = __edit_form__ = __batch_edit_form__ = None
-
     list_template = create_template = edit_template = None
-
     as_radio_group = False
+    form_class = form.BaseForm
 
     def __init__(self, model, model_name=""):
         self.model = model
@@ -47,9 +44,19 @@ class ModelView(object):
         self.data_browser = None
         self.extra_params = {}
         self.__model_name = model_name
-        for fltr in self.__column_filters__:
-            fltr.model_view = self
         self.__list_column_specs = []
+
+    def within_domain(self, url, bp_name):
+        pb_name = bp_name.lower()
+        url = url.lower()
+        import urlparse, posixpath
+        path_ = urlparse.urlparse(url).path
+        segs = path_.split("/")[1:]
+        if len(segs) < 2:
+            return False
+        if segs[0] != bp_name:
+            return False
+        return any("/"+seg in {self.object_view_url, self.list_view_url} for seg in segs[1:]) 
 
     def __list_filters__(self):
         return []
@@ -84,18 +91,7 @@ class ModelView(object):
         # we get document from sqlalchemy models
         doc = self.__column_docs__.get(col, "")
         if not doc:
-            attr_name_list = col.split('.')
-            last_model = self.model
-            for attr_name in attr_name_list[:-1]:
-                attr = getattr(last_model, attr_name)
-                if hasattr(attr, "property"):
-                    last_model = attr.property.mapper.class_
-                else:
-                    last_model = None
-                    break
-            if last_model:
-                if hasattr(last_model, attr_name_list[-1]):
-                    doc = getattr(getattr(last_model, attr_name_list[-1]), "doc", "")
+            doc = get_doc_from_table_def(self, col)
         label=self.__column_labels__.get(col, col)
         if get_primary_key(self.model) == col:
             # TODO add cross ref to registered model
@@ -124,7 +120,7 @@ class ModelView(object):
         if not list_columns:
             list_columns = [col.name for k, col in enumerate(self.model.__table__.c)]
         if list_columns:
-            for col in self.__list_columns__:
+            for col in list_columns:
                 if isinstance(col, basestring):
                     col_spec = self._col_spec_from_str(col)
                 else:
@@ -207,6 +203,16 @@ class ModelView(object):
             self.session.rollback()
             return None
 
+    def get_column_filters(self):
+        return self.__column_filters__
+
+    def _get_column_filters(self):
+        ret = []
+        for fltr in self.get_column_filters():
+            fltr.model_view = self
+            ret.append(fltr)
+        return ret
+
     def get_customized_actions(self, obj=None):
         return self.__customized_actions__
 
@@ -239,17 +245,19 @@ class ModelView(object):
                     model = self.preprocess(model)
                     action.op(model)
                     self.session.commit()
+                    self.do_update_log(model, action.name)
                     flash(action.success_message([model]), 'success')
                     return True
                 except Exception, ex:
                     flash(gettext('Failed to update model. %(error)s', error=str(ex)),
                           'error')
                     self.session.rollback()
-                    return False
+                    raise
         try:
             for name, field in form._fields.iteritems():
                 if field.raw_data is not None:
                     field.populate_obj(model, name)
+            self.do_update_log(model, "update")
             self.on_model_change(form, model)
             self.session.commit()
             return True
@@ -297,6 +305,7 @@ class ModelView(object):
         """
             Create model view
         """
+        self.try_view()
         self.try_create()
         if self.create_template is None:
             import posixpath
@@ -322,14 +331,29 @@ class ModelView(object):
                 else:
                     return redirect(return_url)
         create_url_map = {}
-        converter = ValueConverter(self.model)
-        for col in self.__create_columns__:
+        converter = ValueConverter(self.model, self)
+        for col in [f.name for f in form if f.name != "csrf_token"]:
             attr = getattr(self.model, col if isinstance(col, basestring) else col.col_name)
             if hasattr(attr.property, "direction"):
-                remote_side = attr.property.local_remote_pairs[0][1].table
-                create_url_map[col] = self.data_browser.get_create_url(remote_side)
+                remote_side = attr.property.mapper.class_
+                create_url = self.data_browser.get_create_url(remote_side)
+                if create_url:
+                    create_url_map[col] = create_url
+        kwargs = {}
+        form_kwargs = self.extra_params.get("create_view", {})
+        for k, v in form_kwargs.items():
+            if isinstance(v, types.FunctionType):
+                v = v(self)
+            kwargs[k] = v
         return self.render(self.create_template, form=form, create_url_map=create_url_map,
-                           return_url=return_url, extra="create", hint_message=gettext(u"正在创建%(model_name)s", model_name=self.model_name))
+                           return_url=return_url, extra="create", hint_message=gettext(u"正在创建%(model_name)s", model_name=self.model_name), **kwargs)
+
+    def do_update_log(self, obj, action):
+        from flask.ext.login import current_user
+        self.data_browser.logger.debug(
+            gettext(unicode(current_user) + ' performed ' + action),
+            extra={"obj": obj, "obj_pk": self.scaffold_pk(obj), "action": action, "actor": current_user})
+
 
     def do_create_log(self, obj):
         from flask.ext.login import current_user
@@ -345,7 +369,7 @@ class ModelView(object):
         if isinstance(id_, int):
             id_list = [id_]
         else:
-            id_list = [int(i) for i in id_.split(",") if i]
+            id_list = [i for i in id_.split(",") if i]
         if self.edit_template is None:
             import posixpath
 
@@ -366,11 +390,11 @@ class ModelView(object):
             if form.validate_on_submit():
                 form = self.get_edit_form(obj=model)
                 if self.update_model(form, model):
-                    self.data_browser.logger.debug(
+                    self.data_browser.app.debug(
                         gettext('Model was successfully updated.'),
                         extra={"class":self.model, "obj":model})
                     return redirect(return_url)
-            form = self.get_compound_edit_form(obj=model)
+            compound_form = self.get_compound_edit_form(obj=model)
             hint_message = gettext(u"正在%(action)s%(model_name)s-%(obj)s",
                                    action=u"编辑" if self.can_edit else u"查看",
                                    model_name=self.model_name,
@@ -392,9 +416,6 @@ class ModelView(object):
             form = self.get_batch_edit_form(obj=model)
             if form.is_submitted():
                 if all(self.update_model(form, model) for model in model_list):
-                    self.data_browser.logger.debug(
-                        gettext('Model was successfully updated.'),
-                        extra={"class":self.model, "obj":model_list})
                     return redirect(return_url)
             hint_message = gettext(u"正在%(action)s%(model_name)s-%(objs)s",
                                    action=u"编辑" if self.can_edit else u"查看",
@@ -421,17 +442,19 @@ class ModelView(object):
             if isinstance(f.widget, PlaceHolder):
                 f.widget.set_args(**form_kwargs)
         create_url_map = {}
-        converter = ValueConverter(self.model)
-        for col in self.__form_columns__:
+        converter = ValueConverter(self.model, self)
+        for col in [f.name for f in form if f.name != "csrf_token"]:
             try:
                 attr = getattr(self.model, col if isinstance(col, basestring) else col.col_name)
                 if hasattr(attr.property, "direction"):
-                    remote_side = attr.property.local_remote_pairs[0][1].table
-                    create_url_map[col] = self.data_browser.get_create_url(remote_side)
+                    remote_side = attr.property.mapper.class_
+                    create_url = self.data_browser.get_create_url(remote_side)
+                    if create_url:
+                        create_url_map[col] = create_url
             except AttributeError:
                 pass
         return self.render(self.edit_template,
-                           form=form, create_url_map=create_url_map,
+                           form=compound_form, create_url_map=create_url_map,
                            grouper_info=grouper_info,
                            actions=actions,
                            return_url=return_url, hint_message=hint_message, **form_kwargs)
@@ -443,7 +466,7 @@ class ModelView(object):
         from flask.ext.databrowser.form.convert import AdminModelConverter, get_form
 
         converter = AdminModelConverter(self.session, self)
-        form_class = get_form(self.model, converter, only=columns,
+        form_class = get_form(self.model, converter, base_class=self.form_class, only=columns,
                               exclude=None, field_args=None)
         return form_class
 
@@ -671,10 +694,8 @@ class ModelView(object):
                     model = self.preprocess(model)
                     processed_models.append(model)
                     action.op(model)
+                    self.do_update_log(model, action.name)
                 self.session.commit()
-                self.data_browser.logger.debug(action.name,
-                                                   extra={"class": self.model,
-                                                          "obj": models})
                 flash(action.success_message(processed_models), 'success')
             except Exception, ex:
                 self.session.rollback()
@@ -709,8 +730,11 @@ class ModelView(object):
         """
         from flask import request, url_for
 
+        sortable_columns = self.__sortable_columns__ or get_primary_key(self.model)
+
+
         for c in self.list_column_specs:
-            if c.col_name in self.__sortable_columns__:
+            if c.col_name in sortable_columns:
                 args = request.args.copy()
                 args["order_by"] = c.col_name
                 if order_by == c.col_name: # the table is sorted by c, so revert the order
@@ -736,7 +760,7 @@ class ModelView(object):
         if self.edit_allowable and self.batchly_edit_allowable:
             l.append({"name": gettext(u"批量修改"), "forbidden_msg_formats": {}})
 
-        l.extend(dict(name=action.name, value=action.name,
+        l.extend(dict(name=action.name, value=action.name, css_class=action.css_class,
                       forbidden_msg_formats=action.get_forbidden_msg_formats()) for action in self._get_customized_actions())
         return l
 
@@ -938,10 +962,7 @@ class DataBrowser(object):
 
     def get_create_url(self, model):
         try:
-            if isinstance(model, self.db.Model):
-                model_view = self.__registered_view_map[model.__tablename__]
-            else:
-                model_view = self.__registered_view_map[model.name]
+            model_view = self.__registered_view_map[model.__tablename__]
             return model_view.url_for_object(None, url=request.url)
         except KeyError:
             return None

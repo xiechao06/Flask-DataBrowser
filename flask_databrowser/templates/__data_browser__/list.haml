@@ -9,7 +9,9 @@
       $("select").select2();
       $(".fancybox").fancybox();
       $("input[type=datetime]").each(function(){
-        $(this).datepicker();
+        $(this).datetimepicker({
+            language: {{ model_view.language }},
+        });
       });
       -for filter in __filters__:
          var filter_values = {{ filter.value|tojson }};
@@ -106,7 +108,7 @@
   .container-fluid
     .row-fluid
       -block lists
-        %form.span10#main-form method="POST"
+        %form#main-form method="POST" class={% if __filters__ %}"span10"{% endif %}
           -if __can_create__
             %a.btn.btn-success href="{{ "?url=".join([__object_url__, request.url|urlencode]) }}"
               %span.add-on.icon-plus
@@ -117,7 +119,7 @@
           -if __data__
             %table#list-table class="{{ __css_classes__.list_table_class }}"
               %thead
-                %tr.row-fluid
+                %tr
                   -if __actions__
                     -if not model_view.as_radio_group
                       %th.span1 -> %input type="checkbox" name="rowtoggle"
@@ -137,7 +139,7 @@
                         {{ c.label }}
               %tbody
                 -for row in __data__
-                  %tr class="{{row.css}} row-fluid"
+                  %tr class="{{row.css}}"
                     -if __actions__
                       -if model_view.as_radio_group
                         %td.span1 -> %input type="radio" value="{{ row.pk }}" name="selected-ids"
@@ -159,7 +161,7 @@
               %input value="{{ request.url }}" type="hidden" name="url"
               %span#actions
                 -for action in __actions__:
-                  %input value="{{action.name}}" type="submit" name="action" class="btn btn-info"
+                  %input value="{{action.name}}" type="submit" name="action" class="{{action.css_class}}"
               %span#action-fillings
                 -block action_fillings
 
