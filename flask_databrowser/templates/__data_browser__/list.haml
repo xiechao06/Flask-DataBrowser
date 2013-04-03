@@ -10,7 +10,7 @@
       $(".fancybox").fancybox();
       $("input[type=datetime]").each(function(){
         $(this).datetimepicker({
-            language: {{ model_view.language }},
+            language: "{{ model_view.language }}",
         });
       });
       -for filter in __filters__:
@@ -197,7 +197,7 @@
                             -for input_type in filter.input_type
                               %input type="{{ input_type }}" name="{{ filter.op.id }}" class="{{ __css_classes__[filter.input_class] }}" min=0 placeholder="{{ _("请输入") + filter.label }}"
                               -if not loop.last
-                                %span << {{ filter.sep }}
+                                %div << {{ filter.sep }}
               %hr
               .control-group.pagination-centered
                 .controls

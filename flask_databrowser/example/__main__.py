@@ -94,7 +94,7 @@ def main():
                              filters.BiggerThan("create_time", name=u"在", 
                                                 options=[(yesterday, u'一天内'),
                                                         (week_ago, u'一周内'), 
-                                                        (_30days_ago, u'30天内')]), 
+                                                        (_30days_ago, u'30天内')], default_value=str(yesterday)), 
                              filters.EqualTo("name", name=u"是"),
                              filters.Contains("name", name=u"包含")
                              ]

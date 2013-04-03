@@ -639,9 +639,7 @@ class ModelView(object):
                 kwargs["__css_classes__"] = yaml.load(f.read())
             kwargs["__list_columns__"] = self.scaffold_list_columns(order_by,
                                                                     desc)
-            kwargs["__filters__"] = [
-                f.as_dict("op", "label", "input_type", "input_class", "value",
-                          "options", "sep", "hidden", "multiple") for f in column_filters]
+            kwargs["__filters__"] = column_filters
             kwargs["__actions__"] = self.scaffold_actions()
             kwargs["__action_2_forbidden_message_formats__"] = dict(
                 (action["name"], action["forbidden_msg_formats"]) for action in
@@ -666,8 +664,6 @@ class ModelView(object):
                 if isinstance(v, types.FunctionType):
                     v = v(self)
                 kwargs[k] = v
-            for fltr in column_filters:
-                fltr.value = None
             import posixpath
             # try user defined template
             if self.list_template:
@@ -834,7 +830,7 @@ class ModelView(object):
         """
         from flask import request
 
-        shadow_column_filters = copy.copy(self.__column_filters__)
+        shadow_column_filters = copy.copy(self._get_column_filters())
         #如果不用copy的话，会修改原来的filter
 
         op_id_2_filter = dict(
@@ -853,17 +849,19 @@ class ModelView(object):
 
     def get_rows_action_desc(self, models):
         ret = {}
-        for model in models:
-            id = self.scaffold_pk(model)
-            preprocessed_model = self.preprocess(model)
-            d = {}
-            d["name"] = unicode(model)
-            d["actions"] = {}
-            for action in self._get_customized_actions():
-                error_code = action.test_enabled(preprocessed_model)
-                if error_code is not None:
-                    d["actions"][action.name] = error_code
-            ret[id] = d
+        customized_actions = self._get_customized_actions()
+        if customized_actions:
+            for model in models:
+                id = self.scaffold_pk(model)
+                preprocessed_model = self.preprocess(model)
+                d = {}
+                d["name"] = unicode(model)
+                d["actions"] = {}
+                for action in customized_actions:
+                    error_code = action.test_enabled(preprocessed_model)
+                    if error_code is not None:
+                        d["actions"][action.name] = error_code
+                ret[id] = d
         return ret
 
     def patch_row_attr(self, idx, row):

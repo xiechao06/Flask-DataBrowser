@@ -82,10 +82,10 @@ class BaseFilter(TemplateParam):
                 model = attr.property.mapper.class_
                 ret.extend((getattr(row, get_primary_key(model)), self.opt_formatter(row) if self.opt_formatter else row) 
                         for row in model.query.all())
-            if not ret:
-                ret = [("", u'--%s--' % _(u"所有"))]
-            elif not self.multiple:
-                ret.insert(0, (md5(",".join(unicode(r[0]) for r in ret)).hexdigest(), u'--%s--' % _(u"所有")))
+                if not ret:
+                    ret = [("", u'--%s--' % _(u"所有"))]
+                elif not self.multiple:
+                    ret.insert(0, (md5(",".join(unicode(r[0]) for r in ret)).hexdigest(), u'--%s--' % _(u"所有")))
             return ret
 
     def unfiltered(self, arg):
@@ -128,9 +128,6 @@ class BaseFilter(TemplateParam):
         else:
             return self.__operator__(attr, self.value)
 
-    @property
-    def sep(self):
-        return "--"
 
 
 class EqualTo(BaseFilter):
@@ -154,6 +151,10 @@ class Contains(BaseFilter):
     __operator__ = lambda self, attr, value: attr.like(value.join(["%", "%"]))
 
 class Between(BaseFilter):
+    
+    def __init__(self, col_name, name="", sep="--"):
+        super(Between, self).__init__(col_name, name)
+        self.sep = sep
 
     def __operator__(self, attr, value_list):
         if value_list[0] and not value_list[1]:
@@ -173,7 +174,6 @@ class Between(BaseFilter):
     @_raised_when_model_unset
     def input_class(self):
         return 'numeric-filter'
-
 
 class In_(BaseFilter):
     __notation__ = "__in"
