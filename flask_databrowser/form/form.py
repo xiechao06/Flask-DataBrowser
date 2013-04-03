@@ -5,6 +5,7 @@ from wtforms import fields, widgets
 from flask.globals import _request_ctx_stack
 from flask.ext import wtf
 from flask.ext.babel import gettext, ngettext
+from wtforms.widgets import HTMLString, html_params
 
 class BaseForm(wtf.Form):
     """
@@ -103,8 +104,11 @@ class DatePickerWidget(widgets.TextInput):
         You must include bootstrap-datepicker.js and form.js for styling to work.
     """
     def __call__(self, field, **kwargs):
-        kwargs['data-role'] = u'datepicker'
-        return super(DatePickerWidget, self).__call__(field, **kwargs)
+        kwargs['data-format'] = u"yyyy-MM-dd"
+        ret = '<div data-role="datetimepicker" class="input-append">' + \
+                super(DateTimePickerWidget, self).__call__(field, **kwargs) + \
+                '<span class="add-on"><i data-time-icon="icon-time" data-date-icon="icon-calendar"></i></span></div>'
+        return HTMLString(ret)
 
 
 class DateTimePickerWidget(widgets.TextInput):
@@ -114,8 +118,11 @@ class DateTimePickerWidget(widgets.TextInput):
         You must include bootstrap-datepicker.js and form.js for styling to work.
     """
     def __call__(self, field, **kwargs):
-        kwargs['data-role'] = u'datetimepicker'
-        return super(DateTimePickerWidget, self).__call__(field, **kwargs)
+        kwargs['data-format'] = u"yyyy-MM-dd hh:mm:ss"
+        ret = '<div class="input-append" data-role="datetimepicker">' + \
+                super(DateTimePickerWidget, self).__call__(field, **kwargs) + \
+                '<span class="add-on"><i data-time-icon="icon-time" data-date-icon="icon-calendar"></i></span></div>'
+        return HTMLString(ret)
 
 
 class RenderTemplateWidget(object):

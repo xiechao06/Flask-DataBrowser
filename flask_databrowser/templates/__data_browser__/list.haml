@@ -8,11 +8,9 @@
     $(function(){
       $("select").select2();
       $(".fancybox").fancybox();
-      $("input[type=datetime]").each(function(){
-        $(this).datetimepicker({
-            language: "{{ model_view.language }}",
-        });
-      });
+      $('[data-role=datepicker]').datetimepicker({pickTime: false, language: "{{ model_view.language }}"});
+      $('[data-role=datetimepicker]').datetimepicker({language: "{{ model_view.language }}"});
+     
       -for filter in __filters__:
          var filter_values = {{ filter.value|tojson }};
          -if filter.multiple:
@@ -195,7 +193,18 @@
                                 %option value={{opt[0]}} << {{ opt[1] }}
                           -else
                             -for input_type in filter.input_type
-                              %input type="{{ input_type }}" name="{{ filter.op.id }}" class="{{ __css_classes__[filter.input_class] }}" min=0 placeholder="{{ _("请输入") + filter.label }}"
+                              -if filter.input_type != "date" 
+                                .input-append.input-medium data-role="datepicker"
+                                  %span.add-on 
+                                    %i data-time-icon="icon-time" data-date-icon="icon-calendar"
+                                  %input.input-small data-format="yyyy-MM-dd" 
+                              -elif filter.input_type != "datetime"
+                                .input-append data-role="datetimepicker"
+                                  %span.add-on 
+                                    %i data-time-icon="icon-time" data-date-icon="icon-calendar" 
+                                  %input data-format="yyyy-MM-dd hh:mm:ss" 
+                              -else
+                                %input type="{{ input_type }}" name="{{ filter.op.id }}" class="{{ __css_classes__[filter.input_class] }}" min=0 placeholder="{{ _("请输入") + filter.label }}"
                               -if not loop.last
                                 %div << {{ filter.sep }}
               %hr
