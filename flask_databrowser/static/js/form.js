@@ -65,8 +65,8 @@ $(function () {
         $('[data-role=select2]', parent).select2({width: 'resolve'});
         $('[data-role=select2blank]', parent).select2({allowClear: true, width: 'resolve'});
         $('[data-role=select2tags]', parent).select2({tags: [], tokenSeparators: [','], width: 'resolve'});
-        $('[data-role=datepicker]', parent).datetimepicker({pickTime: false});
-        $('[data-role=datetimepicker]', parent).datetimepicker();
+        $('[data-role=datepicker]', parent).datepicker();
+        $('[data-role=datetimepicker]', parent).datepicker({displayTime: true});
       };
     };
 

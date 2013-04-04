@@ -257,7 +257,7 @@ class ModelView(object):
             for name, field in form._fields.iteritems():
                 if field.raw_data is not None:
                     field.populate_obj(model, name)
-            self.do_update_log(model, "update")
+            self.do_update_log(model, gettext("update"))
             self.on_model_change(form, model)
             self.session.commit()
             return True
@@ -311,7 +311,7 @@ class ModelView(object):
             import posixpath
 
             self.create_template = posixpath.join(
-                self.data_browser.blueprint.name, "form.html")
+                self.data_browser.blueprint.name, "form.haml")
 
         return_url = request.args.get('url') or url_for(
             '.' + self.list_view_endpoint)
@@ -352,14 +352,14 @@ class ModelView(object):
         from flask.ext.login import current_user
         self.data_browser.logger.debug(
             gettext(unicode(current_user) + ' performed ' + action),
-            extra={"obj": obj, "obj_pk": self.scaffold_pk(obj), "action": action, "actor": current_user})
+            extra={"obj": obj, "obj_cls": self.model_name, "obj_pk": self.scaffold_pk(obj), "action": action, "actor": current_user})
 
 
     def do_create_log(self, obj):
         from flask.ext.login import current_user
         self.data_browser.logger.debug(
             gettext('Model was successfully created.'),
-            extra={"obj": obj, "obj_pk": self.scaffold_pk(obj), "action": gettext(u"create"), "actor": current_user})
+            extra={"obj": obj, "obj_cls": self.model_name, "obj_pk": self.scaffold_pk(obj), "action": gettext(u"create"), "actor": current_user})
 
     def edit_view(self, id_):
         """
@@ -374,7 +374,7 @@ class ModelView(object):
             import posixpath
 
             self.edit_template = posixpath.join(
-                self.data_browser.blueprint.name, "form.html")
+                self.data_browser.blueprint.name, "form.haml")
 
         return_url = request.args.get('url') or url_for(
             '.' + self.list_view_endpoint)
