@@ -38,7 +38,7 @@
       setTimeout(function () {
           $("#flash").fadeOut("slow")
       }, 3000);
-
+      $("input,select").change(function () {
+        $("input#submit-btn").attr("disabled", false).attr("title", "");
+      })
     });
-  
-

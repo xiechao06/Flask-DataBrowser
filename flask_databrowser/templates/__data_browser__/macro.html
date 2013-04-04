@@ -83,7 +83,7 @@
 {% macro render_form_buttons(cancel_url, extra=None) %}
     <div class="control-group">
         <div class="controls">
-            <input name="action" type="submit" class="btn btn-primary btn-large" value="{{ _gettext('提交') }}" />
+            <input id="submit-btn" name="action" type="submit" class="btn btn-primary btn-large" value="{{ _gettext('提交') }}" disabled="disabled" title="对象没有改动, 不能提交"/>
             {% if cancel_url %}
                 <a href="{{ cancel_url }}" class="btn btn-large">{{ _gettext('返回') }}</a>
             {% endif %}
