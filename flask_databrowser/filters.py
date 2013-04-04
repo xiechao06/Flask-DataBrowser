@@ -25,8 +25,6 @@ class BaseFilter(TemplateParam):
         self.value = value
         self.model_view = None
         self.__options = options or []
-        if self.__options and len(self.__options) > 1:
-            self.__options.insert(0, (md5(",".join(str(o[0]) for o in self.__options)).hexdigest(), u'--%s--' % _(u"所有")))
         self.opt_formatter = opt_formatter
         self.hidden = hidden
         self.default_value = default_value
@@ -69,7 +67,7 @@ class BaseFilter(TemplateParam):
     @property
     def options(self):
         if self.__options:
-            return self.__options
+            return [(md5(",".join(str(o[0]) for o in self.__options)).hexdigest(), u'--%s--' % _(u"all"))] + self.__options
         else:
             # if column is a relation, then we should find all of them
             attrs = self.col_name.split(".")
@@ -83,9 +81,9 @@ class BaseFilter(TemplateParam):
                 ret.extend((getattr(row, get_primary_key(model)), self.opt_formatter(row) if self.opt_formatter else row) 
                         for row in model.query.all())
                 if not ret:
-                    ret = [("", u'--%s--' % _(u"所有"))]
+                    ret = [("", u'--%s--' % _(u"all"))]
                 elif not self.multiple:
-                    ret.insert(0, (md5(",".join(unicode(r[0]) for r in ret)).hexdigest(), u'--%s--' % _(u"所有")))
+                    ret.insert(0, (md5(",".join(unicode(r[0]) for r in ret)).hexdigest(), u'--%s--' % _(u"all")))
             return ret
 
     def unfiltered(self, arg):

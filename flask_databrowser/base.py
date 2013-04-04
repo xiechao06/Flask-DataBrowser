@@ -7,7 +7,7 @@ import copy
 import operator
 from flask import render_template, flash, request, url_for, redirect
 from flask.ext.principal import PermissionDenied
-from flask.ext.babel import gettext, ngettext
+from flask.ext.babel import ngettext, gettext as _
 from .utils import get_primary_key, named_actions, get_doc_from_table_def
 from .action import DeleteAction
 from flask.ext.databrowser.convert import ValueConverter
@@ -65,7 +65,7 @@ class ModelView(object):
         return obj
 
     def render(self, template, **kwargs):
-        kwargs['_gettext'] = gettext
+        kwargs['_gettext'] = _
         kwargs['_ngettext'] = ngettext
         from . import helpers
 
@@ -198,7 +198,7 @@ class ModelView(object):
             self.session.commit()
             return model
         except Exception, ex:
-            flash(gettext('Failed to create model. %(error)s', error=str(ex)),
+            flash(_('Failed to create %(model_name)s due to %(error)s', model_name=self.model_name, error=str(ex)),
                   'error')
             self.session.rollback()
             return None
@@ -239,7 +239,8 @@ class ModelView(object):
                 action.try_()
                 ret_code = action.test_enabled(model)
                 if ret_code != 0:
-                    flash(gettext(u"不能执行操作%s, 原因是: %s" %(action.name, action.get_forbidden_msg_formats()[ret_code] % unicode(model))), 'error')
+                    flash(_(u"can't apply %(action)s due to %(reason)s", action=action.name, reason=action.get_forbidden_msg_formats()[ret_code] % unicode(model)), 
+                          'error')
                     return False
                 try:
                     model = self.preprocess(model)
@@ -249,7 +250,7 @@ class ModelView(object):
                     flash(action.success_message([model]), 'success')
                     return True
                 except Exception, ex:
-                    flash(gettext('Failed to update model. %(error)s', error=str(ex)),
+                    flash(_('Failed to update %(model_name)s %(model)s due to %(error)s', model_name=self.model_name, model=unicode(model), error=str(ex)),
                           'error')
                     self.session.rollback()
                     raise
@@ -257,12 +258,13 @@ class ModelView(object):
             for name, field in form._fields.iteritems():
                 if field.raw_data is not None:
                     field.populate_obj(model, name)
-            self.do_update_log(model, gettext("update"))
+            self.do_update_log(model, _("update"))
+            flash(_(u"%(model_name)s %(model)s was updated and saved", model_name=self.model_name, model=unicode(model)))
             self.on_model_change(form, model)
             self.session.commit()
             return True
         except Exception, ex:
-            flash(gettext('Failed to update model. %(error)s', error=str(ex)),
+            flash(_('Failed to update %(model_name)s %(model)s due to %(error)s', model_name=self.model_name, model=unicode(model), error=str(ex)),
                   'error')
             self.session.rollback()
             return False
@@ -325,8 +327,8 @@ class ModelView(object):
             model = self.create_model(form)
             if model:
                 self.do_create_log(model)
+                flash(_(u'%(model_name)s %(model)s was created successfully', model_name=self.model_name, model=unicode(model)))
                 if '_add_another' in request.form:
-                    flash(gettext(gettext(u'成功创建' + unicode(model))))
                     return redirect(self.url_for_object(None, url=return_url))
                 else:
                     return redirect(return_url)
@@ -346,20 +348,21 @@ class ModelView(object):
                 v = v(self)
             kwargs[k] = v
         return self.render(self.create_template, form=form, create_url_map=create_url_map,
-                           return_url=return_url, extra="create", hint_message=gettext(u"正在创建%(model_name)s", model_name=self.model_name), **kwargs)
+                           return_url=return_url, extra="create", hint_message=_(u"create %(model_name)s", model_name=self.model_name), 
+                           **kwargs)
 
     def do_update_log(self, obj, action):
         from flask.ext.login import current_user
         self.data_browser.logger.debug(
-            gettext(unicode(current_user) + ' performed ' + action),
-            extra={"obj": obj, "obj_cls": self.model_name, "obj_pk": self.scaffold_pk(obj), "action": action, "actor": current_user})
+            _('%(user)s performed operation %(action)s', user=unicode(current_user), action=action),
+            extra={"obj": obj, "obj_pk": self.scaffold_pk(obj), "action": action, "actor": current_user})
 
 
     def do_create_log(self, obj):
         from flask.ext.login import current_user
         self.data_browser.logger.debug(
-            gettext('Model was successfully created.'),
-            extra={"obj": obj, "obj_cls": self.model_name, "obj_pk": self.scaffold_pk(obj), "action": gettext(u"create"), "actor": current_user})
+            _('%(model_name)s %(model)s was created successfully', model_name=self.model_name, model=unicode(obj)),
+            extra={"obj": obj, "obj_pk": self.scaffold_pk(obj), "action": _(u"create"), "actor": current_user})
 
     def edit_view(self, id_):
         """
@@ -390,15 +393,11 @@ class ModelView(object):
             if form.validate_on_submit():
                 form = self.get_edit_form(obj=model)
                 if self.update_model(form, model):
-                    self.data_browser.app.debug(
-                        gettext('Model was successfully updated.'),
-                        extra={"class":self.model, "obj":model})
                     return redirect(return_url)
             compound_form = self.get_compound_edit_form(obj=model)
-            hint_message = gettext(u"正在%(action)s%(model_name)s-%(obj)s",
-                                   action=u"编辑" if self.can_edit else u"查看",
+            hint_message = _(u"edit %(model_name)s-%(obj)s",
                                    model_name=self.model_name,
-                                   obj=unicode(model))
+                                   obj=unicode(model)) if self.can_edit else ""
             actions = self._get_customized_actions(self.preprocess(model))
         else:
             model_list = [self.get_one(id_) for id_ in id_list]
@@ -417,10 +416,9 @@ class ModelView(object):
             if form.is_submitted():
                 if all(self.update_model(form, model) for model in model_list):
                     return redirect(return_url)
-            hint_message = gettext(u"正在%(action)s%(model_name)s-%(objs)s",
-                                   action=u"编辑" if self.can_edit else u"查看",
+            hint_message = _(u"edit %(model_name)s-%(objs)s",
                                    model_name=self.model_name, objs=",".join(
-                    unicode(model) for model in model_list))
+                    unicode(model) for model in model_list)) if self.can_edit else ""
             actions = self._get_customized_actions()
 
         grouper_info = {}
@@ -681,8 +679,7 @@ class ModelView(object):
                 if action.name == action_name:
                     break
             else:
-                return gettext('such action %(action)s doesn\'t be allowed',
-                               action=action_name), 403
+                return _('invalid action %(action)s', action=action_name), 403
             action.try_()
             try:
                 processed_models = []
@@ -696,7 +693,6 @@ class ModelView(object):
             except Exception, ex:
                 self.session.rollback()
                 raise
-
             return redirect(url_for(
                 ".".join([self.blueprint.name, self.list_view_endpoint]),
                 **request.args))
@@ -754,7 +750,7 @@ class ModelView(object):
     def scaffold_actions(self):
         l = []
         if self.edit_allowable and self.batchly_edit_allowable:
-            l.append({"name": gettext(u"批量修改"), "forbidden_msg_formats": {}})
+            l.append({"name": _(u"batch edit"), "forbidden_msg_formats": {}})
 
         l.extend(dict(name=action.name, value=action.name, css_class=action.css_class,
                       forbidden_msg_formats=action.get_forbidden_msg_formats()) for action in self._get_customized_actions())

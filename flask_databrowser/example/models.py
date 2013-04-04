@@ -81,8 +81,6 @@ class Log(db.Model):
     process = db.Column(db.Integer)
     message = db.Column(db.String)
     args = db.Column(db.String)
-    actor_id = db.Column(db.Integer, db.ForeignKey("TB_USER.id"))
-    actor = db.relationship("User")
     obj = db.Column(db.String(256))
     action = db.Column(db.String(256))
     extra = db.Column(db.String(256))

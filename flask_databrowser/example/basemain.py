@@ -3,6 +3,7 @@ from flask import Flask, Blueprint
 
 app = Flask(__name__)
 
+app.config['BABEL_DEFAULT_LOCALE'] = 'zh_CN'
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///temp.db"
 from flask.ext.sqlalchemy import SQLAlchemy
 db = SQLAlchemy(app)
@@ -28,7 +29,6 @@ class DBHandler(logging.Handler):
         obj = getattr(record, "obj", None)
         if obj:
             log.obj = repr(obj)
-        log.actor = getattr(record, "actor", None)
         log.name = record.name
         log.level = record.levelname
         log.module = record.module

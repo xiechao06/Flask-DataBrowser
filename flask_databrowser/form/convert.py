@@ -10,7 +10,7 @@ from .validators import Unique
 from .fields import QuerySelectField, QuerySelectMultipleField
 from flask.ext.databrowser.column_spec import InputColumnSpec
 from flask.ext.databrowser.utils import make_disabled_field, get_description
-
+from flask.ext.babel import gettext as _
 
 try:
     # Field has better input parsing capabilities.
@@ -170,7 +170,7 @@ class AdminModelConverter(ModelConverterBase):
             if local_column.nullable:
                 kwargs['validators'].append(validators.Optional())
             elif prop.direction.name != 'MANYTOMANY':
-                kwargs['validators'].append(validators.Required())
+                kwargs['validators'].append(validators.Required(message=_(u"this field can't be empty")))
 
             # Override field type if necessary
             override = self._get_field_override(prop.key)
@@ -260,17 +260,17 @@ class AdminModelConverter(ModelConverterBase):
 
                         kwargs['validators'].append(Unique(self.session,
                             model,
-                            column))
+                            column, message=_("This field must be unique, but it already exists!")))
                         unique = True
 
                 # If field is unique, validate it
                 if column.unique and not unique:
                     kwargs['validators'].append(Unique(self.session,
                         model,
-                        column))
+                        column, message=_("This field must be unique, but it already exists!")))
 
                 if not column.nullable and not isinstance(column.type, Boolean):
-                    kwargs['validators'].append(validators.Required())
+                    kwargs['validators'].append(validators.Required(message=_(u"this field can't be empty")))
 
                 # Apply label and description if it isn't inline form field
                 if self.view.model == mapper.class_:
@@ -317,12 +317,14 @@ class AdminModelConverter(ModelConverterBase):
     @classmethod
     def _string_common(cls, column, field_args, **extra):
         if column.type.length:
-            field_args['validators'].append(validators.Length(max=column.type.length))
+            field_args['validators'].append(validators.Length(max=column.type.length, message=_(u"length exceeds %(max_length)%d", max_length=column.type.length)))
 
     @converts('String', 'Unicode')
     def conv_String(self, column, field_args, **extra):
         if hasattr(column.type, 'enums'):
-            field_args['validators'].append(validators.AnyOf(column.type.enums))
+            field_args['validators'].append(validators.AnyOf(column.type.enums, 
+                                                             message=_(u"value of this field must be %(values)s", values=", ".join(str(i) for i in column.type.enums[:-1])) +
+                                                             _(u" or %(last_value)s", last_value=column.type.enums[-1]) if (len(column.type.enums) > 1) else ""))
             field_args['choices'] = [(f,f) for f in column.type.enums]
             return form.Select2Field(**field_args)
         self._string_common(column=column, field_args=field_args, **extra)
@@ -364,7 +366,7 @@ class AdminModelConverter(ModelConverterBase):
         
         unsigned = getattr(column.type, 'unsigned', False)
         if unsigned:
-            field_args['validators'].append(validators.NumberRange(min=0))
+            field_args['validators'].append(validators.NumberRange(min=0, message=_(u"this field must bigger than 0")))
         class MyIntegerField(fields.IntegerField):
             def __call__(self, **kwargs):
                 kwargs['type'] = 'number'
@@ -381,25 +383,25 @@ class AdminModelConverter(ModelConverterBase):
 
     @converts('databases.mysql.MSYear')
     def conv_MSYear(self, field_args, **extra):
-        field_args['validators'].append(validators.NumberRange(min=1901, max=2155))
+        field_args['validators'].append(validators.NumberRange(min=1901, max=2155, message=_(u"this field must between 1901 and 2155")))
         return fields.TextField(**field_args)
 
     @converts('databases.postgres.PGInet', 'dialects.postgresql.base.INET')
     def conv_PGInet(self, field_args, **extra):
         field_args.setdefault('label', u'IP Address')
-        field_args['validators'].append(validators.IPAddress())
+        field_args['validators'].append(validators.IPAddress(message=_(u"this field must be a valid IP address")))
         return fields.TextField(**field_args)
 
     @converts('dialects.postgresql.base.MACADDR')
     def conv_PGMacaddr(self, field_args, **extra):
         field_args.setdefault('label', u'MAC Address')
-        field_args['validators'].append(validators.MacAddress())
+        field_args['validators'].append(validators.MacAddress(message=_(u"this field must be a valid MAC address")))
         return fields.TextField(**field_args)
 
     @converts('dialects.postgresql.base.UUID')
     def conv_PGUuid(self, field_args, **extra):
         field_args.setdefault('label', u'UUID')
-        field_args['validators'].append(validators.UUID())
+        field_args['validators'].append(validators.UUID(message=_(u"this field must be a valid UUID")))
         return fields.TextField(**field_args)
 
     @converts('sqlalchemy.dialects.postgresql.base.ARRAY')

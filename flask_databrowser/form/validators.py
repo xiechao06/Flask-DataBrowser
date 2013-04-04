@@ -30,7 +30,7 @@ class Unique(object):
 
             if not hasattr(form, '_obj') or not form._obj == obj:
                 if self.message is None:
-                    self.message = field.gettext(u'Already exists.')
+                    self.message = field.gettext("This field must be unique, but it already exists!")
                 raise ValidationError(self.message)
         except NoResultFound:
             pass

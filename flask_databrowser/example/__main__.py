@@ -4,6 +4,7 @@
 @version: $
 """
 
+from flask.ext.login import LoginManager
 from flask.ext.principal import Permission, RoleNeed, PermissionDenied
 from flask.ext.databrowser import filters
 
@@ -19,7 +20,14 @@ def main():
 
     from flask.ext.principal import Principal
 
+    login_manager = LoginManager()
+    login_manager.setup_app(app)
     principal = Principal(app)
+
+
+    @login_manager.user_loader
+    def load_user(userid):
+        return User.get(userid)
 
     @app.errorhandler(PermissionDenied)
     def permission_denied(error):
@@ -148,7 +156,6 @@ def main():
     app.register_blueprint(accounts_bp, url_prefix="/accounts")
     app.config["SECRET_KEY"] = "JHdkj1;"
     app.config["CSRF_ENABLED"] = False
-
     app.run(debug=True, port=5001, host="0.0.0.0")
 
 if __name__ == "__main__":

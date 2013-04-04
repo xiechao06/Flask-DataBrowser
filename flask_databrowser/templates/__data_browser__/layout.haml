@@ -17,6 +17,12 @@
       %script src="{{ url_for('__data_browser__.static', filename='css/bootstrap/js/bootstrap.min.js')}}"
       %script src="{{ url_for('__data_browser__.static', filename='js/bootstrap-datepicker.js') }}"
       %script src="{{ url_for('__data_browser__.static', filename='js/form.js') }}"
+      %script
+        $(function () {
+          setTimeout(function () {
+              $(".flash").fadeOut("slow")
+          }, 3000);
+        })
       -block __data_browser__builtin_head_block
       -block __data_browser__customized_head_block
 
@@ -29,20 +35,20 @@
         %div
           -with messages = get_flashed_messages(with_categories=True)
             -if messages
-              -for category, m in messages
-                -if category == 'error'
-                  .alert.alert-error
-                    %a href="#" class="close" data-dismiss="alert" << x
-                    {{ m }}
-                -elif category == 'success'
-                  .alert.alert-success
-                    %a href="#" class="close" data-dismiss="alert" << x
-                    {{ m }}
-                -else
-                  .alert.alert-success
-                    %a href="#" class="close" data-dismiss="alert" << x
-                    {{ m }}
-
+              .flash
+                -for category, m in messages
+                  -if category == 'error'
+                    .alert.alert-error
+                      %a href="#" class="close" data-dismiss="alert" << x
+                      {{ m }}
+                  -elif category == 'success'
+                    .alert.alert-success
+                      %a href="#" class="close" data-dismiss="alert" << x
+                      {{ m }}
+                  -else
+                    .alert.alert-success
+                      %a href="#" class="close" data-dismiss="alert" << x
+                      {{ m }}
           -block body
 
     -block __data_browser__tail_block

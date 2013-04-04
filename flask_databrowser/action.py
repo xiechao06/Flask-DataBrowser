@@ -1,5 +1,5 @@
 # -*- coding: UTF-8 -*-
-from flask.ext.babel import gettext, ngettext
+from flask.ext.babel import gettext as _
 from .utils import raised_when, raised
 
 _raised_when_model_view_unset = raised_when(lambda inst, *args, **kwargs: not inst.model_view, 
@@ -25,16 +25,16 @@ class BaseAction(object):
         """
         will be called when all operations done 
         """
-        return self.model_name + ",".join(unicode(model) for model in models).join(
-            ['[', ']']) + gettext(u"被成功%(name)s", name=self.name)
+        return _(u"operation %(action)s applied upon %(model_name)s - [%(models)s] successfully", 
+                 action=self.name, model_name=self.model_name, models=",".join(unicode(model) for model in models))
 
     @_raised_when_model_view_unset
     def error_message(self, models):
         """
         will be called when operations break
         """
-        return self.model_name + ','.join(unicode(model) for model in models).join(
-            ['[', ']']) + gettext(u"%(name)s失败", name=self.name)
+        return _(u"operation %(action)s failed to apply upon %(model_name)s - [%(models)s]", 
+                 action=self.name, model_name=self.model_name, models=",".join(unicode(model) for model in models))
 
     def try_(self):
         pass
@@ -44,7 +44,7 @@ class BaseAction(object):
 
     def get_forbidden_msg_formats(self):
         ret = self._get_forbidden_msg_formats()
-        ret[-1] = self.model_name + gettext(u'[%%s]不能被%(name)s', name=self.name) # the default forbidden message
+        ret[-1] = self.model_name + _(u'%(action)s can\'t apply upon %(model_name)s [%%s]', action=self.name, model_name=self.model_name) # the default forbidden message
         return ret
 
     def test_enabled(self, model):
@@ -52,7 +52,7 @@ class BaseAction(object):
 
 class DeleteAction(BaseAction):
     
-    def __init__(self, name=gettext("删除"), permission=None, css_class="btn btn-danger"):
+    def __init__(self, name=_("remove"), permission=None, css_class="btn btn-danger"):
         super(DeleteAction, self).__init__(name, css_class)
         self.permission = permission
 
