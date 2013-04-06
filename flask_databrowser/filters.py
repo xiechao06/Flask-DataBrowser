@@ -86,6 +86,12 @@ class BaseFilter(TemplateParam):
                     ret.insert(0, (md5(",".join(unicode(r[0]) for r in ret)).hexdigest(), u'--%s--' % _(u"all")))
             return ret
 
+    @property
+    def real_value(self):
+        from flask import request
+        value = request.args.get(self.col_name+self.__notation__, "")
+        return value if value != (self.options and self.options[0][0]) else None
+
     def unfiltered(self, arg):
         return arg in (None, "") or arg == self.options[0][0]
 
@@ -150,8 +156,8 @@ class Contains(BaseFilter):
 
 class Between(BaseFilter):
     
-    def __init__(self, col_name, name="", sep="--"):
-        super(Between, self).__init__(col_name, name)
+    def __init__(self, col_name, name="", sep="--", default_value=None):
+        super(Between, self).__init__(col_name=col_name, name=name, default_value=default_value)
         self.sep = sep
 
     def __operator__(self, attr, value_list):

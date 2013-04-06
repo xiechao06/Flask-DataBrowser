@@ -6,8 +6,8 @@
   %script
     $(function(){
       $("select").select2();
-      $('input[type="date"]').datepicker({format: "yyyy-mm-dd"}); 
-      $('input[type="datetime"]').datepicker({displayTime: true});
+      $('input[data-role="date"]').datepicker(); 
+      $('input[data-role="datetime"]').datepicker({displayTime: true});
       -for filter in __filters__:
          var filter_values = {{ filter.value|tojson }};
          -if filter.multiple:
@@ -190,7 +190,12 @@
                                 %option value={{opt[0]}} << {{ opt[1] }}
                           -else
                             -for input_type in filter.input_type
-                              %input type="{{ input_type }}" name="{{ filter.op.id }}" class="{{ __css_classes__[filter.input_class] }}" min=0 placeholder="{{ _("请输入") + filter.label }}"
+                              -if input_type == 'date'
+                                %input type="text" data-role="date" name="{{ filter.op.id }}" class="{{ __css_classes__[filter.input_class] }}" min=0 placeholder="{{ _("请输入") + filter.label }}"
+                              -elif input_type == "datetime"
+                                %input type="text" data-role="datetime" name="{{ filter.op.id }}" class="{{ __css_classes__[filter.input_class] }}" min=0 placeholder="{{ _("请输入") + filter.label }}"
+                              -else
+                                %input type="{{ input_type }}" name="{{ filter.op.id }}" class="{{ __css_classes__[filter.input_class] }}" min=0 placeholder="{{ _("请输入") + filter.label }}"
                               -if not loop.last
                                 %div << {{ filter.sep }}
               %hr

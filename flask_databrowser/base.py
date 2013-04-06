@@ -833,6 +833,8 @@ class ModelView(object):
             (fltr.op.id, fltr) for fltr in shadow_column_filters)
         # initialize filter's value with default value
         for op_id, filter in op_id_2_filter.items():
+            # clear original value
+            filter.value = None
             if filter.default_value is not None:
                 filter.value = filter.default_value
         for k, v in request.args.lists():
