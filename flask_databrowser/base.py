@@ -191,10 +191,9 @@ class ModelView(object):
                 Form instance
         """
         try:
-            model = self.model()
-            form.populate_obj(model)
-            self.session.add(model)
+            model = self.do_populate_obj(form)
             self.on_model_change(form, model)
+            self.session.add(model)
             self.session.commit()
             return model
         except Exception, ex:
@@ -202,6 +201,12 @@ class ModelView(object):
                   'error')
             self.session.rollback()
             return None
+
+    def do_populate_obj(self, form):
+        model = self.model()
+        form.populate_obj(model)
+        return model
+
 
     def get_column_filters(self):
         return self.__column_filters__
