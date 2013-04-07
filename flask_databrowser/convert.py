@@ -1,8 +1,8 @@
 # -*- coding: UTF-8 -*-
-import numbers
 from flask.ext.databrowser import extra_widgets
 from flask.ext.databrowser import column_spec
 from flask.ext.databrowser.utils import get_description
+
 
 class ValueConverter(object):
     """
@@ -23,14 +23,13 @@ class ValueConverter(object):
         else:
             obj = self.obj
             if self.model_view and col_spec and hasattr(v, "__mapper__"):
-                from .utils import get_primary_key
                 ref_col_spec = self.model_view.data_browser.create_object_link_column_spec(
                     v.__mapper__.class_, col_spec.label)
                 if ref_col_spec:
                     obj = v
                     col_spec = ref_col_spec
 
-            if col_spec.formatter:
+            if col_spec.formatter and v:
                 v = col_spec.formatter(v, obj)
             css_class = col_spec.css_class
 
@@ -47,7 +46,7 @@ class ValueConverter(object):
                 w = extra_widgets.PlaceHolder(col_spec.template_fname, v, self.obj)
             else: # plaintext
                 # we try to convert it to link
-                    w = extra_widgets.PlainText(unicode(v))
+                w = extra_widgets.PlainText(unicode(v) if v else "")
 
         class FakeField(object):
             def __init__(self, label, widget, css_class=None, description=None):
