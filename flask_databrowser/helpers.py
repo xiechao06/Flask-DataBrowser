@@ -1,4 +1,6 @@
 # -*- coding: UTF-8 -*-
+import posixpath
+import urlparse
 import urllib
 from flask import request
 from flask.ext.databrowser.form.validators import Unique
@@ -22,4 +24,4 @@ def is_disabled_form_field(field):
 
 
 def is_batch_edit():
-    return len(request.args.getlist("selected-ids")) > 1
+    return len(posixpath.basename(urlparse.urlparse(urlparse.unquote(request.url)).path).split(',')) > 1
