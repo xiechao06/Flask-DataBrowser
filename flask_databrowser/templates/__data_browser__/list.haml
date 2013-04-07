@@ -28,11 +28,7 @@
               $(this).val(val).trigger("change");
           })
       $("input[name=rowtoggle]").click(function () {
-        if ($(this).attr('checked')) {
-          $("#list-table tbody input[type=checkbox]").attr("checked", "checked");
-        } else {
-          $("#list-table tbody input[type=checkbox]").removeAttr("checked");
-        }
+        $("#list-table tbody input[type=checkbox]").attr("checked", this.checked);
       });
       $("#main-form #actions input[name=action]").click(function(){
         var list_val = "";
