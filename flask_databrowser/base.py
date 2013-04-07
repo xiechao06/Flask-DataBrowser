@@ -454,7 +454,7 @@ class ModelView(object):
         
         for f in form:
             if isinstance(f.widget, PlaceHolder):
-                f.widget.set_args(**form_kwargs)
+                f.widget.set_args(**kwargs)
         create_url_map = {}
         for col in [f.name for f in form if f.name != "csrf_token"]:
             try:
@@ -472,7 +472,7 @@ class ModelView(object):
                            grouper_info=grouper_info,
                            actions=actions,
                            return_url=return_url, hint_message=hint_message,
-                           **form_kwargs)
+                           **kwargs)
 
     def scaffold_form(self, columns):
         """
