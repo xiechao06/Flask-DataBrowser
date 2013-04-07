@@ -8,6 +8,9 @@
       $("select").select2();
       $('input[data-role="date"]').datepicker(); 
       $('input[data-role="datetime"]').datepicker({displayTime: true});
+      $('span#actions a').click(function () {
+        window.location = "{{__object_url__}}" + "/" + $.map($("#list-table tbody input:checked"), function (e) { return $(e).val() }).join();
+      })
       -for filter in __filters__:
          var filter_values = {{ filter.value|tojson }};
          -if filter.multiple:
@@ -155,6 +158,8 @@
             .alert.alert-block
               %input value="{{ request.url }}" type="hidden" name="url"
               %span#actions
+                -if model_view.edit_allowable and model_view.batchly_edit_allowable
+                  %a href="#" class="btn btn-info" << {{ _('batch edit') }}
                 -for action in __actions__:
                   %input value="{{action.name}}" type="submit" name="action" class="{{action.css_class}}"
               %span#action-fillings

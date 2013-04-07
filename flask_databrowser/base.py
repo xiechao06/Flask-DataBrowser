@@ -390,6 +390,7 @@ class ModelView(object):
         if id_list is None:
             return redirect(return_url)
 
+        compound_form = None
         if len(id_list) == 1:
             model = self.get_one(id_list[0])
 
@@ -425,7 +426,6 @@ class ModelView(object):
                                    model_name=self.model_name, objs=",".join(
                     unicode(model) for model in model_list)) if self.can_edit else ""
             actions = self._get_customized_actions()
-
         grouper_info = {}
         for col in self._model_columns(model):
             grouper_2_cols = {}
@@ -457,7 +457,7 @@ class ModelView(object):
             except AttributeError:
                 pass
         return self.render(self.edit_template,
-                           form=compound_form, create_url_map=create_url_map,
+                           form=compound_form or form, create_url_map=create_url_map,
                            grouper_info=grouper_info,
                            actions=actions,
                            return_url=return_url, hint_message=hint_message, **form_kwargs)
@@ -754,8 +754,8 @@ class ModelView(object):
 
     def scaffold_actions(self):
         l = []
-        if self.edit_allowable and self.batchly_edit_allowable:
-            l.append({"name": _(u"batch edit"), "forbidden_msg_formats": {}})
+        #if self.edit_allowable and self.batchly_edit_allowable:
+            #l.append({"name": _(u"batch edit"), "forbidden_msg_formats": {}, "css_class": "btn btn-info"})
 
         l.extend(dict(name=action.name, value=action.name, css_class=action.css_class,
                       forbidden_msg_formats=action.get_forbidden_msg_formats()) for action in self._get_customized_actions())
