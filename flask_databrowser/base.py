@@ -191,7 +191,7 @@ class ModelView(object):
                 Form instance
         """
         try:
-            model = self.do_populate_obj(form)
+            model = self.populate_obj(form)
             self.on_model_change(form, model)
             self.session.add(model)
             self.session.commit()
@@ -202,7 +202,7 @@ class ModelView(object):
             self.session.rollback()
             return None
 
-    def do_populate_obj(self, form):
+    def populate_obj(self, form):
         model = self.model()
         form.populate_obj(model)
         return model
