@@ -206,9 +206,12 @@ class ModelView(object):
         form.populate_obj(model)
         return model
 
+    def get_column_filters(self):
+        return self.__column_filters__
+
     def _get_column_filters(self):
         ret = []
-        for fltr in self.__column_filters__:
+        for fltr in self.get_column_filters():
             fltr.model_view = self
             ret.append(fltr)
         return ret
@@ -541,7 +544,7 @@ class ModelView(object):
 
         value_converter = ValueConverter(obj, self)
 
-        # I fake a form since I wan't compose my fields and get the 
+        # I fake a form since I won't compose my fields and get the
         # hidden_tag (used to generate csrf) from model's form
         class FakeForm(object):
             def __init__(self, model_form, fields):
@@ -825,8 +828,7 @@ class ModelView(object):
                 idx = cnter.next()
                 yield dict(pk=pk, fields=fields,
                            css=self.patch_row_css(idx, r) or "",
-                           attrs=self.patch_row_attr(idx, r)
-                           )
+                           attrs=self.patch_row_attr(idx, r))
 
         return None if not models else g()
 
