@@ -362,7 +362,6 @@ class ModelView(object):
             _('%(user)s performed operation %(action)s', user=unicode(current_user), action=action),
             extra={"obj": obj, "obj_pk": self.scaffold_pk(obj), "action": action, "actor": current_user})
 
-
     def do_create_log(self, obj):
         from flask.ext.login import current_user
         self.data_browser.logger.debug(

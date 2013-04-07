@@ -33,12 +33,15 @@
         $("input").attr("disabled", true);
         $("select").select2("disable").attr("disabled", true);
       $("input[name='action']").click(function (ui) {
-        return confirm('您确认要' + $(this).attr("value") + '本条数据吗?'); 
+        -if h.is_batch_edit()
+          return confirm('您确认要' + $(this).attr("value") + '这些数据吗?'); 
+        -else
+          return confirm('您确认要' + $(this).attr("value") + '本条数据吗?'); 
       });
       setTimeout(function () {
           $("#flash").fadeOut("slow")
       }, 3000);
-      $("input,select").change(function () {
+      $("input[name!='hold_value'], select").change(function () {
         $("input#submit-btn").attr("disabled", false).attr("title", "");
       })
     });
