@@ -12,11 +12,11 @@
         window.location = "{{__object_url__}}" + "/" + $.map($("#list-table tbody input:checked"), function (e) { return $(e).val() }).join() + "?url=" + window.location;
       })
       -for filter in __filters__:
-         var filter_values = {{ filter.value|tojson }};
-         -if filter.multiple:
-           $("[name='{{ filter.op.id }}']").val(filter_values).trigger("change");
-         -else:
-           $("[name='{{ filter.op.id }}']").each(function(idx, val) {
+        var filter_values = {{ filter.value|tojson }};
+        -if filter.multiple:
+          $("[name='{{ filter.op.id }}']").val(filter_values).trigger("change");
+        -else:
+          $("[name='{{ filter.op.id }}']").each(function(idx, val) {
             var val = filter_values
             if ($.isArray(filter_values)){
               val = filter_values[idx]
@@ -26,7 +26,7 @@
                 $(this).attr("checked", "true")
             -else
               $(this).val(val).trigger("change");
-           })
+          })
       $("input[name=rowtoggle]").click(function () {
         if ($(this).attr('checked')) {
           $("#list-table tbody input[type=checkbox]").attr("checked", "checked");
@@ -35,27 +35,24 @@
         }
       });
       $("#main-form #actions input[name=action]").click(function(){
-          var list_val = "";
-          $("#list-table tbody input:checked").each(function(){
-            list_val += $(this).val() +",";
-          });
-          if (list_val == ""){
-              alert("{{ _("请至少选择一条记录！") }}");
-              return false;
-          }
-          if ($(this).val() == "{{ _('批量修改') }}"){
-              $("#main-form").attr("method", "GET");
-              $("#main-form").attr("action", "{{ __object_url__ }}/"+ list_val);
-              return true;
-          }
-          return confirm("您确认要" + $(this).val() + "选中的记录?");
+        var list_val = "";
+        $("#list-table tbody input:checked").each(function(){
+          list_val += $(this).val() +",";
+        });
+        if (list_val == ""){
+          alert("{{ _("请至少选择一条记录！") }}");
+          return false;
+        }
+        if ($(this).val() == "{{ _('批量修改') }}"){
+          $("#main-form").attr("method", "GET");
+          $("#main-form").attr("action", "{{ __object_url__ }}/"+ list_val);
+            return true;
+        }
+        return confirm("您确认要" + $(this).val() + "选中的记录?");
       });
       $("#reset-button").click(function(){
-       $("select").select2("val","");
+        $("select").select2("val","");
       });
-      setTimeout(function () {
-          $("#flash").fadeOut("slow")
-      }, 3000);
       -if __rows_action_desc__
         var rows_action_desc = {{ __rows_action_desc__|tojson|safe }}; // row -> (name: row.name, actions: action_name-> forbidden_code)
         var actions = {{ __action_2_forbidden_message_formats__ | tojson | safe }}; // action_name -> ()
@@ -67,10 +64,10 @@
             for (var action_name in action_2_forbidden_code) {
               var forbidden_code = action_2_forbidden_code[action_name];
               if (forbidden_code == 0) {
-                  continue;
+                continue;
               }
               if (!(action_name in action_2_rows)) {
-                  action_2_rows[action_name] = new Array();
+                action_2_rows[action_name] = new Array();
               }
               if (!(forbidden_code in action_2_rows[action_name])) {
                 action_2_rows[action_name][forbidden_code] = new Array();
@@ -87,7 +84,7 @@
                 var rows = forbidden_code_2_rows[forbidden_code];
                 var format = actions[$(this).val()][forbidden_code];
                 if (format == undefined) {
-                    format = actions[$(this).val()][-1];
+                  format = actions[$(this).val()][-1];
                 }
                 tooltip += sprintf(format, rows.toString()) + '\n';
               }
