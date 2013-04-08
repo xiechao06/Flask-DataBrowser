@@ -46,7 +46,7 @@ class ValueConverter(object):
                 w = extra_widgets.PlaceHolder(col_spec.template_fname, v, self.obj)
             else: # plaintext
                 # we try to convert it to link
-                w = extra_widgets.PlainText(unicode(v) if v else "")
+                w = extra_widgets.PlainText(unicode(v) if v is not None else "")
 
         class FakeField(object):
             def __init__(self, label, widget, css_class=None, description=None):
