@@ -29,7 +29,7 @@ class ValueConverter(object):
                     obj = v
                     col_spec = ref_col_spec
 
-            if col_spec.formatter and v:
+            if col_spec.formatter and v is not None:
                 v = col_spec.formatter(v, obj)
             css_class = col_spec.css_class
 
