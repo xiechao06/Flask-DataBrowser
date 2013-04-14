@@ -4,9 +4,9 @@
         
 -block body
   -block __data_browser__hint_block
-      -if hint_message
-        .alert.alert-info
-          * {{ hint_message }}
+    -if hint_message
+      .alert.alert-info
+        * {{ hint_message }}
   %div.container
     =lib.render_form(form, return_url, extra)
 

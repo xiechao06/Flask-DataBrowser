@@ -1,6 +1,5 @@
 # -*- coding: UTF-8 -*-
 import types
-import os
 import re
 import itertools
 import copy
@@ -12,7 +11,8 @@ from flask.ext.babel import ngettext, gettext as _
 from .utils import get_primary_key, named_actions, get_doc_from_table_def, request_from_mobile
 from .action import DeleteAction
 from flask.ext.databrowser.convert import ValueConverter
-from flask.ext.databrowser.column_spec import LinkColumnSpec, ColumnSpec, InputColumnSpec, PLACE_HOLDER
+from flask.ext.databrowser.column_spec import LinkColumnSpec, ColumnSpec, \
+    InputColumnSpec
 from flask.ext.databrowser.extra_widgets import PlaceHolder
 from flask.ext.databrowser.form import form
 from flask.ext.databrowser.exceptions import  ValidationError
@@ -57,16 +57,17 @@ class ModelView(object):
         return response
 
     def within_domain(self, url, bp_name):
-        pb_name = bp_name.lower()
         url = url.lower()
         import urlparse, posixpath
         path_ = urlparse.urlparse(url).path
         segs = path_.split("/")[1:]
         if len(segs) < 2:
             return False
-        if segs[0] != bp_name:
+        if segs[0] != bp_name.lower():
             return False
-        return any("/"+seg in {self.object_view_url, self.list_view_url} for seg in segs[1:]) 
+        return any(
+            "/" + seg in {self.object_view_url, self.list_view_url} for seg in
+            segs[1:])
 
     def __list_filters__(self):
         return []
@@ -203,7 +204,6 @@ class ModelView(object):
         form.populate_obj(model)
         return model
 
-
     def get_column_filters(self):
         return self.__column_filters__
 
@@ -259,13 +259,16 @@ class ModelView(object):
                 if field.raw_data is not None:
                     field.populate_obj(model, name)
             self.do_update_log(model, _("update"))
-            flash(_(u"%(model_name)s %(model)s was updated and saved", model_name=self.model_name, model=unicode(model)))
+            flash(_(u"%(model_name)s %(model)s was updated and saved",
+                    model_name=self.model_name, model=unicode(model)))
             self.on_model_change(form, model)
             self.session.commit()
             return True
         except Exception, ex:
-            flash(_('Failed to update %(model_name)s %(model)s due to %(error)s', model_name=self.model_name, model=unicode(model), error=str(ex)),
-                  'error')
+            flash(
+                _('Failed to update %(model_name)s %(model)s due to %(error)s',
+                  model_name=self.model_name, model=unicode(model),
+                  error=str(ex)), 'error')
             self.session.rollback()
             return False
 
@@ -316,13 +319,13 @@ class ModelView(object):
             model = self.create_model(form)
             if model:
                 self.do_create_log(model)
-                flash(_(u'%(model_name)s %(model)s was created successfully', model_name=self.model_name, model=unicode(model)))
+                flash(_(u'%(model_name)s %(model)s was created successfully',
+                        model_name=self.model_name, model=unicode(model)))
                 if '_add_another' in request.form:
                     return redirect(self.url_for_object(None, url=return_url))
                 else:
                     return redirect(return_url)
         create_url_map = {}
-        converter = ValueConverter(self.model, self)
         for col in [f.name for f in form if f.name != "csrf_token"]:
             attr = getattr(self.model, col if isinstance(col, basestring) else col.col_name)
             if hasattr(attr.property, "direction"):
@@ -336,6 +339,7 @@ class ModelView(object):
             if isinstance(v, types.FunctionType):
                 v = v(self)
             kwargs[k] = v
+<<<<<<< HEAD
         return self.render(self.get_create_template(), form=form, create_url_map=create_url_map,
                            return_url=return_url, extra="create", hint_message=_(u"create %(model_name)s", model_name=self.model_name), 
                        **kwargs)
@@ -345,12 +349,37 @@ class ModelView(object):
         self.data_browser.logger.debug(
             _('%(user)s performed operation %(action)s', user=unicode(current_user), action=action),
             extra={"obj": obj, "obj_pk": self.scaffold_pk(obj), "action": action, "actor": current_user})
+=======
+        return self.render(self.create_template, form=form,
+                           create_url_map=create_url_map,
+                           return_url=return_url, extra="create",
+                           hint_message=_(u"create %(model_name)s",
+                                          model_name=self.model_name),
+                           **kwargs)
+
+    def do_update_log(self, obj, action):
+        from flask.ext.login import current_user
+        def _log(obj_):
+            self.data_browser.logger.debug(
+                _(unicode(current_user) + ' performed ' + action),
+                extra={"obj": obj_, "obj_pk": self.scaffold_pk(obj_),
+                       "action": action, "actor": current_user})
+
+        if isinstance(obj, list) or isinstance(obj, tuple):
+            for obj_ in obj:
+                _log(obj_)
+        else:
+            _log(obj)
+>>>>>>> 4fe21a8fc449e4b014382fb074a9036136208c19
 
     def do_create_log(self, obj):
         from flask.ext.login import current_user
+
         self.data_browser.logger.debug(
-            _('%(model_name)s %(model)s was created successfully', model_name=self.model_name, model=unicode(obj)),
-            extra={"obj": obj, "obj_pk": self.scaffold_pk(obj), "action": _(u"create"), "actor": current_user})
+            _('%(model_name)s %(model)s was created successfully',
+              model_name=self.model_name, model=unicode(obj)),
+            extra={"obj": obj, "obj_pk": self.scaffold_pk(obj),
+                   "action": _(u"create"), "actor": current_user})
 
     def edit_view(self, id_):
         """
@@ -380,10 +409,9 @@ class ModelView(object):
             form = self.get_edit_form(obj=model)
 
             if form.validate_on_submit():
-                form = self.get_edit_form(obj=model)
                 if self.update_model(form, model):
                     return redirect(return_url)
-            compound_form = self.get_compound_edit_form(obj=model)
+            compound_form = self.get_compound_edit_form(obj=model, form=form)
             hint_message = _(u"edit %(model_name)s-%(obj)s",
                                    model_name=self.model_name,
                                    obj=unicode(model)) if self.can_edit else ""
@@ -409,6 +437,7 @@ class ModelView(object):
                                    model_name=self.model_name, objs=",".join(
                     unicode(model) for model in model_list)) if self.can_edit else ""
             actions = self._get_customized_actions()
+
         grouper_info = {}
         for col in self._model_columns(model):
             grouper_2_cols = {}
@@ -426,9 +455,8 @@ class ModelView(object):
         
         for f in form:
             if isinstance(f.widget, PlaceHolder):
-                f.widget.set_args(**form_kwargs)
+                f.widget.set_args(**kwargs)
         create_url_map = {}
-        converter = ValueConverter(self.model, self)
         for col in [f.name for f in form if f.name != "csrf_token"]:
             try:
                 attr = getattr(self.model, col if isinstance(col, basestring) else col.col_name)
@@ -439,11 +467,18 @@ class ModelView(object):
                         create_url_map[col] = create_url
             except AttributeError:
                 pass
+<<<<<<< HEAD
         return self.render(self.get_edit_template(),
                            form=compound_form or form, create_url_map=create_url_map,
+=======
+        return self.render(self.edit_template,
+                           form=compound_form or form,
+                           create_url_map=create_url_map,
+>>>>>>> 4fe21a8fc449e4b014382fb074a9036136208c19
                            grouper_info=grouper_info,
                            actions=actions,
-                           return_url=return_url, hint_message=hint_message, **form_kwargs)
+                           return_url=return_url, hint_message=hint_message,
+                           **kwargs)
 
     def scaffold_form(self, columns):
         """
@@ -455,25 +490,23 @@ class ModelView(object):
         form_class = get_form(self.model, converter, base_class=self.form_class, only=columns,
                               exclude=None, field_args=None)
         return form_class
-
-
-    def scaffold_inline_form_models(self, form_class):
-        """
-            Contribute inline models to the form
-
-            :param form_class:
-                Form class
-        """
-        converter = self.model_form_converter(self.session, self)
-        inline_converter = self.inline_model_form_converter(self.session, self)
-
-        for m in self.inline_models:
-            form_class = inline_converter.contribute(converter,
-                                                     self.model,
-                                                     form_class,
-                                                     m)
-
-        return form_class
+    # def scaffold_inline_form_models(self, form_class):
+    #     """
+    #         Contribute inline models to the form
+    #
+    #         :param form_class:
+    #             Form class
+    #     """
+    #     converter = self.model_form_converter(self.session, self)
+    #     inline_converter = self.inline_model_form_converter(self.session, self)
+    #
+    #     for m in self.inline_models:
+    #         form_class = inline_converter.contribute(converter,
+    #                                                  self.model,
+    #                                                  form_class,
+    #                                                  m)
+    #
+    #     return form_class
 
     def _model_columns(self, obj):
         # select the model columns from __form_columns__
@@ -505,22 +538,25 @@ class ModelView(object):
             self.__edit_form__ = self.scaffold_form(self._model_columns(obj))
         return self.__edit_form__(obj=obj)
 
-    def get_compound_edit_form(self, obj=None):
-        model_form = self.get_edit_form(obj=obj)
+    def get_compound_edit_form(self, obj=None, form=None):
+        if not form:
+            form = self.get_edit_form(obj=obj)
 
         if not self.__form_columns__:
-            return model_form
+            return form
 
         value_converter = ValueConverter(obj, self)
 
-        # I fake a form since I wan't compose my fields and get the 
+        # I fake a form since I won't compose my fields and get the
         # hidden_tag (used to generate csrf) from model's form
         class FakeForm(object):
             def __init__(self, model_form, fields):
                 self.model_form = model_form
                 self.fields = fields
+
             def __iter__(self):
                 return iter(self.fields)
+
             def hidden_tag(self):
                 return self.model_form.hidden_tag()
 
@@ -528,18 +564,18 @@ class ModelView(object):
         r = self.preprocess(obj)
         for col in self.__form_columns__:
             if isinstance(col, InputColumnSpec):
-                ret.append(model_form[col.col_name])
+                ret.append(form[col.col_name])
             elif isinstance(col, basestring):
                 try: 
                     # if it is a models property, we yield from model_form
-                    ret.append(model_form[col])
+                    ret.append(form[col])
                 except KeyError:
                     col_spec = self._col_spec_from_str(col)
                     widget = value_converter(operator.attrgetter(col)(r), col_spec)
                     ret.append(widget)
             else:
                 ret.append(value_converter(operator.attrgetter(col.col_name)(r), col))
-        return FakeForm(model_form, ret)
+        return FakeForm(form, ret)
 
     def get_batch_edit_form(self, obj=None):
         if self.__batch_edit_form__ is None:
@@ -810,10 +846,14 @@ class ModelView(object):
                 idx = cnter.next()
                 yield dict(pk=pk, fields=fields,
                            css=self.patch_row_css(idx, r) or "",
+<<<<<<< HEAD
                            attrs=self.patch_row_attr(idx, r),
                            repr_=self.repr_obj(r), 
                            obj=r, 
                            forbidden_actions=[action.name for action in self._get_customized_actions() if action.test_enabled(r) != 0])
+=======
+                           attrs=self.patch_row_attr(idx, r))
+>>>>>>> 4fe21a8fc449e4b014382fb074a9036136208c19
 
         return [] if not models else g()
 
@@ -897,9 +937,7 @@ class ModelView(object):
             for model in models:
                 id = self.scaffold_pk(model)
                 preprocessed_model = self.preprocess(model)
-                d = {}
-                d["name"] = unicode(model)
-                d["actions"] = {}
+                d = {"name": unicode(model), "actions": {}}
                 for action in customized_actions:
                     error_code = action.test_enabled(preprocessed_model)
                     if error_code is not None:
