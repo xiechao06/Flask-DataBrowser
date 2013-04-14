@@ -5,7 +5,7 @@ import itertools
 import copy
 import operator
 import json
-from flask import render_template, flash, request, url_for, redirect, abort
+from flask import render_template, flash, request, url_for, redirect, abort, Flask
 from flask.ext.principal import PermissionDenied
 from flask.ext.babel import ngettext, gettext as _
 from .utils import get_primary_key, named_actions, get_doc_from_table_def, request_from_mobile
@@ -339,17 +339,6 @@ class ModelView(object):
             if isinstance(v, types.FunctionType):
                 v = v(self)
             kwargs[k] = v
-<<<<<<< HEAD
-        return self.render(self.get_create_template(), form=form, create_url_map=create_url_map,
-                           return_url=return_url, extra="create", hint_message=_(u"create %(model_name)s", model_name=self.model_name), 
-                       **kwargs)
-
-    def do_update_log(self, obj, action):
-        from flask.ext.login import current_user
-        self.data_browser.logger.debug(
-            _('%(user)s performed operation %(action)s', user=unicode(current_user), action=action),
-            extra={"obj": obj, "obj_pk": self.scaffold_pk(obj), "action": action, "actor": current_user})
-=======
         return self.render(self.create_template, form=form,
                            create_url_map=create_url_map,
                            return_url=return_url, extra="create",
@@ -370,7 +359,6 @@ class ModelView(object):
                 _log(obj_)
         else:
             _log(obj)
->>>>>>> 4fe21a8fc449e4b014382fb074a9036136208c19
 
     def do_create_log(self, obj):
         from flask.ext.login import current_user
@@ -467,14 +455,9 @@ class ModelView(object):
                         create_url_map[col] = create_url
             except AttributeError:
                 pass
-<<<<<<< HEAD
-        return self.render(self.get_edit_template(),
-                           form=compound_form or form, create_url_map=create_url_map,
-=======
         return self.render(self.edit_template,
                            form=compound_form or form,
                            create_url_map=create_url_map,
->>>>>>> 4fe21a8fc449e4b014382fb074a9036136208c19
                            grouper_info=grouper_info,
                            actions=actions,
                            return_url=return_url, hint_message=hint_message,
@@ -592,14 +575,6 @@ class ModelView(object):
     def session(self):
         return self.data_browser.db.session
 
-        #def __init__(self, model):
-        #self.model = model
-        #self.blueprint = None
-        #self.data_browser = None
-        #self.extra_params = {}
-        #for fltr in self.__column_filters__:
-        #fltr.model_view = self
-
     @property
     def list_view_url(self):
         return self.object_view_url + "-list"
@@ -614,35 +589,37 @@ class ModelView(object):
                             self.model.__name__).lstrip("-")
 
     def url_for_list(self, *args, **kwargs):
+        blueprint_name = "" if isinstance(self.blueprint, Flask) else self.blueprint.name 
         return url_for(
-            ".".join([self.blueprint.name, self.list_view_endpoint]), *args,
+            ".".join([blueprint_name, self.list_view_endpoint]), *args,
             **kwargs)
 
     def url_for_list_json(self, *args, **kwargs):
+        blueprint_name = "" if isinstance(self.blueprint, Flask) else self.blueprint.name 
         return url_for(
-            ".".join([self.blueprint.name, self.list_view_endpoint+"_json"]), *args,
+            ".".join([blueprint_name, self.list_view_endpoint+"_json"]), *args,
             **kwargs)
 
     def url_for_object(self, model, **kwargs):
+        blueprint_name = "" if isinstance(self.blueprint, Flask) else self.blueprint.name 
         if model:
             return url_for(
-                ".".join([self.blueprint.name, self.object_view_endpoint]), id_=self.scaffold_pk(model),
+                ".".join([blueprint_name, self.object_view_endpoint]), id_=self.scaffold_pk(model),
                 **kwargs)
         else:
-            import pdb; pdb.set_trace()
-            
             return url_for(
-                ".".join([self.blueprint.name, self.object_view_endpoint]),
+                ".".join([blueprint_name, self.object_view_endpoint]),
                 **kwargs)
 
     def url_for_object_preview(self, model, **kwargs):
+        blueprint_name = "" if isinstance(self.blueprint, Flask) else self.blueprint.name 
         if model:
             return url_for(
-                ".".join([self.blueprint.name, self.object_view_endpoint]), id_=self.scaffold_pk(model),
+                ".".join([blueprint_name, self.object_view_endpoint]), id_=self.scaffold_pk(model),
                 preview=True, **kwargs)
         else:
             return url_for(
-                ".".join([self.blueprint.name, self.object_view_endpoint]),
+                ".".join([blueprint_name, self.object_view_endpoint]),
                 preview=True, **kwargs)
 
     @property
@@ -846,14 +823,10 @@ class ModelView(object):
                 idx = cnter.next()
                 yield dict(pk=pk, fields=fields,
                            css=self.patch_row_css(idx, r) or "",
-<<<<<<< HEAD
                            attrs=self.patch_row_attr(idx, r),
                            repr_=self.repr_obj(r), 
                            obj=r, 
                            forbidden_actions=[action.name for action in self._get_customized_actions() if action.test_enabled(r) != 0])
-=======
-                           attrs=self.patch_row_attr(idx, r))
->>>>>>> 4fe21a8fc449e4b014382fb074a9036136208c19
 
         return [] if not models else g()
 
