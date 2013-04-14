@@ -1,0 +1,153 @@
+{# 
+  此模板专门用于移动设备，是一个简洁版本。特点如下:
+  1. 不支持批量操作
+  2. 长按后对单个对象进行当前可以进行的操作
+  3. 不支持过滤条件
+  4. 不支持排序
+  5. 可以点击加载数据
+  6. 操作结果(或者错误)会以弹出框的形式展示出来
+#}
+
+{% extends "__data_browser__/layout_mob.html" %}
+{% block __data_browser__builtin_head_block %}
+<script src="{{ url_for('__data_browser__.static', filename='js/sprintf-0.6.js') }}" ></script>
+<script src="{{ url_for('__data_browser__.static', filename='js/waypoints.min.js') }}" ></script>
+<script type="text/javascript">
+  $(document).bind('pageinit', function(event, data) {
+    $(".row").bind('taphold', function () {
+      var popup = $("#action-menu");
+      popup.find("[data-role=divider]").text($(this).find("a").text());
+      popup.find("input[name=selected-ids]").val($(this).attr("data-pk"));
+      {# disable actions #}
+      var actions = $(this).attr("data-forbidden-actions").split(",");
+      $.each(actions, function (idx, action_name) {
+          $("#action-menu li[data-action=" + action_name + "]").hide();
+        });
+      popup.popup("open");
+      });
+    $("#action-menu li.action").bind("tap", function () {
+        $("#action-menu form input[name=action]").val($(this).find("a").text());
+      })
+    $("#action-menu").on('popupafterclose', function () {
+      $("#action-menu").popup("close");
+      //$("#action-menu li").show();
+      var action = $("#action-menu input[name=action]").val();
+      if (action.length > 0) {
+        var popup = $("#assert-dialog");
+        popup.find("h3").text(sprintf("{{ _("Are you sure to %%s %%s?") }}", $("#action-menu input[name=action]").val(), 
+            $("#action-menu [data-role=list-divider]").text()));
+        popup.popup("open");
+      }
+      });
+    $("#assert-dialog input[type=submit]").bind("tap", function () {
+        $("#action-menu form").submit();
+        $("#action-menu input[name=action]").val("");
+        });
+    var loadMore = $('#rows').children('.load-more');
+    var current_page = {{ request.args.get("page", 1) }};
+    var args_except_page = new Array();
+    {% for k, v in request.args.items() %}
+      {% if k != "page" %}
+        args_except_page.push({{k}}+"="+{{v}}]);
+      {% endif %}
+    {% endfor %}
+    loadMore.bind('click', function () {
+        // load the next page
+        $.mobile.loading('show', {
+          text: "{{ _('loading..') }}",
+          textVisible: true,
+          theme: 'b',
+          html: ""
+        });
+        $.getJSON('{{model_view.url_for_list_json()}}' + "?" + args_except_page.concat(["page="+(current_page+1)]).join("&"),
+          function (rows) {
+            var out = [];
+            for (var i=0; i < rows['data'].length; ++i) {
+              var row = rows['data'][i];
+              out.push(sprintf('<li class="row" id="%s" data-pk="%s" data-forbidden_actions=%s><a href="%s">%s</a></li>', 
+                    "row-" + row['pk'], row['pk'], row['forbidden_actions'].join(","), row['obj_url'], row['repr_'])); 
+            }    
+            $('#rows').append(out.join(''))
+            if (rows['has_next']) {
+              $('#rows').append(loadMore);
+            } else {
+              loadMore.hide(); 
+            }
+            $('#rows').listview('refresh'); 
+            current_page += 1; 
+            }).fail(function () {
+                $.mobile.loading("hide");
+                $('#load-fail-popup').popup("open");
+                setTimeout(function () {
+                    $("#load-fail-popup").popup("close")
+                }, 1000);
+              }).always(function () {
+              $.mobile.loading("hide");
+            });
+    });
+  })
+
+</script>
+{% endblock %}
+{% block body %}
+  {% block header %}
+    <div data-role="header" data-position="fixed">
+      <h1>{{ model_view.model_name + _("list") }}</h1>
+      {% if model_view.creation_allowable %}
+      <a href="{{ model_view.url_for_object(None, url=request.url) }}" data-role="button" data-icon="plus" class="ui-btn-right" data-theme="b">{{ _("create") }}</a>
+      {% endif %}
+    </div>
+  {% endblock %}
+  {% block lists %}
+  <div data-role="content">
+    {% if __data__ %}
+    <ul id="rows" data-role="listview" data-position="" data-inset="true" data-filter="true">
+      {% for row in __data__ %}
+        <li class="row" id="row-{{ row.pk }}" data-pk="{{ row.pk }}" data-forbidden-actions="{{ ",".join(row.forbidden_actions) }}">
+        {% if model_view.edit_allowable %}
+          <a href="{{ model_view.url_for_object(row.obj, url=request.url) }}">{{ row.repr_|safe }}</a>
+        {% else %}
+          <a href="{{ model_view.url_for_object_preview(row.obj, url=request.url) }}">{{ row.repr_|safe }}</a>
+        {% endif %}
+        </li>
+        {% endfor %}
+        {% if __pagination__.has_next %}
+          <li class="load-more" data-icon="refresh"><a href="#">{{ _("click to load more") }}</a></li>
+        {% endif %}
+    </ul>
+    {% else %}
+      {{ _("sorry, no data available!") }}
+    {% endif %}
+    <div data-role="popup" class="ui-content" id="action-menu" data-corners="true" data-theme="d">
+      <form method="POST" action="{{ request.url }}">
+        <input type="hidden" name="selected-ids" />
+        <input type="hidden" name="action" />
+        <ul data-role="listview">
+          <li data-role="divider" data-theme="e"></li>
+          {% for action in __actions__ %}  
+            <li data-icon="{{ action.data_icon }}" class="action" data-action="{{ action.name }}"><a href="#assert-popup" data-mini="true">{{ action.name }}</a></li>
+          {% endfor %}
+        </ul>
+      </form>
+    </div>
+		<div data-role="popup" id="assert-dialog" data-overlay-theme="a" data-theme="c" class="ui-corner-all">
+			<div data-role="header" data-theme="a" class="ui-corner-top">
+        <h1>{{ _("Warning") }}</h1>
+			</div>
+			<div data-role="content" data-theme="d" class="ui-corner-bottom ui-content">
+        <h3 class="ui-title"></h3>
+        <a href="#" data-role="button" data-inline="true" data-rel="back" data-theme="c">{{ _("Cancel") }}</a>    
+        <input type="submit" data-role="button" data-inline="true" data-rel="back" data-transition="flow" data-theme="b" value="{{ _("OK") }}" />
+			</div>
+    </div>
+  </div>
+  <div id="load-fail-popup" data-role="popup" class="ui-content" id="action-menu" data-corners="true" data-theme="e">
+    {{ _("loading error") }}
+  </div>
+  {% endblock %}
+  {% block footer %}
+  <div data-role="footer" data-position="fixed">
+    <h2>{{ _("total number of items: %(count)d", count=__count__) }}</h2>
+  </div>
+  {% endblock %}
+{% endblock %}

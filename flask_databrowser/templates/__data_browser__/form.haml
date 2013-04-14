@@ -44,4 +44,10 @@
       $("input[name!='hold_value'], select").change(function () {
         $("input#submit-btn").attr("disabled", false).attr("title", "");
       })
+      $("input[type=reset]").click(function () {
+        $(this).parents('form')[0].reset();
+        $("select").trigger("change");
+        $("input#submit-btn").attr("disabled", true);
+        return false;
+      });
     });

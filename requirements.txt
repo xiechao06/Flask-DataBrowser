@@ -4,3 +4,5 @@ Hamlish-Jinja
 PyYAML==3.10
 wtforms
 Flask-Principal>=0.3.3
+Flask-WTF==0.8.3
+Flask-Babel==0.8

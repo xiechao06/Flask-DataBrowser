@@ -1,0 +1,104 @@
+{# todo batch edit unsupported #}
+{% extends "__data_browser__/layout_mob.html" %}
+
+{% block body %}
+<div data-role="header">
+  <h1>{{ hint_message }}</h1>
+  <a data-rel="back" data-role="button" href="{{ request.args.get("url", "/")}}" data-theme="b">{{ _("back") }}</a>
+</div>
+<form action="" {% if form.has_file_field %} enctype="multipart/form-data"{% endif %} method="POST">
+  <div data-role="content">
+      <ul data-role="listview">
+        {{ form.hidden_tag() if form.hidden_tag is defined }}
+        {% for f in form if f.type != 'HiddenField' and f.type != 'CSRFTokenField' %}
+          <li data-role="fieldcontain">
+            <label for="{{ f.name }}">{{ f.label.text }} {% if f.description %} (<small>{{ f.description }}</small>) {% endif %}
+              {% if f.type != 'ReadOnlyField' and h.is_required_form_field(f) %}
+                  <strong style="color: red">&#42;</strong>
+              {% else %}
+                  &nbsp;
+              {% endif %}
+            </label>
+            {% if not focus_set %}
+              {{ f(**{"autofocus": 'autofocus', "data-mini": 'true'})|safe }}
+                {% set focus_set = True %}
+            {% else %}
+              {{ f(**{'data-mini': "true"})|safe }}
+            {% endif %}
+            {% if f.name in create_url_map %}
+              <a href="{{ create_url_map[f.name] }}" data-role="button">新建</a>
+            {% endif %}
+            </li>
+            {% if f.errors %}
+                <ul>
+                    {% for e in f.errors if e is string %}
+                        <li>{{ e }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+  </div>
+  <div data-role="footer">
+    <div data-role="controlgroup" data-type="horizontal" style="text-align: center">
+      <input id="submit-btn" name="action" type="submit" value="{{ _('commit') }}" disabled="disabled" />
+      <input id="reset-btn" type="reset" value="{{ _('reset') }}" />
+      {% if extra == "create" %}
+      <input name="_add_another" type="submit" value="{{ _('add another') }}" />
+      {% else %}
+      {% for action in actions %}
+      <input name="action" value="{{action.name}}" type="submit" name="action" data-icon="{{ action.data_icon }}"/>
+      {% endfor %}
+      {% endif %}
+    </div>
+  </div>
+</form>
+{% endblock %}
+
+
+{% block __data_browser__tail_block %}
+<script type="text/javascript">
+    $(document).bind('pageinit', function() {
+      {% if grouper_info %}
+        grouper_info = {{ grouper_info|tojson|safe }};
+        for (var grouper_name in grouper_info) {
+          var grouper_e = $('[name="' + grouper_name + '"]');
+          var input_e = $('[name="' + grouper_name.split(".")[0] + '"]');
+
+          grouper_e.change((function (grouper_e, input_e) {
+            return function(ui) {
+              input_e.empty();
+              $.each(grouper_info[grouper_e.attr("name")][grouper_e.val()], function (idx, entry) {
+                input_e.append('<option value="' + entry.id + '">' + entry.text + "</option>");
+              });
+              input_e.select2()
+            }
+              })(grouper_e, input_e))
+        }
+      {% endif %}
+      {% if request.args.get("preview") == 'True' %}
+        $("input").attr("disabled", true);
+        $("select").select2("disable").attr("disabled", true);
+      {% endif %}
+
+      $("input[name='action']").click(function (ui) {
+        {% if h.is_batch_edit() %}
+          return confirm('您确认要' + $(this).attr("value") + '这些数据吗?'); 
+        {% else %}
+          return confirm('您确认要' + $(this).attr("value") + '本条数据吗?'); 
+        {% endif %}
+      });
+      setTimeout(function () {
+          $("#flash").fadeOut("slow")
+      }, 3000);
+      $("input[name!='hold_value'], select").change(function () {
+        $("input#submit-btn").button("enable");
+      })
+      $("input[type=reset]").click(function () {
+        $("input#submit-btn").button("disable");
+        return true;
+      });
+    });
+</script>
+{% endblock %}

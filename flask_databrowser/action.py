@@ -8,10 +8,11 @@ _raised_when_model_view_unset = raised_when(lambda inst, *args, **kwargs: not in
 
 class BaseAction(object):
 
-    def __init__(self, name, css_class="btn btn-info"):
+    def __init__(self, name, css_class="btn btn-info", data_icon=""):
         self.name = name
         self.model_view = None
         self.css_class = css_class
+        self.data_icon = data_icon
 
     def op(self, obj):
         return ""
@@ -52,8 +53,8 @@ class BaseAction(object):
 
 class DeleteAction(BaseAction):
     
-    def __init__(self, name=_("remove"), permission=None, css_class="btn btn-danger"):
-        super(DeleteAction, self).__init__(name, css_class)
+    def __init__(self, name=_("remove"), permission=None, css_class="btn btn-danger", data_icon="delete"):
+        super(DeleteAction, self).__init__(name, css_class, data_icon)
         self.permission = permission
 
     def op(self, obj):

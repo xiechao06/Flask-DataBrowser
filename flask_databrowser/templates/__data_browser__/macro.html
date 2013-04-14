@@ -77,15 +77,16 @@
 {% endmacro %}
 
 {% macro create() %}
-    <input name="_add_another" type="submit" class="btn btn-large" value="{{ _gettext('保存并继续添加') }}" />
+    <input name="_add_another" type="submit" class="btn btn-large" value="{{ _('add another') }}" />
 {% endmacro %}
 
 {% macro render_form_buttons(cancel_url, extra=None) %}
     <div class="control-group">
         <div class="controls">
-            <input id="submit-btn" name="action" type="submit" class="btn btn-primary btn-large" value="{{ _gettext('提交') }}" disabled="disabled" title="对象没有改动, 不能提交"/>
+            <input id="submit-btn" name="action" type="submit" class="btn btn-primary btn-large" value="{{ _('commit') }}" disabled="disabled" title="{{ _("no changes made, can't submit!") }}"/>
+            <input id="reset-btn" type="reset" class="btn btn-primary btn-large" value="{{ _('reset') }}" />
             {% if cancel_url %}
-                <a href="{{ cancel_url }}" class="btn btn-large">{{ _gettext('返回') }}</a>
+                <a href="{{ cancel_url }}" class="btn btn-large">{{ _('back') }}</a>
             {% endif %}
             {% if extra == "create" %}
                 {{ create() }}

@@ -4,6 +4,7 @@
 @version: $
 """
 
+from flask import redirect, Blueprint, request, abort
 from flask.ext.login import LoginManager
 from flask.ext.principal import Permission, RoleNeed, PermissionDenied
 from flask.ext.databrowser import filters
@@ -15,7 +16,6 @@ from collections import namedtuple
 roll_call_perm = Permission(namedtuple("foo", ["method"])('roll_call'))
 
 def main():
-    from flask import Blueprint, request
     from basemain import app, db
 
     from flask.ext.principal import Principal
@@ -29,16 +29,6 @@ def main():
     def load_user(userid):
         return User.get(userid)
 
-    @app.errorhandler(PermissionDenied)
-    def permission_denied(error):
-        permissions = []
-        for idx, need in enumerate(error.args[0].needs):
-            if need.method == "role":
-                s = '角色是' + need.value
-            else:
-                s = need.method
-            permissions.append(s)
-        return '该操作(' + request.url + ')被拒绝需要的访问权限为:' + ";".join(permissions)
 
     from flask.ext import databrowser
     from flask.ext.databrowser.action import DeleteAction
@@ -46,7 +36,13 @@ def main():
     from models import User, Car
     accounts_bp = Blueprint("accounts", __name__, static_folder="static", 
                             template_folder="templates")
-    browser = databrowser.DataBrowser(app, db, page_size=4)
+    browser = databrowser.DataBrowser(app, db, page_size=12)
+
+    from flask.ext.databrowser.utils import ErrorHandler
+    error_handler = ErrorHandler(browser)
+    if not app.config["DEBUG"]:
+        app.errorhandler(Exception)(error_handler)
+        app.errorhandler(404)(error_handler)
 
     class UserModelView(databrowser.ModelView):
 
@@ -103,7 +99,7 @@ def main():
                              filters.BiggerThan("create_time", name=u"在", 
                                                 options=[(yesterday, u'一天内'),
                                                         (week_ago, u'一周内'), 
-                                                        (_30days_ago, u'30天内')], default_value=str(yesterday)), 
+                                                        (_30days_ago, u'30天内')], default_value=str(_30days_ago)), 
                              filters.EqualTo("name", name=u"是"),
                              filters.Contains("name", name=u"包含")
                              ]
@@ -124,8 +120,8 @@ def main():
                     return -1
                 return 0
 
-            def try_(self):
-                roll_call_perm.test()
+            #def try_(self):
+                #roll_call_perm.test()
 
         class MyDeleteAction(DeleteAction):
 
@@ -146,7 +142,8 @@ def main():
 
         __customized_actions__ = [MyDeleteAction(u"删除", admin_permission), RollCall(u"点名")]
 
-    browser.register_model_view(UserModelView(User, u"用户"), accounts_bp, extra_params={"form_view": {"company": "xc"}})
+    user_model_view = UserModelView(User, u"用户")
+    browser.register_model_view(user_model_view, accounts_bp, extra_params={"form_view": {"company": "xc"}})
 
     class CarModelView(databrowser.ModelView):
 
@@ -154,9 +151,15 @@ def main():
 
     browser.register_model_view(CarModelView(Car, u"汽车"), accounts_bp, extra_params={"form_view": {"company": "xc"}})
     app.register_blueprint(accounts_bp, url_prefix="/accounts")
+
+    @app.route("/")
+    def index():
+        return redirect(user_model_view.url_for_list())
     app.config["SECRET_KEY"] = "JHdkj1;"
     app.config["CSRF_ENABLED"] = False
     app.run(debug=True, port=5001, host="0.0.0.0")
+
+
 
 if __name__ == "__main__":
     main()

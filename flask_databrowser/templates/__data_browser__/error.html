@@ -1,0 +1,40 @@
+{% extends "__data_browser__/layout.haml" %}
+{% block body %}
+
+<div class="container">
+  <div>
+    <h3 class="alert alert-error">
+      {% if hint_message %}
+        {{hint_message}}
+      {% else %}
+      参数输入错误!
+      {% endif %}
+    </h3>
+    <table class="table table-condensed table-striped table-bordered">
+      {% if errors %}
+      <thead>
+        <tr>
+          <th>参数</th>
+          <th>错误</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for k, v in errors.items() %}
+        <tr>
+          <td>{{k}}</td>
+          <td>
+            <ul>
+              {% for e in v %}
+              <li>{{e}}</li>
+              {% endfor %}
+            </ul>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      {% endif %}
+    </table>
+  </div>
+  <a href="{{ back_url or request.headers.get("referer") or "/" }}" class="btn btn-large"><big>{{ _("点击返回") }}</big></a>
+</div>
+{% endblock %}

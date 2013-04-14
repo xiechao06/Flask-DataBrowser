@@ -5,16 +5,17 @@ import re
 import itertools
 import copy
 import operator
-from flask import render_template, flash, request, url_for, redirect
+import json
+from flask import render_template, flash, request, url_for, redirect, abort
 from flask.ext.principal import PermissionDenied
 from flask.ext.babel import ngettext, gettext as _
-from .utils import get_primary_key, named_actions, get_doc_from_table_def
+from .utils import get_primary_key, named_actions, get_doc_from_table_def, request_from_mobile
 from .action import DeleteAction
 from flask.ext.databrowser.convert import ValueConverter
 from flask.ext.databrowser.column_spec import LinkColumnSpec, ColumnSpec, InputColumnSpec, PLACE_HOLDER
 from flask.ext.databrowser.extra_widgets import PlaceHolder
 from flask.ext.databrowser.form import form
-
+from flask.ext.databrowser.exceptions import  ValidationError
 
 class ModelView(object):
     __column_formatters__ = {}
@@ -34,7 +35,10 @@ class ModelView(object):
     column_hide_backrefs = True
     can_batchly_edit = can_view = can_create = can_edit = can_delete = True
     __create_form__ = __edit_form__ = __batch_edit_form__ = None
-    list_template = create_template = edit_template = None
+    list_template = "__data_browser__/list.haml"
+    create_template = edit_template = "__data_browser__/form.haml"
+    list_template_mob = "__data_browser__/list_mob.html"
+    create_template_mob = edit_template_mob = "__data_browser__/form_mob.html"
     as_radio_group = False
     form_class = form.BaseForm
 
@@ -45,6 +49,12 @@ class ModelView(object):
         self.extra_params = {}
         self.__model_name = model_name
         self.__list_column_specs = []
+
+    def before_request_hook(self):
+        pass
+
+    def after_request_hook(self, response):
+        return response
 
     def within_domain(self, url, bp_name):
         pb_name = bp_name.lower()
@@ -130,20 +140,6 @@ class ModelView(object):
                 self.__list_column_specs.append(col_spec)
 
         return self.__list_column_specs
-            #for col_name in self.__list_columns__:
-                #doc = self.__column_docs__.get(col_name, "")
-                #if not doc:
-                    #try:
-                        #doc = getattr(self.model.__table__.c,
-                                      #col_name).doc or ""
-                    #except AttributeError: # col may not be table's field
-                        #pass
-                #yield (
-                    #col_name, self.__column_labels__.get(col_name, col_name),
-                    #doc)
-        #else:
-            #for k, c in enumerate(self.model.__table__.c):
-                #yield (c.name, c.name, c.doc or "")
 
     def generate_model_string(self, link):
         return re.sub(r"([A-Z])+", lambda m: link + m.group(0).lower(),
@@ -197,10 +193,10 @@ class ModelView(object):
             self.session.commit()
             return model
         except Exception, ex:
-            flash(_('Failed to create %(model_name)s due to %(error)s', model_name=self.model_name, error=str(ex)),
-                  'error')
+            #flash(_('Failed to create %(model_name)s due to %(error)s', model_name=self.model_name, error=str(ex)),
+                  #'error')
             self.session.rollback()
-            return None
+            raise
 
     def populate_obj(self, form):
         model = self.model()
@@ -231,7 +227,6 @@ class ModelView(object):
     def update_model(self, form, model):
         """
             Update model from form.
-
             :param form:
                 Form instance
             :param model:
@@ -309,25 +304,14 @@ class ModelView(object):
         pass
 
     def create_view(self):
-        """
-            Create model view
-        """
         self.try_view()
         self.try_create()
-        if self.create_template is None:
-            import posixpath
-
-            self.create_template = posixpath.join(
-                self.data_browser.blueprint.name, "form.haml")
 
         return_url = request.args.get('url') or url_for(
             '.' + self.list_view_endpoint)
 
-        if not self.creation_allowable:
-            return redirect(return_url)
-
         form = self.get_create_form()
-
+        # if submit and validated, go, else re-display the create page and show the errors
         if form.validate_on_submit():
             model = self.create_model(form)
             if model:
@@ -352,9 +336,9 @@ class ModelView(object):
             if isinstance(v, types.FunctionType):
                 v = v(self)
             kwargs[k] = v
-        return self.render(self.create_template, form=form, create_url_map=create_url_map,
+        return self.render(self.get_create_template(), form=form, create_url_map=create_url_map,
                            return_url=return_url, extra="create", hint_message=_(u"create %(model_name)s", model_name=self.model_name), 
-                           **kwargs)
+                       **kwargs)
 
     def do_update_log(self, obj, action):
         from flask.ext.login import current_user
@@ -455,7 +439,7 @@ class ModelView(object):
                         create_url_map[col] = create_url
             except AttributeError:
                 pass
-        return self.render(self.edit_template,
+        return self.render(self.get_edit_template(),
                            form=compound_form or form, create_url_map=create_url_map,
                            grouper_info=grouper_info,
                            actions=actions,
@@ -590,12 +574,17 @@ class ModelView(object):
 
     @property
     def object_view_url(self):
-        return "/" + re.sub(r"([A-Z])+", lambda m: "-" + m.groups()[0].lower(),
+        return "/" + re.sub(r"([A-Z]+)", lambda m: "-" + m.groups()[0].lower(),
                             self.model.__name__).lstrip("-")
 
     def url_for_list(self, *args, **kwargs):
         return url_for(
             ".".join([self.blueprint.name, self.list_view_endpoint]), *args,
+            **kwargs)
+
+    def url_for_list_json(self, *args, **kwargs):
+        return url_for(
+            ".".join([self.blueprint.name, self.list_view_endpoint+"_json"]), *args,
             **kwargs)
 
     def url_for_object(self, model, **kwargs):
@@ -604,6 +593,8 @@ class ModelView(object):
                 ".".join([self.blueprint.name, self.object_view_endpoint]), id_=self.scaffold_pk(model),
                 **kwargs)
         else:
+            import pdb; pdb.set_trace()
+            
             return url_for(
                 ".".join([self.blueprint.name, self.object_view_endpoint]),
                 **kwargs)
@@ -620,7 +611,7 @@ class ModelView(object):
 
     @property
     def object_view_endpoint(self):
-        return re.sub(r"([A-Z])+", lambda m: "_" + m.groups()[0].lower(),
+        return re.sub(r"([A-Z]+)", lambda m: "_" + m.groups()[0].lower(),
                       self.model.__name__).lstrip("_")
 
     def list_view(self):
@@ -666,13 +657,7 @@ class ModelView(object):
                 if isinstance(v, types.FunctionType):
                     v = v(self)
                 kwargs[k] = v
-            import posixpath
-            # try user defined template
-            if self.list_template:
-                return self.render(self.list_template, **kwargs)
-            #jinja分割模板是用"/"，在windows下，os.path.join是用"\\"，导致模板路径分割失败。所以一定要用posixpath.join
-            template_fname = posixpath.join(self.data_browser.blueprint.name,
-                                            "list.haml")
+            template_fname = self.get_list_template()
             return self.render(template_fname, **kwargs)
         else:  # POST
             action_name = request.form.get("action")
@@ -683,7 +668,7 @@ class ModelView(object):
                 if action.name == action_name:
                     break
             else:
-                return _('invalid action %(action)s', action=action_name), 403
+                raise ValidationError(_('invalid action %(action)s', action=action_name))
             action.try_()
             try:
                 processed_models = []
@@ -697,14 +682,27 @@ class ModelView(object):
             except Exception, ex:
                 self.session.rollback()
                 raise
-            return redirect(url_for(
-                ".".join([self.blueprint.name, self.list_view_endpoint]),
-                **request.args))
+            return redirect(request.url)
 
+    def list_view_json(self):
+        """
+        this view return a page of items in json format
+        """
+        self.try_view()
+        page, order_by, desc = self._parse_args()
+        column_filters = self.parse_filters()
+        count, data = self.query_data(page, order_by, desc, column_filters)
+        ret = {"total_count": count, "data": [], "has_next": page*self.data_browser.page_size < count}
+        for row in self.scaffold_list(data):
+            if self.edit_allowable:
+                obj_url = self.url_for_object(row["obj"], url=request.url)
+            else:
+                obj_url = self.url_for_object_preview(row["obj"], url=request.url)
+            ret["data"].append(dict(pk=row["pk"], repr_=row["repr_"], forbidden_actions=row["forbidden_actions"], 
+                             obj_url=obj_url))
+        return json.dumps(ret), 200, {'Content-Type': "application/json"}
 
     def _parse_args(self):
-        from flask import request
-
         page = request.args.get("page", 1, type=int)
         order_by = request.args.get("order_by")
         desc = request.args.get("desc", 0, type=int)
@@ -756,7 +754,7 @@ class ModelView(object):
         #if self.edit_allowable and self.batchly_edit_allowable:
             #l.append({"name": _(u"batch edit"), "forbidden_msg_formats": {}, "css_class": "btn btn-info"})
 
-        l.extend(dict(name=action.name, value=action.name, css_class=action.css_class,
+        l.extend(dict(name=action.name, value=action.name, css_class=action.css_class, data_icon=action.data_icon, 
                       forbidden_msg_formats=action.get_forbidden_msg_formats()) for action in self._get_customized_actions())
         return l
 
@@ -792,6 +790,7 @@ class ModelView(object):
             q = q.offset((page - 1) * self.data_browser.page_size)
         q = q.limit(self.data_browser.page_size)
 
+        
         return count, q.all()
 
     def scaffold_list(self, models):
@@ -811,13 +810,22 @@ class ModelView(object):
                 idx = cnter.next()
                 yield dict(pk=pk, fields=fields,
                            css=self.patch_row_css(idx, r) or "",
-                           attrs=self.patch_row_attr(idx, r)
-                           )
+                           attrs=self.patch_row_attr(idx, r),
+                           repr_=self.repr_obj(r), 
+                           obj=r, 
+                           forbidden_actions=[action.name for action in self._get_customized_actions() if action.test_enabled(r) != 0])
 
-        return None if not models else g()
+        return [] if not models else g()
 
     def patch_row_css(self, idx, row):
         return ""
+
+    def repr_obj(self, obj):
+        """
+        this function decide how to represent an object in MOBILE LIST VIEW.
+        override to provide your representation. HTML supported
+        """
+        return unicode(obj)
 
     def scaffold_pk(self, entry):
         from .utils import get_primary_key
@@ -848,6 +856,39 @@ class ModelView(object):
                 pass
         return shadow_column_filters
 
+    def get_list_template(self):
+        """
+        get the real list template, there're 2 scenarios:
+
+            * you access site from DESKTOP. if you specify option "ModelView.list_template", else 
+                "/__data_browser/list.haml" will be used
+            * you access site from mobile device. if you specify option "ModelView.list_template_mob", else 
+                "/__data_browser/list_mob.html" will be used
+        """
+        return self.list_template_mob if request_from_mobile() else self.list_template
+
+    def get_create_template(self):
+        """
+        get the real create template, there're 2 scenarios:
+
+            * you access site from DESKTOP. if you specify option "ModelView.create_template", else 
+                "/__data_browser/form.haml" will be used
+            * you access site from mobile device. if you specify option "ModelView.create_template_mob", else 
+                "/__data_browser/form_mob.html" will be used
+        """
+        return self.create_template_mob if request_from_mobile() else self.create_template
+
+    def get_edit_template(self):
+        """
+        get the real edit template, there're 2 scenarios:
+
+            * you access site from DESKTOP. if you specify option "ModelView.edit_template", else 
+                "/__data_browser/form.haml" will be used
+            * you access site from mobile device. if you specify option "ModelView.edit_template_mob", else 
+                "/__data_browser/form_mob.html" will be used
+        """
+        return self.edit_template_mob if request_from_mobile() else self.edit_template
+
 
     def get_rows_action_desc(self, models):
         ret = {}
@@ -870,6 +911,9 @@ class ModelView(object):
         return ""
 
 class DataBrowser(object):
+    error_template = "/__data_browser__/error.html"
+    error_template_mob = "/__data_browser__/error_mob.html"
+
     def __init__(self, app, db, page_size=16, logger=None):
         self.app = app
         self.db = db
@@ -936,6 +980,10 @@ class DataBrowser(object):
                                model_view.list_view_endpoint,
                                model_view.list_view,
                                methods=["GET", "POST"])
+        blueprint.add_url_rule(model_view.list_view_url+".json",
+                               model_view.list_view_endpoint+"_json", 
+                               model_view.list_view_json,
+                               methods=["GET"])
         blueprint.add_url_rule(model_view.object_view_url,
                                model_view.object_view_endpoint,
                                model_view.object_view,
@@ -944,6 +992,8 @@ class DataBrowser(object):
                                model_view.object_view_endpoint,
                                model_view.object_view,
                                methods=["GET", "POST"])
+        blueprint.before_request(model_view.before_request_hook)
+        blueprint.after_request(model_view.after_request_hook)
         self.__registered_view_map[model_view.model.__tablename__] = model_view
 
     def create_object_link_column_spec(self, model, label=None):

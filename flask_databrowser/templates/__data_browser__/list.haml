@@ -156,7 +156,6 @@
 
           -block actions
             .alert.alert-block
-              %input value="{{ request.url }}" type="hidden" name="url"
               %span#actions
                 -if model_view.edit_allowable and model_view.batchly_edit_allowable
                   %a href="#" class="btn btn-info" << {{ _('batch edit') }}
