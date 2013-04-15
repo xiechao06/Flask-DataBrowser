@@ -103,7 +103,7 @@
           -if __can_create__
             %a.btn.btn-success href="{{ "?url=".join([__object_url__, request.url|urlencode]) }}" style="margin-bottom: 5px"
               %span.add-on.icon-plus
-              {{ _("新建") + model_view.model_name }}
+              {{ _("create") + ' ' + model_view.model_name }}
 
           -block __data_browser__hint_block
 
@@ -144,7 +144,7 @@
             -from "__data_browser__/lib.haml" import render_pagination
             {{ render_pagination(__pagination__, __count__) }}
           -else
-            %p.text-error << {{ _("没有符合条件的结果") }}
+            %p.text-error << {{ _("no results matched!") }}
 
 
           -block actions
@@ -160,7 +160,7 @@
       -block filters
         -if __filters__
           %div class="{{ __css_classes__.filters_class }} span2"
-            %h4 << {{ _("过滤条件") }}
+            %h4 << {{ _("refine search") }}
             %hr
             %form.form-inline
               -for k, v in request.args.lists():
@@ -198,5 +198,5 @@
               %hr
               .control-group.pagination-centered
                 .controls
-                  %input.btn.btn-primary type="submit" value={{ _("刷新结果") }}
-                  %input.btn.btn-danger type="reset" value={{ _("重置") }} id="reset-button"
+                  %input.btn.btn-primary type="submit" value={{ _("refresh") }}
+                  %input.btn.btn-danger type="reset" value={{ _("reset") }} id="reset-button"

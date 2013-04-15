@@ -3,10 +3,10 @@
     %ul
       -if not pagination.has_prev:
         %li class="disabled"
-          %a << {{ _("上一页") }}
+          %a << {{ _("prev") }}
       -else:
         %li
-          %a href="{{ url_for_other_page(page=pagination.page-1 if pagination.page > 1 else 1) }}" << {{ _("上一页") }}
+          %a href="{{ url_for_other_page(page=pagination.page-1 if pagination.page > 1 else 1) }}" << {{ _("prev") }}
 
       -for page in pagination.iter_pages()
         -if page
@@ -18,4 +18,4 @@
 
       -if __count__:
         %li class="disabled"
-          %a << {{ _("符合条件的记录共%(count)d条", count=__count__) }}
+          %a << {{ _("totally matched records: %(count)d", count=__count__) }}
