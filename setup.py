@@ -10,8 +10,8 @@ DESCRIPTION = ""
 AUTHOR = ""
 AUTHOR_EMAIL = ""
 URL = ""
-VERSION = __import__(PACKAGE).__version__
-DOC = __import__(PACKAGE).__doc__
+VERSION = "0.9.0"
+DOC = "a framework bring convenience to object CRUD"
 
 
 class PyTest(TestCommand):
