@@ -132,8 +132,6 @@ class BaseFilter(TemplateParam):
         else:
             return self.__operator__(attr, self.value)
 
-
-
 class EqualTo(BaseFilter):
     __notation__ = ""
     __operator__ = operator.eq
