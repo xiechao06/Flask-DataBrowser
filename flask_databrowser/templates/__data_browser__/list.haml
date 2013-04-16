@@ -123,9 +123,9 @@
                           {{ c.label }}
                           -if __order_by__(c.name) 
                             -if __desc__
-                              %i class="icon-chevron-down"
+                              %i.icon-chevron-down
                             -else
-                              %i class="icon-chevron-up"
+                              %i.icon-chevron-up
                       -else
                         {{ c.label }}
               %tbody
@@ -192,7 +192,7 @@
                               -elif input_type == "datetime"
                                 %input type="text" data-role="datetime" name="{{ filter.op.id }}" class="{{ __css_classes__[filter.input_class] }}" min=0 placeholder="{{ _("请输入") + filter.label }}"
                               -else
-                                %input type="{{ input_type }}" name="{{ filter.op.id }}" class="{{ __css_classes__[filter.input_class] }}" min=0 placeholder="{{ _("请输入") + filter.label }}"
+                                %input type="{{ input_type }}" name="{{ filter.op.id }}" class="{{ __css_classes__[filter.input_class] }}" placeholder="{{ _("请输入") + filter.label }}"
                               -if not loop.last
                                 %div << {{ filter.sep }}
               %hr

@@ -5,6 +5,7 @@ from flask.ext.principal import PermissionDenied
 from flask.ext.babel import ngettext, gettext as _
 from flask.ext.databrowser.exceptions import ValidationError
 
+
 def get_primary_key(model):
     """
         Return primary key name from a model
@@ -28,6 +29,7 @@ def get_primary_key(model):
 
     return None
 
+
 def url_for_other_page(page):
     """
     generate the other page's url
@@ -35,6 +37,7 @@ def url_for_other_page(page):
     args = request.args.copy()
     args['page'] = page
     return url_for(request.endpoint, **args) # pylint: disable=W0142
+
 
 class TemplateParam(object):
     """A class intends to be templates parameter should inherit this class"""
@@ -60,6 +63,7 @@ class TemplateParam(object):
 named_actions = set()
 
 from functools import wraps
+
 
 def raised_when(test, assertion):
     def decorator(f):
@@ -90,7 +94,8 @@ def make_disabled_field(field):
 
     field.field_class = FakeField
     return field
-    
+
+
 def fslice(iterable, predict):
     a = []
     b = []
@@ -146,7 +151,7 @@ def request_from_mobile():
         b = reg_b.search(user_agent)
         v = reg_v.search(user_agent[0:4])
         return b or v
-    return false
+    return False
 
 class ErrorHandler(object):
 

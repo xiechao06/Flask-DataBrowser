@@ -1,5 +1,6 @@
 # -*- coding: UTF-8 -*-
 import types
+import sys
 import re
 import itertools
 import copy
@@ -15,7 +16,8 @@ from flask.ext.databrowser.column_spec import LinkColumnSpec, ColumnSpec, \
     InputColumnSpec
 from flask.ext.databrowser.extra_widgets import PlaceHolder
 from flask.ext.databrowser.form import form
-from flask.ext.databrowser.exceptions import  ValidationError
+from flask.ext.databrowser.exceptions import ValidationError
+
 
 class ModelView(object):
     __column_formatters__ = {}
@@ -30,6 +32,8 @@ class ModelView(object):
     __customized_actions__ = []
     __create_columns__ = []
     __max_col_len__ = 255
+
+    __model_list__ = []
 
     language = "en"
     column_hide_backrefs = True
@@ -59,6 +63,7 @@ class ModelView(object):
     def within_domain(self, url, bp_name):
         url = url.lower()
         import urlparse, posixpath
+
         path_ = urlparse.urlparse(url).path
         segs = path_.split("/")[1:]
         if len(segs) < 2:
@@ -103,20 +108,24 @@ class ModelView(object):
         doc = self.__column_docs__.get(col, "")
         if not doc:
             doc = get_doc_from_table_def(self, col)
-        label=self.__column_labels__.get(col, col)
+        label = self.__column_labels__.get(col, col)
         if get_primary_key(self.model) == col:
             # TODO add cross ref to registered model
             # add link to object if it is primary key
             if self.can_edit:
-                formatter = lambda x, obj: self.url_for_object(obj, url=request.url)
+                formatter = lambda x, obj: self.url_for_object(obj,
+                                                               url=request.url)
             else:
-                formatter = lambda x, obj: self.url_for_object_preview(obj, url=request.url)
+                formatter = lambda x, obj: self.url_for_object_preview(obj,
+                                                                       url=request.url)
             col_spec = LinkColumnSpec(col, doc=doc, anchor=lambda x: x,
-                                      formatter=formatter, 
+                                      formatter=formatter,
                                       label=label, css_class="control-text")
         else:
-            formatter = self.__column_formatters__.get(col, lambda x, obj: unicode(x))
-            col_spec = ColumnSpec(col, doc=doc, 
+            formatter = self.__column_formatters__.get(col,
+                                                       lambda x, obj: unicode(
+                                                           x))
+            col_spec = ColumnSpec(col, doc=doc,
                                   formatter=formatter,
                                   label=label,
                                   css_class="control-text")
@@ -126,10 +135,11 @@ class ModelView(object):
     def list_column_specs(self):
         if self.__list_column_specs:
             return self.__list_column_specs
-        
+
         list_columns = self.__list_columns__
         if not list_columns:
-            list_columns = [col.name for k, col in enumerate(self.model.__table__.c)]
+            list_columns = [col.name for k, col in
+                            enumerate(self.model.__table__.c)]
         if list_columns:
             for col in list_columns:
                 if isinstance(col, basestring):
@@ -194,8 +204,10 @@ class ModelView(object):
             self.session.commit()
             return model
         except Exception, ex:
-            #flash(_('Failed to create %(model_name)s due to %(error)s', model_name=self.model_name, error=str(ex)),
-                  #'error')
+        #flash(_('Failed to create %(model_name)s due to %(error)s', model_name=self.model_name, error=str(ex)),
+
+
+        #'error')
             self.session.rollback()
             raise
 
@@ -239,7 +251,10 @@ class ModelView(object):
                 action.try_()
                 ret_code = action.test_enabled(model)
                 if ret_code != 0:
-                    flash(_(u"can't apply %(action)s due to %(reason)s", action=action.name, reason=action.get_forbidden_msg_formats()[ret_code] % unicode(model)), 
+                    flash(_(u"can't apply %(action)s due to %(reason)s",
+                            action=action.name,
+                            reason=action.get_forbidden_msg_formats()[
+                                       ret_code] % unicode(model)),
                           'error')
                     return False
                 try:
@@ -250,7 +265,11 @@ class ModelView(object):
                     flash(action.success_message([model]), 'success')
                     return True
                 except Exception, ex:
-                    flash(_('Failed to update %(model_name)s %(model)s due to %(error)s', model_name=self.model_name, model=unicode(model), error=str(ex)),
+                    flash(_(
+                        'Failed to update %(model_name)s %(model)s due to %('
+                        'error)s',
+                        model_name=self.model_name, model=unicode(model),
+                        error=str(ex)),
                           'error')
                     self.session.rollback()
                     raise
@@ -300,7 +319,7 @@ class ModelView(object):
     @property
     def batchly_edit_allowable(self):
         return self.can_batchly_edit() if isinstance(self.can_batchly_edit,
-                                             types.MethodType) else self.can_batchly_edit
+                                                     types.MethodType) else self.can_batchly_edit
 
 
     def try_edit(self):
@@ -327,7 +346,8 @@ class ModelView(object):
                     return redirect(return_url)
         create_url_map = {}
         for col in [f.name for f in form if f.name != "csrf_token"]:
-            attr = getattr(self.model, col if isinstance(col, basestring) else col.col_name)
+            attr = getattr(self.model, col if isinstance(col,
+                                                         basestring) else col.col_name)
             if hasattr(attr.property, "direction"):
                 remote_side = attr.property.mapper.class_
                 create_url = self.data_browser.get_create_url(remote_side)
@@ -339,7 +359,7 @@ class ModelView(object):
             if isinstance(v, types.FunctionType):
                 v = v(self)
             kwargs[k] = v
-        return self.render(self.create_template, form=form,
+        return self.render(self.get_create_template(), form=form,
                            create_url_map=create_url_map,
                            return_url=return_url, extra="create",
                            hint_message=_(u"create %(model_name)s",
@@ -348,6 +368,7 @@ class ModelView(object):
 
     def do_update_log(self, obj, action):
         from flask.ext.login import current_user
+
         def _log(obj_):
             self.data_browser.logger.debug(
                 _(unicode(current_user) + ' performed ' + action),
@@ -378,11 +399,6 @@ class ModelView(object):
             id_list = [id_]
         else:
             id_list = [i for i in id_.split(",") if i]
-        if self.edit_template is None:
-            import posixpath
-
-            self.edit_template = posixpath.join(
-                self.data_browser.blueprint.name, "form.haml")
 
         return_url = request.args.get('url') or url_for(
             '.' + self.list_view_endpoint)
@@ -391,9 +407,28 @@ class ModelView(object):
             return redirect(return_url)
 
         compound_form = None
+        pre_url = next_url = ""
         if len(id_list) == 1:
             model = self.get_one(id_list[0])
-
+            models = self.get_model_list()
+            try:
+                idx = models.index(self.scaffold_pk(model))
+                blueprint_name = "" if isinstance(self.blueprint,
+                                                  Flask) else self.blueprint.name
+                if idx > 0:
+                    pre_url = url_for(
+                        ".".join([blueprint_name, self.object_view_endpoint]),
+                        id_=models[idx - 1],
+                        url=request.args.get("url") or request.url)
+                try:
+                    next_url = url_for(
+                        ".".join([blueprint_name, self.object_view_endpoint]),
+                        id_=models[idx + 1],
+                        url=request.args.get("url") or request.url)
+                except IndexError:
+                    pass
+            except ValueError:
+                pass
             form = self.get_edit_form(obj=model)
 
             if form.validate_on_submit():
@@ -401,20 +436,21 @@ class ModelView(object):
                     return redirect(return_url)
             compound_form = self.get_compound_edit_form(obj=model, form=form)
             hint_message = _(u"edit %(model_name)s-%(obj)s",
-                                   model_name=self.model_name,
-                                   obj=unicode(model)) if self.can_edit else ""
+                             model_name=self.model_name,
+                             obj=unicode(model)) if self.can_edit else ""
             actions = self._get_customized_actions(self.preprocess(model))
         else:
             model_list = [self.get_one(id_) for id_ in id_list]
             model = None
             if request.method == "GET":
-                model = type("_temp", (object,),{})()
+                model = type("_temp", (object,), {})()
                 for attr in dir(self.model):
                     if attr.startswith("_"):
                         continue
                     default_value = getattr(model_list[0], attr)
                     if all(getattr(model_,
-                                   attr) == default_value for model_ in model_list):
+                                   attr) == default_value for model_ in
+                           model_list):
                         setattr(model, attr, default_value)
 
             form = self.get_batch_edit_form(obj=model)
@@ -422,17 +458,21 @@ class ModelView(object):
                 if all(self.update_model(form, model) for model in model_list):
                     return redirect(return_url)
             hint_message = _(u"edit %(model_name)s-%(objs)s",
-                                   model_name=self.model_name, objs=",".join(
-                    unicode(model) for model in model_list)) if self.can_edit else ""
+                             model_name=self.model_name, objs=",".join(
+                    unicode(model) for model in
+                    model_list)) if self.can_edit else ""
             actions = self._get_customized_actions()
 
         grouper_info = {}
         for col in self._model_columns(model):
             grouper_2_cols = {}
             if isinstance(col, InputColumnSpec) and col.group_by:
-                for row in self.session.query(getattr(self.model, col.col_name).property.mapper.class_).all():
+                for row in self.session.query(getattr(self.model,
+                                                      col.col_name).property.mapper.class_).all():
                     # should use pk here
-                    grouper_2_cols.setdefault(getattr(row, col.group_by.property.key).id, []).append(dict(id=row.id, text=unicode(row)))
+                    grouper_2_cols.setdefault(
+                        getattr(row, col.group_by.property.key).id, []).append(
+                        dict(id=row.id, text=unicode(row)))
                 grouper_info[col.grouper_input_name] = grouper_2_cols
         kwargs = {}
         form_kwargs = self.extra_params.get("form_view", {})
@@ -440,14 +480,15 @@ class ModelView(object):
             if isinstance(v, types.FunctionType):
                 v = v(self)
             kwargs[k] = v
-        
+
         for f in form:
             if isinstance(f.widget, PlaceHolder):
                 f.widget.set_args(**kwargs)
         create_url_map = {}
         for col in [f.name for f in form if f.name != "csrf_token"]:
             try:
-                attr = getattr(self.model, col if isinstance(col, basestring) else col.col_name)
+                attr = getattr(self.model, col if isinstance(col,
+                                                             basestring) else col.col_name)
                 if hasattr(attr.property, "direction"):
                     remote_side = attr.property.mapper.class_
                     create_url = self.data_browser.get_create_url(remote_side)
@@ -455,8 +496,10 @@ class ModelView(object):
                         create_url_map[col] = create_url
             except AttributeError:
                 pass
-        return self.render(self.edit_template,
+        return self.render(self.get_edit_template(),
                            form=compound_form or form,
+                           pre_url=pre_url,
+                           next_url=next_url,
                            create_url_map=create_url_map,
                            grouper_info=grouper_info,
                            actions=actions,
@@ -470,9 +513,11 @@ class ModelView(object):
         from flask.ext.databrowser.form.convert import AdminModelConverter, get_form
 
         converter = AdminModelConverter(self.session, self)
-        form_class = get_form(self.model, converter, base_class=self.form_class, only=columns,
+        form_class = get_form(self.model, converter,
+                              base_class=self.form_class, only=columns,
                               exclude=None, field_args=None)
         return form_class
+
     # def scaffold_inline_form_models(self, form_class):
     #     """
     #         Contribute inline models to the form
@@ -494,8 +539,9 @@ class ModelView(object):
     def _model_columns(self, obj):
         # select the model columns from __form_columns__
         if not self.__form_columns__:
-            return [] 
-        model_clumns = set([p.key for p in self.model.__mapper__.iterate_properties])
+            return []
+        model_clumns = set(
+            [p.key for p in self.model.__mapper__.iterate_properties])
         ret = []
         for col in self.__form_columns__:
             if isinstance(col, InputColumnSpec):
@@ -509,12 +555,12 @@ class ModelView(object):
             if col_name in model_clumns:
                 ret.append(col)
         return ret
-        
+
     def get_create_form(self):
         if self.__create_form__ is None:
             self.__create_form__ = self.scaffold_form(self.__create_columns__)
         return self.__create_form__()
-        
+
 
     def get_edit_form(self, obj=None):
         if self.__edit_form__ is None:
@@ -549,15 +595,17 @@ class ModelView(object):
             if isinstance(col, InputColumnSpec):
                 ret.append(form[col.col_name])
             elif isinstance(col, basestring):
-                try: 
-                    # if it is a models property, we yield from model_form
+                try:
+                # if it is a models property, we yield from model_form
                     ret.append(form[col])
                 except KeyError:
                     col_spec = self._col_spec_from_str(col)
-                    widget = value_converter(operator.attrgetter(col)(r), col_spec)
+                    widget = value_converter(operator.attrgetter(col)(r),
+                                             col_spec)
                     ret.append(widget)
             else:
-                ret.append(value_converter(operator.attrgetter(col.col_name)(r), col))
+                ret.append(
+                    value_converter(operator.attrgetter(col.col_name)(r), col))
         return FakeForm(form, ret)
 
     def get_batch_edit_form(self, obj=None):
@@ -589,33 +637,41 @@ class ModelView(object):
                             self.model.__name__).lstrip("-")
 
     def url_for_list(self, *args, **kwargs):
-        blueprint_name = "" if isinstance(self.blueprint, Flask) else self.blueprint.name 
+        blueprint_name = "" if isinstance(self.blueprint,
+                                          Flask) else self.blueprint.name
         return url_for(
             ".".join([blueprint_name, self.list_view_endpoint]), *args,
             **kwargs)
 
     def url_for_list_json(self, *args, **kwargs):
-        blueprint_name = "" if isinstance(self.blueprint, Flask) else self.blueprint.name 
+        blueprint_name = "" if isinstance(self.blueprint,
+                                          Flask) else self.blueprint.name
         return url_for(
-            ".".join([blueprint_name, self.list_view_endpoint+"_json"]), *args,
+            ".".join([blueprint_name, self.list_view_endpoint + "_json"]),
+            *args,
             **kwargs)
 
     def url_for_object(self, model, **kwargs):
-        blueprint_name = "" if isinstance(self.blueprint, Flask) else self.blueprint.name 
+        blueprint_name = "" if isinstance(self.blueprint,
+                                          Flask) else self.blueprint.name
         if model:
             return url_for(
-                ".".join([blueprint_name, self.object_view_endpoint]), id_=self.scaffold_pk(model),
+                ".".join([blueprint_name, self.object_view_endpoint]),
+                id_=self.scaffold_pk(model),
                 **kwargs)
         else:
             return url_for(
                 ".".join([blueprint_name, self.object_view_endpoint]),
                 **kwargs)
 
+
     def url_for_object_preview(self, model, **kwargs):
-        blueprint_name = "" if isinstance(self.blueprint, Flask) else self.blueprint.name 
+        blueprint_name = "" if isinstance(self.blueprint,
+                                          Flask) else self.blueprint.name
         if model:
             return url_for(
-                ".".join([blueprint_name, self.object_view_endpoint]), id_=self.scaffold_pk(model),
+                ".".join([blueprint_name, self.object_view_endpoint]),
+                id_=self.scaffold_pk(model),
                 preview=True, **kwargs)
         else:
             return url_for(
@@ -649,7 +705,7 @@ class ModelView(object):
             kwargs["__actions__"] = self.scaffold_actions()
             kwargs["__action_2_forbidden_message_formats__"] = dict(
                 (action["name"], action["forbidden_msg_formats"]) for action in
-                    kwargs["__actions__"])
+                kwargs["__actions__"])
             count, data = self.query_data(page, order_by, desc, column_filters)
             kwargs["__rows_action_desc__"] = self.get_rows_action_desc(data)
             kwargs["__count__"] = count
@@ -681,7 +737,8 @@ class ModelView(object):
                 if action.name == action_name:
                     break
             else:
-                raise ValidationError(_('invalid action %(action)s', action=action_name))
+                raise ValidationError(
+                    _('invalid action %(action)s', action=action_name))
             action.try_()
             try:
                 processed_models = []
@@ -710,9 +767,11 @@ class ModelView(object):
             if self.edit_allowable:
                 obj_url = self.url_for_object(row["obj"], url=request.url)
             else:
-                obj_url = self.url_for_object_preview(row["obj"], url=request.url)
-            ret["data"].append(dict(pk=row["pk"], repr_=row["repr_"], forbidden_actions=row["forbidden_actions"], 
-                             obj_url=obj_url))
+                obj_url = self.url_for_object_preview(row["obj"],
+                                                      url=request.url)
+            ret["data"].append(dict(pk=row["pk"], repr_=row["repr_"],
+                                    forbidden_actions=row["forbidden_actions"],
+                                    obj_url=obj_url))
         return json.dumps(ret), 200, {'Content-Type': "application/json"}
 
     def _parse_args(self):
@@ -737,8 +796,8 @@ class ModelView(object):
         """
         from flask import request, url_for
 
-        sortable_columns = self.__sortable_columns__ or get_primary_key(self.model)
-
+        sortable_columns = self.__sortable_columns__ or get_primary_key(
+            self.model)
 
         for c in self.list_column_specs:
             if c.col_name in sortable_columns:
@@ -757,7 +816,8 @@ class ModelView(object):
                     **args)
             else:
                 sort_url = ""
-            yield dict(name=c.col_name, label=c.label, doc=c.doc, sort_url=sort_url)
+            yield dict(name=c.col_name, label=c.label, doc=c.doc,
+                       sort_url=sort_url)
 
     def scaffold_filters(self):
         return [dict(label="a", op=dict(name="lt", id="a__lt"))]
@@ -765,13 +825,15 @@ class ModelView(object):
     def scaffold_actions(self):
         l = []
         #if self.edit_allowable and self.batchly_edit_allowable:
-            #l.append({"name": _(u"batch edit"), "forbidden_msg_formats": {}, "css_class": "btn btn-info"})
+        #l.append({"name": _(u"batch edit"), "forbidden_msg_formats": {}, "css_class": "btn btn-info"})
 
-        l.extend(dict(name=action.name, value=action.name, css_class=action.css_class, data_icon=action.data_icon, 
-                      forbidden_msg_formats=action.get_forbidden_msg_formats()) for action in self._get_customized_actions())
+        l.extend(dict(name=action.name, value=action.name,
+                      css_class=action.css_class, data_icon=action.data_icon,
+                      forbidden_msg_formats=action.get_forbidden_msg_formats())
+                 for action in self._get_customized_actions())
         return l
 
-    def query_data(self, page, order_by, desc, filters):
+    def query_data(self, page, order_by, desc, filters, count=0):
 
         q = self.model.query
 
@@ -801,16 +863,16 @@ class ModelView(object):
         count = q.count()
         if page:
             q = q.offset((page - 1) * self.data_browser.page_size)
-        q = q.limit(self.data_browser.page_size)
+        if not count:
+            count = self.data_browser.page_size
+        q = q.limit(count)
 
-        
         return count, q.all()
 
     def scaffold_list(self, models):
 
         def g():
-            cnter = itertools.count()
-            for r in models:
+            for idx, r in enumerate(models):
                 r = self.preprocess(r)
                 converter = ValueConverter(r, self)
                 pk = self.scaffold_pk(r)
@@ -820,13 +882,14 @@ class ModelView(object):
                     formatted_value = converter(raw_value, c)
                     fields.append(formatted_value)
 
-                idx = cnter.next()
                 yield dict(pk=pk, fields=fields,
                            css=self.patch_row_css(idx, r) or "",
                            attrs=self.patch_row_attr(idx, r),
-                           repr_=self.repr_obj(r), 
-                           obj=r, 
-                           forbidden_actions=[action.name for action in self._get_customized_actions() if action.test_enabled(r) != 0])
+                           repr_=self.repr_obj(r),
+                           obj=r,
+                           forbidden_actions=[action.name for action in
+                                              self._get_customized_actions() if
+                                              action.test_enabled(r) != 0])
 
         return [] if not models else g()
 
@@ -900,6 +963,11 @@ class ModelView(object):
             * you access site from mobile device. if you specify option "ModelView.edit_template_mob", else 
                 "/__data_browser/form_mob.html" will be used
         """
+        if self.edit_template is None:
+            import posixpath
+
+            self.edit_template = posixpath.join(
+                self.data_browser.blueprint.name, "form.haml")
         return self.edit_template_mob if request_from_mobile() else self.edit_template
 
 
@@ -920,6 +988,13 @@ class ModelView(object):
 
     def patch_row_attr(self, idx, row):
         return ""
+
+    def get_model_list(self):
+        if not self.__model_list__:
+            page, order_by, desc = self._parse_args()
+            count, data = self.query_data(page, order_by, desc, [], sys.maxint)
+            self.__model_list__ = [self.scaffold_pk(model) for model in data]
+        return self.__model_list__
 
 class DataBrowser(object):
     error_template = "/__data_browser__/error.html"
@@ -991,8 +1066,8 @@ class DataBrowser(object):
                                model_view.list_view_endpoint,
                                model_view.list_view,
                                methods=["GET", "POST"])
-        blueprint.add_url_rule(model_view.list_view_url+".json",
-                               model_view.list_view_endpoint+"_json", 
+        blueprint.add_url_rule(model_view.list_view_url + ".json",
+                               model_view.list_view_endpoint + "_json",
                                model_view.list_view_json,
                                methods=["GET"])
         blueprint.add_url_rule(model_view.object_view_url,
@@ -1012,12 +1087,19 @@ class DataBrowser(object):
             current_url = request.url
             model_view = self.__registered_view_map[model.__tablename__]
             from .utils import get_primary_key
-             
+
             pk = get_primary_key(model)
             if model_view.can_edit:
-                return LinkColumnSpec(col_name=pk, formatter=lambda v, obj: model_view.url_for_object(obj, label=label, url=current_url), anchor=lambda v: unicode(v))
+                return LinkColumnSpec(col_name=pk, formatter=lambda v,
+                                                                    obj:
+                model_view.url_for_object(
+                    obj, label=label, url=current_url),
+                                      anchor=lambda v: unicode(v))
             else:
-                return LinkColumnSpec(col_name=pk, formatter=lambda v, obj: model_view.url_for_object_preview(obj, label=label, url=current_url), anchor=lambda v: unicode(v))
+                return LinkColumnSpec(col_name=pk, formatter=lambda v,
+                                                                    obj: model_view.url_for_object_preview(
+                    obj, label=label, url=current_url),
+                                      anchor=lambda v: unicode(v))
         except KeyError:
             return None
 
