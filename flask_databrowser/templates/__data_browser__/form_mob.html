@@ -6,7 +6,7 @@
     $(function () {
       function swipeleftHandler(event) {
         {% if pre_url %}
-          location.href = "{{ pre_url }}";
+          location.href = "{{ pre_url|safe }}";
         {% else %}
           $('#load-fail-popup').popup("open");
           setTimeout(function () {
@@ -17,7 +17,7 @@
 
       function swiperightHandler(event) {
         {% if next_url %}
-          location.href = "{{ next_url }}";
+          location.href = "{{ next_url|safe }}";
         {% else %}
           $('#load-fail-popup').popup("open");
           setTimeout(function () {

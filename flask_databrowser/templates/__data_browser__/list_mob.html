@@ -48,7 +48,7 @@
     var args_except_page = new Array();
     {% for k, v in request.args.items() %}
       {% if k != "page" %}
-        args_except_page.push({{k}}+"="+{{v}}]);
+        args_except_page.push({{k}}+"="+{{v}});
       {% endif %}
     {% endfor %}
     loadMore.bind('click', function () {
@@ -105,9 +105,9 @@
       {% for row in __data__ %}
         <li class="row" id="row-{{ row.pk }}" data-pk="{{ row.pk }}" data-forbidden-actions="{{ ",".join(row.forbidden_actions) }}">
         {% if model_view.edit_allowable %}
-          <a href="{{ model_view.url_for_object(row.obj, url=request.url) }}">{{ row.repr_|safe }}</a>
+          <a href="{{ model_view.url_for_object(row.obj, url=request.url, cdx=loop.index) }}">{{ row.repr_|safe }}</a>
         {% else %}
-          <a href="{{ model_view.url_for_object_preview(row.obj, url=request.url) }}">{{ row.repr_|safe }}</a>
+          <a href="{{ model_view.url_for_object_preview(row.obj, url=request.url, cdx=loop.index) }}">{{ row.repr_|safe }}</a>
         {% endif %}
         </li>
         {% endfor %}

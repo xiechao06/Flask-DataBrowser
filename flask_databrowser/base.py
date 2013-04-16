@@ -410,25 +410,31 @@ class ModelView(object):
         pre_url = next_url = ""
         if len(id_list) == 1:
             model = self.get_one(id_list[0])
-            models = self.get_model_list()
-            try:
-                idx = models.index(self.scaffold_pk(model))
-                blueprint_name = "" if isinstance(self.blueprint,
-                                                  Flask) else self.blueprint.name
-                if idx > 0:
-                    pre_url = url_for(
-                        ".".join([blueprint_name, self.object_view_endpoint]),
-                        id_=models[idx - 1],
-                        url=request.args.get("url") or request.url)
-                try:
-                    next_url = url_for(
-                        ".".join([blueprint_name, self.object_view_endpoint]),
-                        id_=models[idx + 1],
-                        url=request.args.get("url") or request.url)
-                except IndexError:
-                    pass
-            except ValueError:
-                pass
+            cdx = request.args.get("cdx", 0, int)
+            if cdx:
+                page, order_by, desc = self._parse_args()
+                if cdx == 1:
+                    count, models = self.query_data(0, order_by, desc, [],
+                                                    offset=cdx)
+                    try:
+                        next_model = models[1]
+                        next_url = self.url_for_object(next_model, url=return_url,
+                                                       cdx=cdx + 1)
+                    except IndexError:
+                        pass
+                else:
+                    count, models = self.query_data(0, order_by, desc, [],
+                                                    offset=cdx - 2)
+                    try:
+                        pre_model = models[0]
+                        next_model = models[2]
+                        pre_url = self.url_for_object(pre_model, cdx=cdx - 1,
+                                                      url=return_url)
+                        next_url = self.url_for_object(next_model, cdx=cdx + 1,
+                                                       url=return_url)
+                    except IndexError:
+                        pass
+
             form = self.get_edit_form(obj=model)
 
             if form.validate_on_submit():
@@ -762,13 +768,17 @@ class ModelView(object):
         page, order_by, desc = self._parse_args()
         column_filters = self.parse_filters()
         count, data = self.query_data(page, order_by, desc, column_filters)
-        ret = {"total_count": count, "data": [], "has_next": page*self.data_browser.page_size < count}
-        for row in self.scaffold_list(data):
+        ret = {"total_count": count, "data": [],
+               "has_next": page * self.data_browser.page_size < count}
+        for idx, row in enumerate(self.scaffold_list(data)):
             if self.edit_allowable:
-                obj_url = self.url_for_object(row["obj"], url=request.url)
+                obj_url = self.url_for_object(row["obj"], url=request.url,
+                                              cdx=(
+                                                      page - 1) * self.data_browser.page_size + idx + 1)
             else:
                 obj_url = self.url_for_object_preview(row["obj"],
-                                                      url=request.url)
+                                                      url=request.url, cdx=(
+                                                                               page - 1) * self.data_browser.page_size + idx + 1)
             ret["data"].append(dict(pk=row["pk"], repr_=row["repr_"],
                                     forbidden_actions=row["forbidden_actions"],
                                     obj_url=obj_url))
@@ -833,7 +843,7 @@ class ModelView(object):
                  for action in self._get_customized_actions())
         return l
 
-    def query_data(self, page, order_by, desc, filters, count=0):
+    def query_data(self, page, order_by, desc, filters, offset=0):
 
         q = self.model.query
 
@@ -861,11 +871,11 @@ class ModelView(object):
                 order_criterion = order_criterion.desc()
             q = q.order_by(order_criterion)
         count = q.count()
+        if offset:
+            q = q.offset(offset)
         if page:
             q = q.offset((page - 1) * self.data_browser.page_size)
-        if not count:
-            count = self.data_browser.page_size
-        q = q.limit(count)
+        q = q.limit(self.data_browser.page_size)
 
         return count, q.all()
 
@@ -989,12 +999,6 @@ class ModelView(object):
     def patch_row_attr(self, idx, row):
         return ""
 
-    def get_model_list(self):
-        if not self.__model_list__:
-            page, order_by, desc = self._parse_args()
-            count, data = self.query_data(page, order_by, desc, [], sys.maxint)
-            self.__model_list__ = [self.scaffold_pk(model) for model in data]
-        return self.__model_list__
 
 class DataBrowser(object):
     error_template = "/__data_browser__/error.html"
