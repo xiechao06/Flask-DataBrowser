@@ -339,6 +339,7 @@ class ModelView(object):
             if isinstance(v, types.FunctionType):
                 v = v(self)
             kwargs[k] = v
+        
         return self.render(self.get_create_template(), form=form,
                            create_url_map=create_url_map,
                            return_url=return_url, extra="create",
