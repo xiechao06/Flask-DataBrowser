@@ -34,9 +34,9 @@
         $("select").select2("disable").attr("disabled", true);
       $("input[name='action']").click(function (ui) {
         -if h.is_batch_edit()
-          return confirm('您确认要' + $(this).attr("value") + '这些数据吗?'); 
+          return confirm(sprintf("{{ _('Are you sure to %%s these items?') }}", $(this).attr("value"))); 
         -else
-          return confirm('您确认要' + $(this).attr("value") + '本条数据吗?'); 
+          return confirm(sprintf("{{ _('Are you sure to %%s this item?') }}", $(this).attr("value"))); 
       });
       setTimeout(function () {
           $("#flash").fadeOut("slow")
