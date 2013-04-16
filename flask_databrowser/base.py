@@ -339,7 +339,7 @@ class ModelView(object):
             if isinstance(v, types.FunctionType):
                 v = v(self)
             kwargs[k] = v
-        return self.render(self.create_template, form=form,
+        return self.render(self.get_create_template(), form=form,
                            create_url_map=create_url_map,
                            return_url=return_url, extra="create",
                            hint_message=_(u"create %(model_name)s",
@@ -455,7 +455,7 @@ class ModelView(object):
                         create_url_map[col] = create_url
             except AttributeError:
                 pass
-        return self.render(self.edit_template,
+        return self.render(self.get_edit_template(),
                            form=compound_form or form,
                            create_url_map=create_url_map,
                            grouper_info=grouper_info,
