@@ -140,7 +140,7 @@
                         %td {%if row.attrs %} {%for k,v in row.attrs.items() %}{{ k }}="{{ v }}"{% endfor %}{% endif %} -> %a href="{{ v.link }}" << {{ v.value }}
                       -else
                         %td {%if row.attrs %} {%for k,v in row.attrs.items() %}{{ k }}="{{ v }}"{% endfor %}{% endif %} << {{ v() }}
-            -from "__data_browser__/lib.haml" import render_pagination
+            -from "__data_browser__/macro.html" import render_pagination
             {{ render_pagination(__pagination__, __count__) }}
           -else
             %p.text-error << {{ _("no results matched!") }}
