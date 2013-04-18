@@ -8,9 +8,9 @@
         {% if pre_url %}
           location.href = "{{ pre_url|safe }}";
         {% else %}
-          $('#load-fail-popup').popup("open");
+          $('#load-fail-popup-left').popup("open");
           setTimeout(function () {
-            $("#load-fail-popup").popup("close")
+            $("#load-fail-popup-left").popup("close")
           }, 1000);
         {% endif %}
       }
@@ -19,9 +19,9 @@
         {% if next_url %}
           location.href = "{{ next_url|safe }}";
         {% else %}
-          $('#load-fail-popup').popup("open");
+          $('#load-fail-popup-right').popup("open");
           setTimeout(function () {
-            $("#load-fail-popup").popup("close")
+            $("#load-fail-popup-right").popup("close")
           }, 1000);
         {% endif %}
       }
@@ -87,8 +87,11 @@
       </div>
     </div>
   </form>
-  <div id="load-fail-popup" data-role="popup" class="ui-content" id="action-menu" data-corners="true" data-theme="e">
-    {{ _("no previous/next item") }}
+  <div id="load-fail-popup-left" data-role="popup" class="ui-content" id="action-menu" data-corners="true" data-theme="e">
+    {{ _("no previous item") }}
+  </div>
+  <div id="load-fail-popup-right" data-role="popup" class="ui-content" id="action-menu" data-corners="true" data-theme="e">
+    {{ _("no previous item") }}
   </div>
 {% endblock %}
 
