@@ -1,3 +1,32 @@
+{% macro render_pagination(pagination, __count__) %}
+  <div class="pagination">
+    <ul>
+      {% if not pagination.has_prev %}
+        <li class="disabled">
+          <a>{{ _("prev") }}</a>
+        </li>
+      {% else %}
+        <li>
+          <a href="{{ url_for_other_page(page=pagination.page - 1 if pagination.page > 1 else 1) }}">{{ _("prev") }}</a>
+        </li>
+      {% endif %}
+      {% for page in pagination.iter_pages() %}
+        {% if page %}
+          <li class="{% if page == pagination.page %}active{% endif %}">
+            <a href="{{ url_for_other_page(page=page) }}">{{ page }}</a>
+          </li>
+        {% else %}
+          <li class="disabled"><a>...</a></li>
+        {% endif %}
+      {% endfor %}
+      {% if __count__ %}
+        <li class="disabled">
+          <a>{{ _("totally matched records: %(count)d", count=__count__) }}</a>
+        </li>
+      {% endif %}
+    </ul>
+  </div>
+{% endmacro %}
 {% macro render_form_fields(form, focus_set=False) %}
     {{ form.hidden_tag() if form.hidden_tag is defined }}
 
@@ -30,16 +59,16 @@
                 <div>
                     {% if h.is_batch_edit() %}
                         {% if h.is_disabled_form_field(f) %}
-                            {{ f(disabled=True, value=_("唯一值，不能批量修改"))|safe }}
+                            {{ f(disabled=True, value=_("unique field, can't be modified"))|safe }}
                         {% elif not focus_set %}
                             {{ f(autofocus='autofocus', disabled=True)|safe }}
                             <input type="checkbox" name="hold_value" id=""
-                                   checked="checked">保持原值
+                            checked="checked">{{ _("keep unchanged") }}
                             {% set focus_set = True %}
                         {% else %}
                             {{ f(disabled=True)|safe }}
                             <input type="checkbox" name="hold_value" id=""
-                                   checked="checked">保持原值
+                              checked="checked">{{ _("keep unchanged") }}
                         {% endif %}
                     {% else %}
                         {% if not focus_set %}
@@ -49,7 +78,7 @@
                             {{ f()|safe }}
                         {% endif %}
                         {% if f.name in create_url_map %}
-                        <a href="{{ create_url_map[f.name] }}" class="btn btn-primary">新建</a>
+                        <a href="{{ create_url_map[f.name] }}" class="btn btn-primary">{{ _("create") }}</a>
                         {% endif %}
                     {% endif %}
                     {% if f.description %}

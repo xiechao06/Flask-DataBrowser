@@ -372,7 +372,7 @@ class ModelView(object):
 
         def _log(obj_):
             self.data_browser.logger.debug(
-                _(unicode(current_user) + ' performed ' + action),
+                _("%(user)s performed %(action)s", user=unicode(current_user), action=action),
                 extra={"obj": obj_, "obj_pk": self.scaffold_pk(obj_),
                        "action": action, "actor": current_user})
 

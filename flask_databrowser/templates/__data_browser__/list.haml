@@ -35,15 +35,15 @@
           list_val += $(this).val() +",";
         });
         if (list_val == ""){
-          alert("{{ _("请至少选择一条记录！") }}");
+          alert("{{ _("please choose one item!") }}");
           return false;
         }
-        if ($(this).val() == "{{ _('批量修改') }}"){
+        if ($(this).val() == "{{ _('batch edit') }}"){
           $("#main-form").attr("method", "GET");
           $("#main-form").attr("action", "{{ __object_url__ }}/"+ list_val);
             return true;
         }
-        return confirm("您确认要" + $(this).val() + "选中的记录?");
+        return confirm(sprintf("{{ _("Are you sure to %%s selected item(s)?") }}", $(this).val()));
       });
       $("#reset-button").click(function(){
         $("select").select2("val","");
@@ -187,11 +187,11 @@
                           -else
                             -for input_type in filter.input_type
                               -if input_type == 'date'
-                                %input type="text" data-role="date" name="{{ filter.op.id }}" class="{{ __css_classes__[filter.input_class] }}" min=0 placeholder="{{ _("请输入") + filter.label }}"
+                                %input type="text" data-role="date" name="{{ filter.op.id }}" class="{{ __css_classes__[filter.input_class] }}" min=0 placeholder="{{ _("input %(label)s here", label=filter.label) }}"
                               -elif input_type == "datetime"
-                                %input type="text" data-role="datetime" name="{{ filter.op.id }}" class="{{ __css_classes__[filter.input_class] }}" min=0 placeholder="{{ _("请输入") + filter.label }}"
+                                %input type="text" data-role="datetime" name="{{ filter.op.id }}" class="{{ __css_classes__[filter.input_class] }}" min=0 placeholder="{{ _("input %(label)s here", label=filter.label) }}"
                               -else
-                                %input type="{{ input_type }}" name="{{ filter.op.id }}" class="{{ __css_classes__[filter.input_class] }}" placeholder="{{ _("请输入") + filter.label }}"
+                                %input type="{{ input_type }}" name="{{ filter.op.id }}" class="{{ __css_classes__[filter.input_class] }}" placeholder="{{ _("input %(label)s here", label=filter.label) }}"
                               -if not loop.last
                                 %div << {{ filter.sep }}
               %hr

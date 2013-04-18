@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2013-04-18 14:40+0800\n"
+"POT-Creation-Date: 2013-04-18 17:48+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -72,7 +72,9 @@ msgstr ""
 msgid "%(user)s performed %(action)s"
 msgstr ""
 
-#: base.py:392
+#: base.py:392 templates/__data_browser__/list.haml:105
+#: templates/__data_browser__/list_mob.html:97
+#: templates/__data_browser__/macro.html:81
 msgid "create"
 msgstr ""
 
@@ -160,5 +162,151 @@ msgstr ""
 
 #: form/form.py:68
 msgid "Invalid time format"
+msgstr ""
+
+#: templates/__data_browser__/error.html:38
+msgid "点击返回"
+msgstr ""
+
+#: templates/__data_browser__/error_mob.html:12
+msgid "Error"
+msgstr ""
+
+#: templates/__data_browser__/error_mob.html:16
+#: templates/__data_browser__/form_mob.html:37
+#: templates/__data_browser__/macro.html:118
+msgid "back"
+msgstr ""
+
+#: templates/__data_browser__/form.haml:37
+#, python-format
+msgid "Are you sure to %%s these items?"
+msgstr ""
+
+#: templates/__data_browser__/form.haml:39
+#, python-format
+msgid "Are you sure to %%s this item?"
+msgstr ""
+
+#: templates/__data_browser__/form_mob.html:78
+#: templates/__data_browser__/macro.html:115
+msgid "commit"
+msgstr ""
+
+#: templates/__data_browser__/form_mob.html:79
+#: templates/__data_browser__/list.haml:201
+#: templates/__data_browser__/macro.html:116
+msgid "reset"
+msgstr ""
+
+#: templates/__data_browser__/form_mob.html:81
+#: templates/__data_browser__/macro.html:109
+msgid "add another"
+msgstr ""
+
+#: templates/__data_browser__/form_mob.html:91
+msgid "no previous item"
+msgstr ""
+
+#: templates/__data_browser__/form_mob.html:94
+msgid "no next item"
+msgstr ""
+
+#: templates/__data_browser__/list.haml:38
+msgid "please choose one item!"
+msgstr ""
+
+#: templates/__data_browser__/list.haml:41
+#: templates/__data_browser__/list.haml:153
+msgid "batch edit"
+msgstr ""
+
+#: templates/__data_browser__/list.haml:46
+#, python-format
+msgid "Are you sure to %%s selected item(s)?"
+msgstr ""
+
+#: templates/__data_browser__/list.haml:146
+msgid "no results matched!"
+msgstr ""
+
+#: templates/__data_browser__/list.haml:162
+msgid "refine search"
+msgstr ""
+
+#: templates/__data_browser__/list.haml:190
+#: templates/__data_browser__/list.haml:192
+#: templates/__data_browser__/list.haml:194
+#, python-format
+msgid "input %(label)s here"
+msgstr ""
+
+#: templates/__data_browser__/list.haml:200
+msgid "refresh"
+msgstr ""
+
+#: templates/__data_browser__/list_mob.html:37
+#, python-format
+msgid "Are you sure to %%s %%s?"
+msgstr ""
+
+#: templates/__data_browser__/list_mob.html:57
+msgid "loading.."
+msgstr ""
+
+#: templates/__data_browser__/list_mob.html:95
+msgid "list"
+msgstr ""
+
+#: templates/__data_browser__/list_mob.html:115
+msgid "click to load more"
+msgstr ""
+
+#: templates/__data_browser__/list_mob.html:119
+msgid "sorry, no data available!"
+msgstr ""
+
+#: templates/__data_browser__/list_mob.html:135
+msgid "Warning"
+msgstr ""
+
+#: templates/__data_browser__/list_mob.html:139
+msgid "Cancel"
+msgstr ""
+
+#: templates/__data_browser__/list_mob.html:140
+msgid "OK"
+msgstr ""
+
+#: templates/__data_browser__/list_mob.html:145
+msgid "loading error"
+msgstr ""
+
+#: templates/__data_browser__/list_mob.html:150
+#, python-format
+msgid "total number of items: %(count)d"
+msgstr ""
+
+#: templates/__data_browser__/macro.html:6
+#: templates/__data_browser__/macro.html:10
+msgid "prev"
+msgstr ""
+
+#: templates/__data_browser__/macro.html:24
+#, python-format
+msgid "totally matched records: %(count)d"
+msgstr ""
+
+#: templates/__data_browser__/macro.html:62
+msgid "unique field, can't be modified"
+msgstr ""
+
+#: templates/__data_browser__/macro.html:66
+#: templates/__data_browser__/macro.html:71
+msgid "keep unchanged"
+msgstr ""
+
+#: templates/__data_browser__/macro.html:115
+msgid "no changes made, can't submit!"
 msgstr ""
 
