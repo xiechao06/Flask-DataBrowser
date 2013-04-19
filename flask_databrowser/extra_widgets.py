@@ -113,18 +113,23 @@ class ListWidget(object):
         return HTMLString(''.join(html))
 
 class PlaceHolder(object):
-    def __init__(self, template_fname, field_value, obj):
+    def __init__(self, template_fname, field_value, obj, model_view):
         self.template_fname = template_fname
         self.obj = obj
         self.field_value = field_value
         self.kwargs = {}
+        self.model_view = model_view
 
     def set_args(self, **kwargs):
         self.kwargs = kwargs
     
     def __call__(self, field, **kwargs):
         from flask import render_template
-        return render_template(self.template_fname, field_value=self.field_value, obj=self.obj, **self.kwargs)
+        return render_template(self.template_fname, 
+                               field_value=self.field_value, 
+                               obj=self.obj, 
+                               model_view=self.model_view,
+                               **self.kwargs)
 
 if __name__ == "__main__":
     print Image("http://a.com/a.jpg", "an image")(None)
