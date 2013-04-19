@@ -43,7 +43,7 @@ class ValueConverter(object):
             elif col_spec.genre == column_spec.UNORDERED_LIST:
                 w = extra_widgets.ListWidget(v, item_col_spec=col_spec.item_col_spec, model_view=self.model_view)
             elif col_spec.genre == column_spec.PLACE_HOLDER:
-                w = extra_widgets.PlaceHolder(col_spec.template_fname, v, self.obj)
+                w = extra_widgets.PlaceHolder(col_spec.template_fname, v, self.obj, self.model_view)
             else: # plaintext
                 # we try to convert it to link
                 w = extra_widgets.PlainText(unicode(v) if v is not None else "")
