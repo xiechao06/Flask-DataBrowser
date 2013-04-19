@@ -30,7 +30,12 @@
 {% macro render_form_fields(form, focus_set=False) %}
     {{ form.hidden_tag() if form.hidden_tag is defined }}
 
-    {% for f in form if f.type != 'HiddenField' and f.type != 'CSRFTokenField' %}
+    {% for fieldset, fields in form|groupby("fieldset") %}
+    <fieldset>
+      {% if fieldset %}
+        <legend>{{fieldset}}</legend>
+      {% endif %}
+      {% for f in fields if f.type != 'HiddenField' and f.type != 'CSRFTokenField' %}
         <div class="control-group{{ ' error' if f.errors }}">
             <div class="control-label">
                 <strong>{{ f.label.text }}</strong>
@@ -94,14 +99,14 @@
                 {% endif %}
             </div>
         </div>
+      {% endfor %}
+    </fieldset>
     {% endfor %}
 {% endmacro %}
 
 {% macro form_tag() %}
     <form action="" method="POST" class="form-horizontal"{% if form.has_file_field %} enctype="multipart/form-data"{% endif %}>
-        <fieldset>
-            {{ caller() }}
-        </fieldset>
+      {{ caller() }}
     </form>
 {% endmacro %}
 

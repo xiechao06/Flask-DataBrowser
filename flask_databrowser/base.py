@@ -550,7 +550,13 @@ class ModelView(object):
         model_clumns = set(
             [p.key for p in self.model.__mapper__.iterate_properties])
         ret = []
-        for col in self.__form_columns__:
+
+        if isinstance(self.__form_columns__, types.DictType):
+            form_columns = list(itertools.chain(*self.__form_columns__.values()))
+        else:
+            form_columns = self.__form_columns__
+
+        for col in form_columns:
             if isinstance(col, InputColumnSpec):
                 col_name = col.col_name
                 if isinstance(col.read_only, types.FunctionType):
@@ -565,14 +571,40 @@ class ModelView(object):
 
     def get_create_form(self):
         if self.__create_form__ is None:
-            self.__create_form__ = self.scaffold_form(self.__create_columns__)
-        return self.__create_form__()
-
-
+            if isinstance(self.__create_columns__, types.DictType):
+                create_columns = list(itertools.chain(*self.__create_columns__.values()))
+            else:
+                create_columns = self.__create_columns__
+            self.__create_form__ = self.scaffold_form(create_columns)
+        ret = self.__create_form__()
+        if isinstance(self.__create_columns__, types.DictType):
+            for fieldset, fields in self.__create_columns__.items():
+                for field in fields:
+                    ret[field].fieldset = fieldset
+        # self.__create_columns__ may be a list, so we must set an empty fieldset 
+        # for each field, besides, there's an invisible csrf field in form, we
+        # must set an empty fieldset for this field either
+        for field in ret:
+            if not hasattr(field, "fieldset"):
+                field.fieldset = ""
+        return ret
+                    
     def get_edit_form(self, obj=None):
         if self.__edit_form__ is None:
             self.__edit_form__ = self.scaffold_form(self._model_columns(obj))
-        return self.__edit_form__(obj=obj)
+        ret = self.__edit_form__(obj=obj)
+        if isinstance(self.__form_columns__, types.DictType):
+            for fieldset, fields in self.__form_columns__.items():
+                for field in fields:
+                    if field in ret:
+                        ret[field].fieldset = fieldset
+        # self.__form_columns__ may be a list, so we must set an empty fieldset 
+        # for each field, besides, there's an invisible csrf field in form, we
+        # must set an empty fieldset for this field either
+        for field in ret:
+            if not hasattr(field, "fieldset"):
+                field.fieldset = ""
+        return ret
 
     def get_compound_edit_form(self, obj=None, form=None):
         if not form:
@@ -596,31 +628,68 @@ class ModelView(object):
             def hidden_tag(self):
                 return self.model_form.hidden_tag()
 
-        ret = []
+        fields = []
         r = self.preprocess(obj)
-        for col in self.__form_columns__:
+
+        pairs = [] # a list of (fieldset, col)
+        if isinstance(self.__form_columns__, types.DictType):
+            for fieldset, cols in self.__form_columns__.items():
+                for col in cols:
+                    pairs.append((fieldset, col)) 
+        else:
+            for col in self.__form_columns__:
+                pairs.append(("", col))
+
+        for fieldset, col in pairs:
             if isinstance(col, InputColumnSpec):
-                ret.append(form[col.col_name])
+                field = form[col.col_name]
             elif isinstance(col, basestring):
                 try:
-                # if it is a models property, we yield from model_form
-                    ret.append(form[col])
+                    # if it is a models property, we yield from model_form
+                    field = form[col]
                 except KeyError:
                     col_spec = self._col_spec_from_str(col)
-                    widget = value_converter(operator.attrgetter(col)(r),
+                    field = value_converter(operator.attrgetter(col)(r),
                                              col_spec)
-                    ret.append(widget)
             else:
-                ret.append(
-                    value_converter(operator.attrgetter(col.col_name)(r), col))
-        return FakeForm(form, ret)
+                field = value_converter(operator.attrgetter(col.col_name)(r), col)
+            field.fieldset = fieldset
+            fields.append(field)
+            
+        return FakeForm(form, fields)
 
     def get_batch_edit_form(self, obj=None):
         if self.__batch_edit_form__ is None:
-            self.__batch_edit_form__ = self.scaffold_form(
-                [column for column in self.__batch_form_columns__ if
-                 column.find(".") == -1])
-        return self.__batch_edit_form__(obj=obj)
+            batch_form_columns = []
+            if isinstance(self.__batch_form_columns__, types.DictType):
+                for col in itertools.chain(*self.__batch_form_columns__.values()):
+                    if isinstance(col, InputColumnSpec):
+                        if col.col_name.find(".") == -1:
+                            batch_form_columns.append(col)
+                    elif col.find(".") == -1:
+                        batch_form_columns.append(col)
+            else:
+                for col in self.__batch_form_columns__:
+                    if isinstance(col, InputColumnSpec):
+                        if col.col_name.find(".") == -1:
+                            batch_form_columns.append(col)
+                    elif col.find(".") == -1:
+                        batch_form_columns.append(col)
+            self.__batch_edit_form__ = self.scaffold_form(batch_form_columns)
+        ret = self.__batch_edit_form__(obj=obj)
+        # set fieldset
+        if isinstance(self.__batch_form_columns__, types.DictType):
+            for fieldset, fields in self.__batch_form_columns__.items():
+                for field in fields:
+                    if field in ret:
+                        ret[field].fieldset = fieldset
+        # self.__batch_form_columns__ may be a list, so we must set an empty fieldset 
+        # for each field, besides, there's an invisible csrf field in form, we
+        # must set an empty fieldset for this field either
+        for field in ret:
+            if not hasattr(field, "fieldset"):
+                field.fieldset = ""
+        return ret
 
     @property
     def model_name(self):
