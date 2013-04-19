@@ -8,6 +8,7 @@ from flask import redirect, Blueprint, request, abort
 from flask.ext.login import LoginManager
 from flask.ext.principal import Permission, RoleNeed, PermissionDenied
 from flask.ext.databrowser import filters
+from brownie.datastructures import OrderedDict
 
 admin_permission = Permission(RoleNeed("Admin"))
 
@@ -56,15 +57,21 @@ def main():
         from flask.ext.databrowser.column_spec import ImageColumnSpec, TableColumnSpec, PlaceHolderColumnSpec
         __list_columns__ = ["id", "name", "group", "password", "roll_called", "group.name", "create_time", ImageColumnSpec("avatar", alt=u"头像", 
             formatter=lambda v, model: "http://farm9.staticflickr.com/8522/8478415115_152c6f5e55_m.jpg", doc=u"头像，^_^！"), "good"]
-        __create_columns__ = {"primary": ["name", "group", "password"], "secondary": ["age", "roll_called"]}
-        __form_columns__ = {u"主要的": ["id", "name", "group", "password"], u"次要的": ["roll_called", "good", "age", "create_time", 
-                            ImageColumnSpec("avatar", alt=u"头像", 
-                                            formatter=lambda v, model: "http://farm9.staticflickr.com/8522/8478415115_152c6f5e55_m.jpg", doc=u"头像， ^_^!")],
-                            u"额外的": [TableColumnSpec("dogs", css_class="table table-striped table-hover table-condensed table-bordered"),
-                            TableColumnSpec("car_list", css_class="table table-striped table-hover table-condensed table-bordered", col_specs=["id", "model"])
-                            ]}
+        __create_columns__ = OrderedDict()
+        __create_columns__["secondary"] = ["age", "roll_called"]
+        __create_columns__["primary"] = ["name", "group", "password"]
 
-        __batch_form_columns__ = {"primary": ["name", "group"], "secondary": ["age", "roll_called"]}
+        __form_columns__ = OrderedDict()
+        __form_columns__[u"主要的"] = ["id", "name", "group", "password"]
+        __form_columns__[u"次要的"] = ["roll_called", "good", "age", "create_time", ImageColumnSpec("avatar", alt=u"头像", 
+                                            formatter=lambda v, model: "http://farm9.staticflickr.com/8522/8478415115_152c6f5e55_m.jpg", doc=u"头像， ^_^!")]
+        __form_columns__[u"额外的"] = [TableColumnSpec("dogs", css_class="table table-striped table-hover table-condensed table-bordered"),
+                            TableColumnSpec("car_list", css_class="table table-striped table-hover table-condensed table-bordered", col_specs=["id", "model"])
+                            ]
+
+        __batch_form_columns__ = OrderedDict()
+        __batch_form_columns__["primary"] = ["name", "group"]
+        __batch_form_columns__["secondary"] = ["age", "roll_called"]
 
         __column_formatters__ = {
             "create_time": lambda v, model: v.strftime("%Y-%m-%d %H") + u"点",
