@@ -56,6 +56,7 @@ def main():
         from flask.ext.databrowser.column_spec import ImageColumnSpec, TableColumnSpec, PlaceHolderColumnSpec
         __list_columns__ = ["id", "name", "group", "password", "roll_called", "group.name", "create_time", ImageColumnSpec("avatar", alt=u"头像", 
             formatter=lambda v, model: "http://farm9.staticflickr.com/8522/8478415115_152c6f5e55_m.jpg", doc=u"头像，^_^！"), "good"]
+        __create_columns__ = {"primary": ["name", "group", "password"], "secondary": ["age", "roll_called"]}
         __form_columns__ = ["id", "name", "group", "password", "roll_called", "good", "age", "create_time", 
                             ImageColumnSpec("avatar", alt=u"头像", 
                                             formatter=lambda v, model: "http://farm9.staticflickr.com/8522/8478415115_152c6f5e55_m.jpg", doc=u"头像， ^_^!"),

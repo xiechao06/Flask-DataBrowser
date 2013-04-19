@@ -565,10 +565,24 @@ class ModelView(object):
 
     def get_create_form(self):
         if self.__create_form__ is None:
-            self.__create_form__ = self.scaffold_form(self.__create_columns__)
-        return self.__create_form__()
-
-
+            if isinstance(self.__create_columns__, types.DictType):
+                create_columns = list(itertools.chain(*self.__create_columns__.values()))
+            else:
+                create_columns = self.__create_columns__
+            self.__create_form__ = self.scaffold_form(create_columns)
+        ret = self.__create_form__()
+        if isinstance(self.__create_columns__, types.DictType):
+            for fieldset, fields in self.__create_columns__.items():
+                for field in fields:
+                    ret[field].fieldset = fieldset
+        # self.__create_columns__ may be a list, so we must set an empty fieldset 
+        # for each field, besides, there's an invisible csrf field in form, we
+        # must set an empty fieldset for this field either
+        for field in ret:
+            if not hasattr(field, "fieldset"):
+                field.fieldset = ""
+        return ret
+                    
     def get_edit_form(self, obj=None):
         if self.__edit_form__ is None:
             self.__edit_form__ = self.scaffold_form(self._model_columns(obj))
