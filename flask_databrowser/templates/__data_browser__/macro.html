@@ -37,6 +37,7 @@
       {% endif %}
       {% for f in fields if f.type != 'HiddenField' and f.type != 'CSRFTokenField' %}
         <div class="control-group{{ ' error' if f.errors }}">
+          {% if f.label.text %} 
             <div class="control-label">
                 <strong>{{ f.label.text }}</strong>
                 {% if f.type != 'ReadOnlyField' and h.is_required_form_field(f) %}
@@ -45,6 +46,13 @@
                     &nbsp;
                 {% endif %}
             </div>
+          {% else%}
+            {% if f.type != 'ReadOnlyField' and h.is_required_form_field(f) %}
+                <strong style="color: red">&#42;</strong>
+            {% else %}
+                &nbsp;
+            {% endif %}
+          {% endif %}
             {% if h.is_batch_edit() %}
                 <script type="text/javascript">
                     $(function () {
@@ -60,7 +68,9 @@
                     })
                 </script>
             {% endif %}
+            {% if f.label.text %}
             <div class="controls">
+            {% endif %}
                 <div>
                     {% if h.is_batch_edit() %}
                         {% if h.is_disabled_form_field(f) %}
@@ -97,7 +107,9 @@
                         {% endfor %}
                     </ul>
                 {% endif %}
+            {% if f.label.text %}
             </div>
+            {%endif%}
         </div>
       {% endfor %}
     </fieldset>

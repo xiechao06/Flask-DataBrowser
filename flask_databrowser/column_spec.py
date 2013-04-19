@@ -11,12 +11,12 @@ PLACE_HOLDER = 7
 
 class ColumnSpec(object):
 
-    def __init__(self, col_name, genre=PLAIN_TEXT, doc="", formatter=None, label="", css_class=""):
+    def __init__(self, col_name, genre=PLAIN_TEXT, doc="", formatter=None, label=None, css_class=""):
         self.col_name = col_name
         self.genre = genre
         self.formatter = formatter
         self.doc = doc
-        self.label = label or col_name
+        self.label = col_name if (label is None) else label
         self.css_class = css_class
 
 PlainTextColumnSpec = ColumnSpec # alias to ColumnSpec
