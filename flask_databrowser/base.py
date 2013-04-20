@@ -593,6 +593,19 @@ class ModelView(object):
             else:
                 create_columns = self.__create_columns__
             self.__create_form__ = self.scaffold_form(create_columns)
+        default_args = {}
+        for k, v in request.args.items():
+            if k != "url":
+                default_args[k] = v
+        if default_args:
+            for k in default_args:
+                col = getattr(self.model, k)
+                if hasattr(col.property, 'direction'): # relationship
+                    default_args[k] = col.property.mapper.class_.query.get(default_args[k])
+            obj = self.model(**default_args)
+            #for k, v in default_args.items():
+                #setattr(obj, k, v)
+            return self.__create_form__(obj=obj)
         return self.__create_form__()
                     
     def get_edit_form(self, obj=None):
