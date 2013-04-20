@@ -331,6 +331,7 @@ class ModelView(object):
 
         return_url = request.args.get('url') or url_for(
             '.' + self.list_view_endpoint)
+        on_fly = int(request.args.get("on_fly", 0))
 
         form = self.get_create_form()
         # if submit and validated, go, else re-display the create page and show the errors
@@ -343,14 +344,21 @@ class ModelView(object):
                 if '_add_another' in request.form:
                     return redirect(self.url_for_object(None, url=return_url))
                 else:
-                    return redirect(return_url)
+                    if on_fly:
+                        return render_template("__data_browser__/on_fly_result.haml", 
+                                               model_cls=self.model_name, 
+                                               obj=unicode(model), 
+                                               obj_pk=self.scaffold_pk(model), 
+                                               target=request.args.get("target"))
+                    else:
+                        return redirect(return_url)
         create_url_map = {}
         for col in [f.name for f in form if f.name != "csrf_token"]:
-            attr = getattr(self.model, col if isinstance(col,
-                                                         basestring) else col.col_name)
+            col_name = col if isinstance(col, basestring) else col.col_name
+            attr = getattr(self.model, col_name)
             if hasattr(attr.property, "direction"):
                 remote_side = attr.property.mapper.class_
-                create_url = self.data_browser.get_create_url(remote_side)
+                create_url = self.data_browser.get_create_url(remote_side, col_name)
                 if create_url:
                     create_url_map[col] = create_url
         kwargs = {}
@@ -366,10 +374,11 @@ class ModelView(object):
                 fieldset_list.append((fieldset, [form[col.col_name if isinstance(col, ColumnSpec) else col] for col in cols]))
         else:
             fieldset_list.append(("", form))
+
         return self.render(self.get_create_template(), form=form,
                            fieldset_list=fieldset_list,
                            create_url_map=create_url_map,
-                           return_url=return_url, extra="create",
+                           return_url=return_url, extra="" if on_fly else "create",
                            hint_message=_(u"create %(model_name)s",
                                           model_name=self.model_name),
                            **kwargs)
@@ -501,11 +510,11 @@ class ModelView(object):
         create_url_map = {}
         for col in [f.name for f in form if f.name != "csrf_token"]:
             try:
-                attr = getattr(self.model, col if isinstance(col,
-                                                             basestring) else col.col_name)
+                col_name = col if isinstance(col, basestring) else col.col_name
+                attr = getattr(self.model, col_name)
                 if hasattr(attr.property, "direction"):
                     remote_side = attr.property.mapper.class_
-                    create_url = self.data_browser.get_create_url(remote_side)
+                    create_url = self.data_browser.get_create_url(remote_side, col_name)
                     if create_url:
                         create_url_map[col] = create_url
             except AttributeError:
@@ -594,15 +603,17 @@ class ModelView(object):
             else:
                 create_columns = self.__create_columns__
             self.__create_form__ = self.scaffold_form(create_columns)
+        # if request specify some fields, then use these fields
         default_args = {}
+        
         for k, v in request.args.items():
-            if k != "url":
-                default_args[k] = v
-        if default_args:
-            for k in default_args:
+            if hasattr(self.model, k):
                 col = getattr(self.model, k)
                 if hasattr(col.property, 'direction'): # relationship
-                    default_args[k] = col.property.mapper.class_.query.get(default_args[k])
+                    default_args[k] = col.property.mapper.class_.query.get(v)
+                else:
+                    default_args[k] = v
+        if default_args:
             obj = self.model(**default_args)
             #for k, v in default_args.items():
                 #setattr(obj, k, v)
@@ -1170,10 +1181,10 @@ class DataBrowser(object):
         except KeyError:
             return None
 
-    def get_create_url(self, model):
+    def get_create_url(self, model, target):
         try:
             model_view = self.__registered_view_map[model.__tablename__]
-            return model_view.url_for_object(None, url=request.url)
+            return model_view.url_for_object(None, url=request.url, on_fly=1, target=target)
         except KeyError:
             return None
     

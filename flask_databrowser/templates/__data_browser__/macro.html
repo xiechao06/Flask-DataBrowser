@@ -93,7 +93,7 @@
                             {{ f()|safe }}
                         {% endif %}
                         {% if f.name in create_url_map %}
-                        <a href="{{ create_url_map[f.name] }}" class="btn btn-primary">{{ _("create") }}</a>
+                        <a href="{{ create_url_map[f.name] }}" data-role="new-related-obj" data-target="{{f.name}}" class="btn btn-primary">{{ _("create") }}</a>
                         {% endif %}
                     {% endif %}
                     {% if f.description %}

@@ -50,4 +50,10 @@
         $("input#submit-btn").attr("disabled", true);
         return false;
       });
+      $("a[data-role=new-related-obj]").click(function() {
+        //var win = window.open($(this).attr('href'), $(this).attr('data-target'), "menubar=yes,location=yes,resizable=yes,scrollbars=yes,status=yes"); 
+        var win = window.open($(this).attr('href'), $(this).attr('data-target')); 
+        win.focus();
+        return false;
+      });
     });
