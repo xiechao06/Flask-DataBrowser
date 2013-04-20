@@ -623,6 +623,14 @@ class ModelView(object):
     def get_edit_form(self, obj=None):
         if self.__edit_form__ is None:
             self.__edit_form__ = self.scaffold_form(self._model_columns(obj))
+        # if request specify some fields, then we override fields with this value 
+        for k, v in request.args.items():
+            if hasattr(self.model, k):
+                col = getattr(self.model, k)
+                if hasattr(col.property, 'direction'): # relationship
+                    setattr(obj, k, col.property.mapper.class_.query.get(v))
+                else:
+                    setattr(obj, k, v)
         return self.__edit_form__(obj=obj)
 
     def get_compound_edit_form(self, obj=None, form=None):
