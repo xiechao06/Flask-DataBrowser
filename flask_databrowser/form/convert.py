@@ -249,15 +249,11 @@ class AdminModelConverter(ModelConverterBase):
 
                 unique = False
 
-                if column.primary_key and type(column.type).__name__ == "Integer":
+                if column.primary_key:
                     if hidden_pk:
                         # If requested to add hidden field, show it
                         return fields.HiddenField()
                     else:
-                        # If PK is not explicitly allowed, ignore it
-                        if prop.key not in self.view.__form_columns__:
-                            return None
-
                         kwargs['validators'].append(Unique(self.session,
                             model,
                             column, message=_("This field must be unique, but it already exists!")))

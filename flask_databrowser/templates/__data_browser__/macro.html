@@ -96,17 +96,14 @@
                         <a href="{{ create_url_map[f.name] }}" data-role="new-related-obj" data-target="{{f.name}}" class="btn btn-primary">{{ _("create") }}</a>
                         {% endif %}
                     {% endif %}
+                    {% if f.errors %}
+                      <span class="alert alert-error">{{ f.errors|join("; ")}}</span>
+                    {% endif %}
+
                     {% if f.description %}
                       <span class="help-inline">* <i class="text-info">{{ f.description }}</i></span>
                     {% endif %}
                 </div>
-                {% if f.errors %}
-                    <ul>
-                        {% for e in f.errors if e is string %}
-                            <li>{{ e }}</li>
-                        {% endfor %}
-                    </ul>
-                {% endif %}
             {% if f.label.text %}
             </div>
             {%endif%}
