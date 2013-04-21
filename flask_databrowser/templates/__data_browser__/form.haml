@@ -41,9 +41,12 @@
       setTimeout(function () {
           $("#flash").fadeOut("slow")
       }, 3000);
+      $("input").keypress(function () {
+        $("input#submit-btn").attr("disabled", false).attr("title", "");
+      });
       $("input[name!='hold_value'], select").change(function () {
         $("input#submit-btn").attr("disabled", false).attr("title", "");
-      })
+      });
       $("input[type=reset]").click(function () {
         $(this).parents('form')[0].reset();
         $("select").trigger("change");
@@ -51,7 +54,6 @@
         return false;
       });
       $("a[data-role=new-related-obj]").click(function() {
-        //var win = window.open($(this).attr('href'), $(this).attr('data-target'), "menubar=yes,location=yes,resizable=yes,scrollbars=yes,status=yes"); 
         var win = window.open($(this).attr('href'), $(this).attr('data-target')); 
         win.focus();
         return false;
