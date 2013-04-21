@@ -147,7 +147,7 @@ class AdminModelConverter(ModelConverterBase):
 
     def convert(self, model, mapper, prop, field_args, hidden_pk, col_spec=None):
         kwargs = {
-            'validators': [],
+            'validators': col_spec.validators if col_spec else [],
             'filters': []
         }
 

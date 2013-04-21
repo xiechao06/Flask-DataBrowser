@@ -46,12 +46,23 @@ class TableColumnSpec(ColumnSpec):
 
 class InputColumnSpec(ColumnSpec):
 
-    def __init__(self, col_name, group_by=None, read_only=False, doc="", formatter=None, label="", css_class="", filter_=None, opt_filter=None):
+    def __init__(self, col_name, 
+                 group_by=None, # a grouper field, must be of `InstrumentedAttribute`
+                 read_only=False, 
+                 doc="", 
+                 formatter=None, 
+                 label="", 
+                 css_class="", 
+                 filter_=None, # a function to add filters to query 
+                 opt_filter=None, # a function to filter options
+                 validators=None, # user provided validators
+                ):
         super(InputColumnSpec, self).__init__(col_name, genre=INPUT, doc=doc, formatter=formatter, label=label, css_class=css_class)
         self.group_by = group_by
         self.read_only = read_only
         self.filter_ = filter_
         self.opt_filter = opt_filter
+        self.validators = validators or []
     
     @property
     def grouper_input_name(self):
