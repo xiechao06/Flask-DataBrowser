@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2013-04-18 17:48+0800\n"
+"POT-Creation-Date: 2013-04-21 18:53+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -57,38 +57,38 @@ msgstr ""
 msgid "%(model_name)s %(model)s was updated and saved"
 msgstr ""
 
-#: base.py:342 base.py:390
+#: base.py:343 base.py:406
 #, python-format
 msgid "%(model_name)s %(model)s was created successfully"
 msgstr ""
 
-#: base.py:366
+#: base.py:382
 #, python-format
 msgid "create %(model_name)s"
 msgstr ""
 
-#: base.py:375
+#: base.py:391
 #, python-format
 msgid "%(user)s performed %(action)s"
 msgstr ""
 
-#: base.py:392 templates/__data_browser__/list.haml:105
+#: base.py:408 templates/__data_browser__/list.haml:105
 #: templates/__data_browser__/list_mob.html:97
-#: templates/__data_browser__/macro.html:81
+#: templates/__data_browser__/macro.html:96
 msgid "create"
 msgstr ""
 
-#: base.py:447
+#: base.py:463
 #, python-format
 msgid "edit %(model_name)s-%(obj)s"
 msgstr ""
 
-#: base.py:469
+#: base.py:485
 #, python-format
 msgid "edit %(model_name)s-%(objs)s"
 msgstr ""
 
-#: base.py:748
+#: base.py:829
 #, python-format
 msgid "invalid action %(action)s"
 msgstr ""
@@ -113,46 +113,46 @@ msgstr ""
 msgid "Internal error \"%(err)s\", please contact us!"
 msgstr ""
 
-#: form/convert.py:173 form/convert.py:273
+#: form/convert.py:173 form/convert.py:269
 msgid "this field can't be empty"
 msgstr ""
 
-#: form/convert.py:263 form/convert.py:270 form/validators.py:33
+#: form/convert.py:259 form/convert.py:266 form/validators.py:33
 msgid "This field must be unique, but it already exists!"
 msgstr ""
 
-#: form/convert.py:320
+#: form/convert.py:316
 #, python-format
 msgid "length exceeds %(max_length)%d"
 msgstr ""
 
-#: form/convert.py:326
+#: form/convert.py:322
 #, python-format
 msgid "value of this field must be %(values)s"
 msgstr ""
 
-#: form/convert.py:327
+#: form/convert.py:323
 #, python-format
 msgid " or %(last_value)s"
 msgstr ""
 
-#: form/convert.py:369
+#: form/convert.py:365
 msgid "this field must bigger than 0"
 msgstr ""
 
-#: form/convert.py:386
+#: form/convert.py:382
 msgid "this field must between 1901 and 2155"
 msgstr ""
 
-#: form/convert.py:392
+#: form/convert.py:388
 msgid "this field must be a valid IP address"
 msgstr ""
 
-#: form/convert.py:398
+#: form/convert.py:394
 msgid "this field must be a valid MAC address"
 msgstr ""
 
-#: form/convert.py:404
+#: form/convert.py:400
 msgid "this field must be a valid UUID"
 msgstr ""
 
@@ -174,7 +174,7 @@ msgstr ""
 
 #: templates/__data_browser__/error_mob.html:16
 #: templates/__data_browser__/form_mob.html:37
-#: templates/__data_browser__/macro.html:118
+#: templates/__data_browser__/macro.html:132
 msgid "back"
 msgstr ""
 
@@ -189,18 +189,18 @@ msgid "Are you sure to %%s this item?"
 msgstr ""
 
 #: templates/__data_browser__/form_mob.html:78
-#: templates/__data_browser__/macro.html:115
+#: templates/__data_browser__/macro.html:129
 msgid "commit"
 msgstr ""
 
 #: templates/__data_browser__/form_mob.html:79
 #: templates/__data_browser__/list.haml:201
-#: templates/__data_browser__/macro.html:116
+#: templates/__data_browser__/macro.html:130
 msgid "reset"
 msgstr ""
 
 #: templates/__data_browser__/form_mob.html:81
-#: templates/__data_browser__/macro.html:109
+#: templates/__data_browser__/macro.html:123
 msgid "add another"
 msgstr ""
 
@@ -297,16 +297,29 @@ msgstr ""
 msgid "totally matched records: %(count)d"
 msgstr ""
 
-#: templates/__data_browser__/macro.html:62
+#: templates/__data_browser__/macro.html:77
 msgid "unique field, can't be modified"
 msgstr ""
 
-#: templates/__data_browser__/macro.html:66
-#: templates/__data_browser__/macro.html:71
+#: templates/__data_browser__/macro.html:81
+#: templates/__data_browser__/macro.html:86
 msgid "keep unchanged"
 msgstr ""
 
-#: templates/__data_browser__/macro.html:115
+#: templates/__data_browser__/macro.html:129
 msgid "no changes made, can't submit!"
+msgstr ""
+
+#: templates/__data_browser__/on_fly_result.haml:23
+msgid "congratulations"
+msgstr ""
+
+#: templates/__data_browser__/on_fly_result.haml:24
+#, python-format
+msgid "you have created %(model_cls)s %(obj)s successfully!"
+msgstr ""
+
+#: templates/__data_browser__/on_fly_result.haml:25
+msgid "close"
 msgstr ""
 
