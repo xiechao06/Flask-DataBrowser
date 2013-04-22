@@ -70,9 +70,10 @@ class InputColumnSpec(ColumnSpec):
 
 class ListColumnSpec(ColumnSpec):
 
-    def __init__(self, col_name, item_col_spec=None, doc="", formatter=None, label="", css_class=""):
+    def __init__(self, col_name, item_col_spec=None, doc="", formatter=None, label="", css_class="", compressed=False):
         super(ListColumnSpec, self).__init__(col_name, genre=UNORDERED_LIST, doc=doc, formatter=formatter, label=label, css_class=css_class)
         self.item_col_spec = item_col_spec
+        self.compressed = compressed
 
 class PlaceHolderColumnSpec(ColumnSpec):
 

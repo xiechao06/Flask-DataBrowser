@@ -3,6 +3,7 @@
 extra widgets beside wtform's widgets
 """
 import operator
+import uuid
 from wtforms.widgets import HTMLString, html_params
 from wtforms.compat import text_type, string_types, iteritems
 from flask.ext.databrowser.column_spec import ColumnSpec
@@ -96,20 +97,34 @@ class TableWidget(object):
 
 class ListWidget(object):
 
-    def __init__(self, rows, item_col_spec, html_tag="ul", model_view=None):
+    def __init__(self, rows, item_col_spec, html_tag="ul", model_view=None, compressed=False):
         self.rows = rows
         self.item_col_spec = item_col_spec
         self.html_tag = html_tag
         self.model_view = model_view
+        self.compressed = compressed
 
     def __call__(self, field, **kwargs):
         from flask.ext.databrowser.convert import ValueConverter
 
-        html = ["<%s>\n" % self.html_tag]
-        for row in self.rows:
-            converter = ValueConverter(row, self.model_view)
-            html.append(" <li>%s</li>\n" % converter(row, self.item_col_spec)())
-        html.append("</%s>" % self.html_tag)
+        if not self.compressed:
+            html = ["<%s>\n" % self.html_tag]
+            for row in self.rows:
+                converter = ValueConverter(row, self.model_view)
+                html.append(" <li>%s</li>\n" % converter(row, self.item_col_spec)())
+            html.append("</%s>" % self.html_tag)
+        else:
+            uuid_ = uuid.uuid1()
+            if self.rows:
+                html = ['<a href="#" data-target="#%s" data-toggle="collapse">%d</a>' % (uuid_, len(self.rows))]
+                html.append('<i class="icon-chevron-left"></i>')
+                html.append('<div id="%s" class="collapse in" data-builtin="true">\n<div class="accordion-inner">' % uuid_)
+                for row in self.rows:
+                    converter = ValueConverter(row, self.model_view)
+                    html.append(" <div>%s</div>\n" % converter(row, self.item_col_spec)())
+                html.append('</div>\n</div>')
+            else:
+                html = ["0"]
         return HTMLString(''.join(html))
 
 class PlaceHolder(object):

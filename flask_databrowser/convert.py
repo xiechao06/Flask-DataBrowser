@@ -19,34 +19,33 @@ class ValueConverter(object):
         old_v = v
         css_class = None
         if not col_spec:
-            w = extra_widgets.PlainText(unicode(v))
-        else:
-            obj = self.obj
-            if self.model_view and col_spec and hasattr(v, "__mapper__"):
-                ref_col_spec = self.model_view.data_browser.create_object_link_column_spec(
-                    v.__mapper__.class_, col_spec.label)
-                if ref_col_spec:
-                    obj = v
-                    col_spec = ref_col_spec
+            col_spec = column_spec.ColumnSpec("")
+        obj = self.obj
+        if self.model_view and hasattr(v, "__mapper__"):
+            ref_col_spec = self.model_view.data_browser.create_object_link_column_spec(
+                v.__mapper__.class_, col_spec and col_spec.label)
+            if ref_col_spec:
+                obj = v
+                col_spec = ref_col_spec
 
-            if col_spec.formatter:
-                v = col_spec.formatter(v, obj)
-            css_class = col_spec.css_class
+        if col_spec.formatter:
+            v = col_spec.formatter(v, obj)
+        css_class = col_spec.css_class
 
-            if col_spec.genre == column_spec.IMAGE:
-                w = extra_widgets.Image(v, alt=col_spec.alt)
-            elif col_spec.genre == column_spec.LINK:
-                w = extra_widgets.Link((col_spec.anchor if isinstance(col_spec.anchor, basestring) else col_spec.anchor(old_v)) or v, href=v)
-            elif col_spec.genre == column_spec.TABLE: 
-                # TODO if v is a registered model, then a link should generated 
-                w = extra_widgets.TableWidget(v, col_specs=col_spec.col_specs, model_view=self.model_view, sum_fields=col_spec.sum_fields)
-            elif col_spec.genre == column_spec.UNORDERED_LIST:
-                w = extra_widgets.ListWidget(v, item_col_spec=col_spec.item_col_spec, model_view=self.model_view)
-            elif col_spec.genre == column_spec.PLACE_HOLDER:
-                w = extra_widgets.PlaceHolder(col_spec.template_fname, v, self.obj, self.model_view)
-            else: # plaintext
-                # we try to convert it to link
-                w = extra_widgets.PlainText(unicode(v) if v is not None else "")
+        if col_spec.genre == column_spec.IMAGE:
+            w = extra_widgets.Image(v, alt=col_spec.alt)
+        elif col_spec.genre == column_spec.LINK:
+            w = extra_widgets.Link((col_spec.anchor if isinstance(col_spec.anchor, basestring) else col_spec.anchor(old_v)) or v, href=v)
+        elif col_spec.genre == column_spec.TABLE: 
+            # TODO if v is a registered model, then a link should generated 
+            w = extra_widgets.TableWidget(v, col_specs=col_spec.col_specs, model_view=self.model_view, sum_fields=col_spec.sum_fields)
+        elif col_spec.genre == column_spec.UNORDERED_LIST:
+            w = extra_widgets.ListWidget(v, item_col_spec=col_spec.item_col_spec, model_view=self.model_view, compressed=col_spec.compressed)
+        elif col_spec.genre == column_spec.PLACE_HOLDER:
+            w = extra_widgets.PlaceHolder(col_spec.template_fname, v, self.obj, self.model_view)
+        else: # plaintext
+            # we try to convert it to link
+            w = extra_widgets.PlainText(unicode(v) if v is not None else "")
 
         class FakeField(object):
             def __init__(self, label, name, widget, css_class=None, description=None):
