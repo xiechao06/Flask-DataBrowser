@@ -11,6 +11,11 @@
     =lib.render_form(form, return_url, extra)
 
 -block __data_browser__builtin_head_block
+  <style type="text/css">
+    legend {
+        margin-bottom: 0px;
+    }
+  </style>
   %script type="text/javascript"
     $(function(){
       -if grouper_info
