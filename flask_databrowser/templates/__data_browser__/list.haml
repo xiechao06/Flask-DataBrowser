@@ -4,7 +4,13 @@
 
   %script
     $(function(){
+      $(".collapse[data-builtin=true]").collapse();
       $("select").select2();
+      $(".collapse[data-builtin=true]").on("shown", function () {
+        $(this).prev().attr("class", "icon-chevron-down")
+      }).on("hidden", function () {
+        $(this).prev().attr("class", "icon-chevron-left")
+      });
       $('input[data-role="date"]').datepicker(); 
       $('input[data-role="datetime"]').datepicker({displayTime: true});
       $('span#actions a').click(function () {
