@@ -2,6 +2,7 @@
 
 # TODO need refactoring
 
+import urllib
 from hashlib import md5
 from collections import namedtuple, Iterable
 import operator
@@ -67,7 +68,7 @@ class BaseFilter(TemplateParam):
     @property
     def options(self):
         if self.__options:
-            return [(md5(",".join(str(o[0]) for o in self.__options)).hexdigest(), u'--%s--' % _(u"all"))] + self.__options
+            return [(md5(",".join(str(o[0]) for o in self.__options)).hexdigest(), u'--%s--' % _(u"all"))] + [(urllib.quote(o[0]), o[1]) for o in self.__options]
         else:
             # if column is a relation, then we should find all of them
             attrs = self.col_name.split(".")
@@ -78,12 +79,12 @@ class BaseFilter(TemplateParam):
             ret = []
             if hasattr(attr, 'property') and hasattr(attr.property, 'direction'):
                 model = attr.property.mapper.class_
-                ret.extend((getattr(row, get_primary_key(model)), self.opt_formatter(row) if self.opt_formatter else row) 
+                ret.extend((urllib.quote(getattr(row, get_primary_key(model))), self.opt_formatter(row) if self.opt_formatter else row) 
                         for row in model.query.all())
                 if not ret:
                     ret = [("", u'--%s--' % _(u"all"))]
                 elif not self.multiple:
-                    ret.insert(0, (md5(",".join(unicode(r[0]) for r in ret)).hexdigest(), u'--%s--' % _(u"all")))
+                    ret.insert(0, (md5((",".join(unicode(r[0]) for r in ret)).encode("utf-8")).hexdigest(), u'--%s--' % _(u"all")))
             return ret
 
     @property
