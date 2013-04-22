@@ -455,6 +455,7 @@ class ModelView(object):
             form = self.get_edit_form(obj=model)
 
             if form.validate_on_submit():
+                self.try_edit()
                 if self.update_model(form, model):
                     return redirect(return_url)
             compound_form = self.get_compound_edit_form(obj=model, form=form)
@@ -478,6 +479,7 @@ class ModelView(object):
 
             form = self.get_batch_edit_form(obj=model)
             if form.is_submitted():
+                self.try_edit()
                 if all(self.update_model(form, model) for model in model_list):
                     return redirect(return_url)
             hint_message = _(u"edit %(model_name)s-%(objs)s",
@@ -1176,7 +1178,7 @@ class DataBrowser(object):
             from .utils import get_primary_key
 
             pk = get_primary_key(model)
-            if model_view.can_edit:
+            if model_view.edit_allowable:
                 return LinkColumnSpec(col_name=pk, formatter=lambda v,
                                                                     obj:
                 model_view.url_for_object(
