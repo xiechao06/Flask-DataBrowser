@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2013-04-21 18:53+0800\n"
+"POT-Creation-Date: 2013-04-22 13:35+0800\n"
 "PO-Revision-Date: 2013-04-04 12:40+0800\n"
 "Last-Translator: xiechao<xiechao06@gmail.com>\n"
 "Language-Team: zh_CN <LL@li.org>\n"
@@ -17,24 +17,24 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 0.9.6\n"
 
-#: action.py:30
+#: action.py:31
 #, python-format
 msgid ""
 "operation %(action)s applied upon %(model_name)s - [%(models)s] "
 "successfully"
 msgstr "%(model_name)s[%(models)s]被成功%(action)s"
 
-#: action.py:38
+#: action.py:39
 #, python-format
 msgid "operation %(action)s failed to apply upon %(model_name)s - [%(models)s]"
 msgstr "(%model_name)s[%(models)s]没有被成功%(action)s"
 
-#: action.py:48
+#: action.py:49
 #, python-format
 msgid "%(action)s can't apply upon %(model_name)s [%%s]"
 msgstr "%(model_name)s[%%s]没有被成功%(action)s"
 
-#: action.py:56
+#: action.py:57
 msgid "remove"
 msgstr "删除"
 
@@ -72,7 +72,7 @@ msgstr "正在创建%(model_name)s"
 msgid "%(user)s performed %(action)s"
 msgstr "用户%(user)s执行了%(action)s操作"
 
-#: base.py:408 templates/__data_browser__/list.haml:105
+#: base.py:408 templates/__data_browser__/list.haml:116
 #: templates/__data_browser__/list_mob.html:97
 #: templates/__data_browser__/macro.html:96
 msgid "create"
@@ -194,7 +194,7 @@ msgid "commit"
 msgstr "提交"
 
 #: templates/__data_browser__/form_mob.html:79
-#: templates/__data_browser__/list.haml:201
+#: templates/__data_browser__/list.haml:214
 #: templates/__data_browser__/macro.html:130
 msgid "reset"
 msgstr "重置"
@@ -212,36 +212,40 @@ msgstr "已经是第一条记录"
 msgid "no next item"
 msgstr "已经是最后一条记录"
 
-#: templates/__data_browser__/list.haml:38
+#: templates/__data_browser__/list.haml:44
 msgid "please choose one item!"
 msgstr "请至少选择一条记录！"
 
-#: templates/__data_browser__/list.haml:41
-#: templates/__data_browser__/list.haml:153
+#: templates/__data_browser__/list.haml:47
+#: templates/__data_browser__/list.haml:166
 msgid "batch edit"
 msgstr "批量修改"
 
-#: templates/__data_browser__/list.haml:46
+#: templates/__data_browser__/list.haml:52
 #, python-format
 msgid "Are you sure to %%s selected item(s)?"
 msgstr "您确认要%%s选中的记录?"
 
-#: templates/__data_browser__/list.haml:146
+#: templates/__data_browser__/list.haml:55
+msgid "Attention!"
+msgstr "注意"
+
+#: templates/__data_browser__/list.haml:159
 msgid "no results matched!"
 msgstr "没有符合条件的结果"
 
-#: templates/__data_browser__/list.haml:162
+#: templates/__data_browser__/list.haml:175
 msgid "refine search"
 msgstr "完善搜索条件"
 
-#: templates/__data_browser__/list.haml:190
-#: templates/__data_browser__/list.haml:192
-#: templates/__data_browser__/list.haml:194
+#: templates/__data_browser__/list.haml:203
+#: templates/__data_browser__/list.haml:205
+#: templates/__data_browser__/list.haml:207
 #, python-format
 msgid "input %(label)s here"
 msgstr "在这里输入%(label)s"
 
-#: templates/__data_browser__/list.haml:200
+#: templates/__data_browser__/list.haml:213
 msgid "refresh"
 msgstr "刷新"
 
@@ -317,7 +321,7 @@ msgstr "祝贺您"
 #: templates/__data_browser__/on_fly_result.haml:24
 #, python-format
 msgid "you have created %(model_cls)s %(obj)s successfully!"
-msgstr '您成功的创建了%(model_cls)s"%(obj)s"'
+msgstr "您成功的创建了%(model_cls)s\"%(obj)s\""
 
 #: templates/__data_browser__/on_fly_result.haml:25
 msgid "I see"

@@ -148,7 +148,7 @@ def main():
             if row.name == "Tyde":
                 return {"title": u"测试"}
 
-        __customized_actions__ = [MyDeleteAction(u"删除", admin_permission), RollCall(u"点名")]
+        __customized_actions__ = [MyDeleteAction(u"删除", admin_permission), RollCall(u"点名", warn_msg=u"点名后就是弱智！")]
 
     user_model_view = UserModelView(User, u"用户")
     browser.register_model_view(user_model_view, accounts_bp, extra_params={"form_view": {"company": "xc"}})

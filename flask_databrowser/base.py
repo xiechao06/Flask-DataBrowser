@@ -921,7 +921,8 @@ class ModelView(object):
 
         l.extend(dict(name=action.name, value=action.name,
                       css_class=action.css_class, data_icon=action.data_icon,
-                      forbidden_msg_formats=action.get_forbidden_msg_formats())
+                      forbidden_msg_formats=action.get_forbidden_msg_formats(), 
+                     warn_msg=action.warn_msg)
                  for action in self._get_customized_actions())
         return l
 

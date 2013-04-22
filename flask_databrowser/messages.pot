@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2013-04-21 18:53+0800\n"
+"POT-Creation-Date: 2013-04-22 13:35+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,24 +17,24 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 0.9.6\n"
 
-#: action.py:30
+#: action.py:31
 #, python-format
 msgid ""
 "operation %(action)s applied upon %(model_name)s - [%(models)s] "
 "successfully"
 msgstr ""
 
-#: action.py:38
+#: action.py:39
 #, python-format
 msgid "operation %(action)s failed to apply upon %(model_name)s - [%(models)s]"
 msgstr ""
 
-#: action.py:48
+#: action.py:49
 #, python-format
 msgid "%(action)s can't apply upon %(model_name)s [%%s]"
 msgstr ""
 
-#: action.py:56
+#: action.py:57
 msgid "remove"
 msgstr ""
 
@@ -72,7 +72,7 @@ msgstr ""
 msgid "%(user)s performed %(action)s"
 msgstr ""
 
-#: base.py:408 templates/__data_browser__/list.haml:105
+#: base.py:408 templates/__data_browser__/list.haml:116
 #: templates/__data_browser__/list_mob.html:97
 #: templates/__data_browser__/macro.html:96
 msgid "create"
@@ -194,7 +194,7 @@ msgid "commit"
 msgstr ""
 
 #: templates/__data_browser__/form_mob.html:79
-#: templates/__data_browser__/list.haml:201
+#: templates/__data_browser__/list.haml:214
 #: templates/__data_browser__/macro.html:130
 msgid "reset"
 msgstr ""
@@ -212,36 +212,40 @@ msgstr ""
 msgid "no next item"
 msgstr ""
 
-#: templates/__data_browser__/list.haml:38
+#: templates/__data_browser__/list.haml:44
 msgid "please choose one item!"
 msgstr ""
 
-#: templates/__data_browser__/list.haml:41
-#: templates/__data_browser__/list.haml:153
+#: templates/__data_browser__/list.haml:47
+#: templates/__data_browser__/list.haml:166
 msgid "batch edit"
 msgstr ""
 
-#: templates/__data_browser__/list.haml:46
+#: templates/__data_browser__/list.haml:52
 #, python-format
 msgid "Are you sure to %%s selected item(s)?"
 msgstr ""
 
-#: templates/__data_browser__/list.haml:146
+#: templates/__data_browser__/list.haml:55
+msgid "Attention!"
+msgstr ""
+
+#: templates/__data_browser__/list.haml:159
 msgid "no results matched!"
 msgstr ""
 
-#: templates/__data_browser__/list.haml:162
+#: templates/__data_browser__/list.haml:175
 msgid "refine search"
 msgstr ""
 
-#: templates/__data_browser__/list.haml:190
-#: templates/__data_browser__/list.haml:192
-#: templates/__data_browser__/list.haml:194
+#: templates/__data_browser__/list.haml:203
+#: templates/__data_browser__/list.haml:205
+#: templates/__data_browser__/list.haml:207
 #, python-format
 msgid "input %(label)s here"
 msgstr ""
 
-#: templates/__data_browser__/list.haml:200
+#: templates/__data_browser__/list.haml:213
 msgid "refresh"
 msgstr ""
 
@@ -320,6 +324,6 @@ msgid "you have created %(model_cls)s %(obj)s successfully!"
 msgstr ""
 
 #: templates/__data_browser__/on_fly_result.haml:25
-msgid "close"
+msgid "I see"
 msgstr ""
 
