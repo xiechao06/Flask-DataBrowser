@@ -117,7 +117,7 @@ class ListWidget(object):
             uuid_ = uuid.uuid1()
             if self.rows:
                 html = ['<a href="#" data-target="#%s" data-toggle="collapse">%d</a>' % (uuid_, len(self.rows))]
-                html.append('<i class="icon-chevron-left"></i>')
+                html.append('<i class="icon-chevron-down"></i>')
                 html.append('<div id="%s" class="collapse in" data-builtin="true">\n<div class="accordion-inner">' % uuid_)
                 for row in self.rows:
                     converter = ValueConverter(row, self.model_view)

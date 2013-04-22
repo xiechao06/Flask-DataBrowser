@@ -6,10 +6,10 @@
     $(function(){
       $(".collapse[data-builtin=true]").collapse();
       $("select").select2();
-      $(".collapse[data-builtin=true]").on("shown", function () {
+      $(".collapse[data-builtin=true]").on("show", function () {
+        $(this).prev().attr("class", "icon-chevron-up")
+      }).on("hide", function () {
         $(this).prev().attr("class", "icon-chevron-down")
-      }).on("hidden", function () {
-        $(this).prev().attr("class", "icon-chevron-left")
       });
       $('input[data-role="date"]').datepicker(); 
       $('input[data-role="datetime"]').datepicker({displayTime: true});
@@ -52,7 +52,7 @@
         var hint = sprintf("{{ _("Are you sure to %%s selected item(s)?") }}", $(this).val());
         var warn = $(this).attr("data-warn");
         if (warn.length > 0) {
-            hint += "\n\n\n  - "+ '{{ _("Attention!") }}' + ' ' + warn;
+          hint += "\n\n\n  - "+ '{{ _("Attention!") }}' + ' ' + warn;
         }
         return confirm(hint);
       });
