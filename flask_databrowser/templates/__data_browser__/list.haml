@@ -196,7 +196,7 @@
                           -if filter.options
                             %select name="{{ filter.op.id }}" class="input-medium" {% if filter.multiple %} multiple="multiple" {% endif %}
                               -for opt in filter.options:
-                                %option value={{opt[0]}} << {{ opt[1] }}
+                                %option value="{{opt[0]}}" << {{ opt[1] }}
                           -else
                             -for input_type in filter.input_type
                               -if input_type == 'date'
