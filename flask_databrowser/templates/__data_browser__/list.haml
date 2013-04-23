@@ -142,7 +142,7 @@
                         <i class="icon-info-sign"></i>
               %tbody
                 -for row in __data__
-                  %tr class="{{row.css}}"
+                  %tr {% if row.css %}class="{{row.css}}"{% endif %} {%if row.attrs %} {%for k,v in row.attrs.items() %}{{ k }}="{{ v }}"{% endfor %}{% endif %}
                     -if __actions__
                       -if model_view.as_radio_group
                         %td.span1 -> %input type="radio" value="{{ row.pk }}" name="selected-ids"
@@ -150,9 +150,9 @@
                         %td.span1 -> %input type="checkbox" value="{{ row.pk }}" name="selected-ids"
                     -for v in row.fields:
                       -if v.link
-                        %td {%if row.attrs %} {%for k,v in row.attrs.items() %}{{ k }}="{{ v }}"{% endfor %}{% endif %} -> %a href="{{ v.link }}" << {{ v.value }}
+                        %td -> %a href="{{ v.link }}" << {{ v.value }}
                       -else
-                        %td {%if row.attrs %} {%for k,v in row.attrs.items() %}{{ k }}="{{ v }}"{% endfor %}{% endif %} << {{ v() }}
+                        %td << {{ v() }}
             -from "__data_browser__/macro.html" import render_pagination
             {{ render_pagination(__pagination__, __count__) }}
           -else

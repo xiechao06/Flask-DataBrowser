@@ -1096,6 +1096,11 @@ class ModelView(object):
         return ret
 
     def patch_row_attr(self, idx, row):
+        """
+        set html element attributes to each row in list table, take notice to
+        attribute 'class', if 'patch_row_css' do return non-empty, it will override
+        attribute 'class' returned from here
+        """
         return ""
 
 
