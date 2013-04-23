@@ -108,7 +108,11 @@ legend {
     padding: 6px;
     border-radius: 8px;
 }
+.navbar-fixed-bottom {
+    opacity: 0.8
+}
 
 .navbar-fixed-bottom div {
     text-align: center;
+    opacity: 1.0;
 }
