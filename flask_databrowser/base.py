@@ -136,7 +136,7 @@ class ModelView(object):
         if self.__list_column_specs:
             return self.__list_column_specs
 
-        list_columns = self.__list_columns__
+        list_columns = self.get_list_columns()
         if not list_columns:
             list_columns = [col.name for k, col in
                             enumerate(self.model.__table__.c)]
@@ -369,8 +369,9 @@ class ModelView(object):
             kwargs[k] = v
         
         fieldset_list = []
-        if isinstance(self.__create_columns__, types.DictType):
-            for fieldset, cols in self.__create_columns__.items():
+        create_columns = self.get_create_columns()
+        if isinstance(create_columns, types.DictType):
+            for fieldset, cols in create_columns.items():
                 fieldset_list.append((fieldset, [form[col.col_name if isinstance(col, ColumnSpec) else col] for col in cols]))
         else:
             fieldset_list.append(("", form))
@@ -523,7 +524,7 @@ class ModelView(object):
                 pass
 
         form = compound_form or form
-        form_columns = self.__form_columns__ if len(id_list) == 1 else self.__batch_form_columns__
+        form_columns = self.get_form_columns() if len(id_list) == 1 else self.get_batch_form_columns()
         fieldset_list = []
         if isinstance(form_columns, types.DictType):
             for fieldset, cols in form_columns.items():
@@ -572,18 +573,20 @@ class ModelView(object):
     #
     #     return form_class
 
+
     def _model_columns(self, obj):
         # select the model columns from __form_columns__
-        if not self.__form_columns__:
+        form_columns = self.get_form_columns()
+        if not form_columns:
             return []
         model_clumns = set(
             [p.key for p in self.model.__mapper__.iterate_properties])
         ret = []
 
-        if isinstance(self.__form_columns__, types.DictType):
-            form_columns = list(itertools.chain(*self.__form_columns__.values()))
+        if isinstance(form_columns, types.DictType):
+            form_columns = list(itertools.chain(*form_columns.values()))
         else:
-            form_columns = self.__form_columns__
+            form_columns = self.get_form_columns()
 
         for col in form_columns:
             if isinstance(col, InputColumnSpec):
@@ -599,11 +602,10 @@ class ModelView(object):
         return ret
 
     def get_create_form(self):
+        create_columns = self.get_create_columns()
         if self.__create_form__ is None:
-            if isinstance(self.__create_columns__, types.DictType):
-                create_columns = list(itertools.chain(*self.__create_columns__.values()))
-            else:
-                create_columns = self.__create_columns__
+            if isinstance(create_columns, types.DictType):
+                create_columns = list(itertools.chain(*create_columns.values()))
             self.__create_form__ = self.scaffold_form(create_columns)
         # if request specify some fields, then use these fields
         default_args = {}
@@ -639,7 +641,8 @@ class ModelView(object):
         if not form:
             form = self.get_edit_form(obj=obj)
 
-        if not self.__form_columns__:
+        form_columns = self.get_form_columns()
+        if not form_columns:
             return form
 
         value_converter = ValueConverter(obj, self)
@@ -664,7 +667,6 @@ class ModelView(object):
                 return self.model_form.hidden_tag()
         ret = []
         r = self.preprocess(obj)
-        form_columns = self.__form_columns__
         if isinstance(form_columns, types.DictType):
             form_columns = list(itertools.chain(*form_columns.values()))
 
@@ -686,17 +688,18 @@ class ModelView(object):
         return FakeForm(form, ret)
 
     def get_batch_edit_form(self, obj=None):
+        batch_form_columns = self.get_batch_form_columns()
         if self.__batch_edit_form__ is None:
             batch_form_columns = []
-            if isinstance(self.__batch_form_columns__, types.DictType):
-                for col in itertools.chain(*self.__batch_form_columns__.values()):
+            if isinstance(batch_form_columns, types.DictType):
+                for col in itertools.chain(*batch_form_columns.values()):
                     if isinstance(col, InputColumnSpec):
                         if col.col_name.find(".") == -1:
                             batch_form_columns.append(col)
                     elif col.find(".") == -1:
                         batch_form_columns.append(col)
             else:
-                for col in self.__batch_form_columns__:
+                for col in batch_form_columns:
                     if isinstance(col, InputColumnSpec):
                         if col.col_name.find(".") == -1:
                             batch_form_columns.append(col)
@@ -1065,6 +1068,17 @@ class ModelView(object):
                 self.data_browser.blueprint.name, "form.haml")
         return self.edit_template_mob if request_from_mobile() else self.edit_template
 
+    def get_list_columns(self):
+        return self.__list_columns__
+
+    def get_create_columns(self):
+        return self.__create_columns__
+
+    def get_form_columns(self):
+        return self.__form_columns__
+
+    def get_batch_form_columns(self):
+        return self.__batch_form_columns__
 
     def get_rows_action_desc(self, models):
         ret = {}
