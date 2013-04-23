@@ -125,7 +125,7 @@
 
 {% macro render_form_buttons(cancel_url, extra=None) %}
     <div class="navbar-fixed-bottom alert alert-info">
-      <div class="controls">
+      <div>
         <div data-role="trivial-control-group">
             <input id="submit-btn" name="action" type="submit" class="btn btn-primary" value="{{ _('commit') }}" disabled="disabled" title="{{ _("no changes made, can't submit!") }}"/>
             <input id="reset-btn" type="reset" class="btn btn-primary" value="{{ _('reset') }}" />

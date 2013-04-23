@@ -11,24 +11,6 @@
     =lib.render_form(form, return_url, extra)
 
 -block __data_browser__builtin_head_block
-  <style type="text/css">
-    legend {
-        margin-bottom: 0px;
-    }
-    [data-role="trivial-control-group"] {
-        display: inline-block;
-        border: 3px solid #FFF2A3;
-        padding: 6px;
-        border-radius: 8px;
-    }
-    [data-role="customized-control-group"] {
-        display: inline-block;
-        margin-left: 2em;
-        border: 3px solid #FFF2A3;
-        padding: 6px;
-        border-radius: 8px;
-    }
-  </style>
   %script type="text/javascript"
     $(function(){
       -if grouper_info
