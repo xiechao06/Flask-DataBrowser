@@ -68,5 +68,5 @@ class ValueConverter(object):
                     kwargs["class"] = self.css_class
                 return self.widget(self, **kwargs)
 
-        description = get_description(self.model_view, col_spec.col_name, col_spec) if col_spec else ""
+        description = get_description(self.model_view, col_spec.col_name, self.obj, col_spec)
         return FakeField(dict(text=col_spec.label if col_spec else ""), name=col_spec.col_name if col_spec else "", widget=w, css_class=css_class, description=description)

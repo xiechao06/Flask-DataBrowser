@@ -107,7 +107,7 @@ class ModelView(object):
         # we get document from sqlalchemy models
         doc = self.__column_docs__.get(col, "")
         if not doc:
-            doc = get_doc_from_table_def(self, col)
+            doc = get_doc_from_table_def(self.model, col)
         label = self.__column_labels__.get(col, col)
         if get_primary_key(self.model) == col:
             # TODO add cross ref to registered model
