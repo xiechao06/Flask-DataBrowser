@@ -9,7 +9,7 @@ from .import form
 from .validators import Unique
 from .fields import QuerySelectField, QuerySelectMultipleField
 from flask.ext.databrowser.column_spec import InputColumnSpec
-from flask.ext.databrowser.utils import make_disabled_field, get_description
+from flask.ext.databrowser.utils import make_disabled_field, get_description, get_primary_key
 from flask.ext.babel import gettext as _
 
 try:
@@ -202,16 +202,19 @@ class AdminModelConverter(ModelConverterBase):
                             grouper = form.Select2Widget()
                             class FakeField(object):
 
-                                def __init__(self, name):
+                                def __init__(self, name, data):
                                     self.name = name
                                     self.id = "_" + name
+                                    self.data = data
 
                                 def iter_choices(self):
+                                    model = col_spec.group_by.property.mapper.class_ 
+                                    pk = get_primary_key(model)
                                     for row in session.query(col_spec.group_by.property.mapper.class_).all():
-                                        # TODO should use pk
-                                        yield row.id, unicode(row), False
+                                        yield getattr(row, pk), unicode(row), getattr(row, pk) == self.data
 
-                            s = grouper(FakeField(self.col_spec.grouper_input_name)) + "   -    "
+                            s = grouper(FakeField(self.col_spec.grouper_input_name, 
+                                                  getattr(self.data, col_spec.group_by.property.local_remote_pairs[0][0].name))) + "   -    "
                             s += super(QuerySelectField_, self).__call__(**kwargs)
                             return s
                     return QuerySelectField_(col_spec, widget=form.Select2Widget(), **kwargs)
