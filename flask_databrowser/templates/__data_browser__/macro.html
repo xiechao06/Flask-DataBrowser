@@ -133,6 +133,7 @@
                 <a href="{{ cancel_url }}" class="btn">{{ _('back') }}</a>
             {% endif %}
         </div>
+        {% if extra=="create" or actions %}
         <div data-role="customized-control-group">
             {% if extra == "create" %}
                 {{ create() }}
@@ -142,6 +143,7 @@
               {% endfor %}
             {% endif %}
         </div>
+        {% endif %}
       </div>
     </div>
 {% endmacro %}
