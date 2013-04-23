@@ -11,7 +11,7 @@ PLACE_HOLDER = 7
 
 class ColumnSpec(object):
 
-    def __init__(self, col_name, genre=PLAIN_TEXT, doc="", formatter=None, label=None, css_class=""):
+    def __init__(self, col_name, genre=PLAIN_TEXT, doc="", formatter=None, label=None, css_class="control-text"):
         self.col_name = col_name
         self.genre = genre
         self.formatter = formatter
