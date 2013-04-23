@@ -1217,5 +1217,17 @@ class DataBrowser(object):
             return model_view.url_for_object(None, url=request.url, on_fly=1, target=target)
         except KeyError:
             return None
-    
+
+    def get_form_url(self, obj):
+        try:
+            model_view = self.__registered_view_map[obj.__tablename__]
+            if model_view.edit_allowable:
+                return model_view.url_for_object(obj, url=request.url)
+            else:
+                return model_view.url_for_object_preview(obj, url=request.url)
+        except KeyError:
+            return None
+
+
+
 

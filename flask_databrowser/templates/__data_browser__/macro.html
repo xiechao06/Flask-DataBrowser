@@ -120,26 +120,29 @@
 {% endmacro %}
 
 {% macro create() %}
-    <input name="_add_another" type="submit" class="btn btn-large" value="{{ _('add another') }}" />
+    <input name="_add_another" type="submit" class="btn" value="{{ _('add another') }}" />
 {% endmacro %}
 
 {% macro render_form_buttons(cancel_url, extra=None) %}
-    <div class="control-group">
-        <div class="controls">
-            <input id="submit-btn" name="action" type="submit" class="btn btn-primary btn-large" value="{{ _('commit') }}" disabled="disabled" title="{{ _("no changes made, can't submit!") }}"/>
-            <input id="reset-btn" type="reset" class="btn btn-primary btn-large" value="{{ _('reset') }}" />
+    <div class="navbar-fixed-bottom alert alert-info">
+      <div class="controls">
+        <div data-role="trivial-control-group">
+            <input id="submit-btn" name="action" type="submit" class="btn btn-primary" value="{{ _('commit') }}" disabled="disabled" title="{{ _("no changes made, can't submit!") }}"/>
+            <input id="reset-btn" type="reset" class="btn btn-primary" value="{{ _('reset') }}" />
             {% if cancel_url %}
-                <a href="{{ cancel_url }}" class="btn btn-large">{{ _('back') }}</a>
+                <a href="{{ cancel_url }}" class="btn">{{ _('back') }}</a>
             {% endif %}
+        </div>
+        <div data-role="customized-control-group">
             {% if extra == "create" %}
                 {{ create() }}
             {% else %}
               {% for action in actions %}
-              <input name="action" value="{{action.name}}" type="submit" name="action" class="{{action.css_class}} btn-large"/>
+              <input name="action" value="{{action.name}}" type="submit" name="action" class="{{action.css_class}}"/>
               {% endfor %}
             {% endif %}
-
         </div>
+      </div>
     </div>
 {% endmacro %}
 

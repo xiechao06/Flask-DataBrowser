@@ -25,7 +25,14 @@ class ValueConverter(object):
             ref_col_spec = self.model_view.data_browser.create_object_link_column_spec(
                 v.__mapper__.class_, col_spec and col_spec.label)
             if ref_col_spec:
-                obj = v
+                obj = v # why we do this, see ModelView.create_object_link_column_spec
+                if col_spec and col_spec.genre == column_spec.PLAIN_TEXT:
+                    if col_spec.formatter:
+                        def _Anchor(col_spec, obj):
+                            def _anchor(v):
+                                return col_spec.formatter(v, obj)
+                            return _anchor
+                        ref_col_spec.anchor = _Anchor(col_spec, self.obj)
                 col_spec = ref_col_spec
 
         if col_spec.formatter:
