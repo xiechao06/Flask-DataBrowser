@@ -385,6 +385,7 @@ class ModelView(object):
                            return_url=return_url, extra="" if on_fly else "create",
                            hint_message=_(u"create %(model_name)s",
                                           model_name=self.model_name),
+                           help_message=self.get_create_help(),
                            **kwargs)
 
     def do_update_log(self, obj, action):
@@ -431,6 +432,7 @@ class ModelView(object):
         pre_url = next_url = ""
         if len(id_list) == 1:
             model = self.get_one(id_list[0])
+            processed_model = self.preprocess(model)
             cdx = request.args.get("cdx", 0, int)
             if cdx:
                 page, order_by, desc = self._parse_args()
@@ -460,7 +462,7 @@ class ModelView(object):
 
             if form.validate_on_submit():
                 self.try_edit()
-                ret = self.update_objs(form, [model])
+                ret = self.update_objs(form, [processed_model])
                 if ret:
                     if isinstance(ret, werkzeug.wrappers.BaseResponse) and ret.status_code == 302:
                         return ret
@@ -470,7 +472,8 @@ class ModelView(object):
             hint_message = _(u"edit %(model_name)s-%(obj)s",
                              model_name=self.model_name,
                              obj=unicode(model)) if self.can_edit else _("you are viewing %(model_name)s-%(obj)s, since you have only read permission", model_name=self.model_name, obj=unicode(model))
-            actions = self._get_customized_actions([self.preprocess(model)])
+            actions = self._get_customized_actions([processed_model])
+            help_message = self.get_edit_help(processed_model)
         else:
             model_list = [self.get_one(id_) for id_ in id_list]
             model = None
@@ -499,6 +502,7 @@ class ModelView(object):
                     unicode(model) for model in
                     model_list)) if self.can_edit else ""
             actions = self._get_customized_actions(model_list)
+            help_message = self.get_edit_help([self.preprocess(obj) for obj in model_list])
 
         grouper_info = {}
         for col in self._model_columns(model):
@@ -552,7 +556,17 @@ class ModelView(object):
                            grouper_info=grouper_info,
                            actions=actions,
                            return_url=return_url, hint_message=hint_message,
+                           help_message=help_message,
                            **kwargs)
+
+    def get_create_help(self):
+        return ""
+    
+    def get_edit_help(self, objs):
+        return ""
+
+    def get_list_help(self):
+        return ""
 
     def scaffold_form(self, columns):
         """
@@ -826,6 +840,7 @@ class ModelView(object):
                                                   self.data_browser.page_size,
                                                   count, kwargs["__data__"])
             list_kwargs = self.extra_params.get("list_view", {})
+            kwargs["help_message"] = self.get_list_help()
             for k, v in list_kwargs.items():
                 if isinstance(v, types.FunctionType):
                     v = v(self)
