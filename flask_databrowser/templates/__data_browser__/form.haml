@@ -29,9 +29,6 @@
             }
               })(grouper_e, input_e))
         }
-      -if request.args.get("preview") == 'True'
-        $("input").attr("disabled", true);
-        $("select").select2("disable").attr("disabled", true);
       $("input[name='action']").click(function (ui) {
         -if h.is_batch_edit()
           return confirm(sprintf("{{ _('Are you sure to %%s these items?') }}", $(this).attr("value"))); 

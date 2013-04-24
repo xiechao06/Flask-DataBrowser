@@ -38,7 +38,7 @@ class ModelView(object):
 
     language = "en"
     column_hide_backrefs = True
-    can_batchly_edit = can_view = can_create = can_edit = can_delete = True
+    can_batchly_edit = False
     __create_form__ = __edit_form__ = __batch_edit_form__ = None
     list_template = "__data_browser__/list.haml"
     create_template = edit_template = "__data_browser__/form.haml"
@@ -89,6 +89,11 @@ class ModelView(object):
         kwargs['h'] = helpers
         return render_template(template, **kwargs)
 
+    @property
+    def batchly_editable(self):
+        return self.can_batchly_edit() if isinstance(self.can_batchly_edit,
+                                                     types.MethodType) else self.can_batchly_edit
+
     # Various helpers
     def prettify_name(self, name):
         """
@@ -111,14 +116,8 @@ class ModelView(object):
             doc = get_doc_from_table_def(self.model, col)
         label = self.__column_labels__.get(col, col)
         if get_primary_key(self.model) == col:
-            # TODO add cross ref to registered model
-            # add link to object if it is primary key
-            if self.can_edit:
-                formatter = lambda x, obj: self.url_for_object(obj,
-                                                               url=request.url)
-            else:
-                formatter = lambda x, obj: self.url_for_object_preview(obj,
-                                                                       url=request.url)
+            formatter = lambda x, obj: self.url_for_object(obj,
+                                                           url=request.url)
             col_spec = LinkColumnSpec(col, doc=doc, anchor=lambda x: x,
                                       formatter=formatter,
                                       label=label, css_class="control-text")
@@ -278,7 +277,7 @@ class ModelView(object):
         try:
             for obj in objs:
                 for name, field in form._fields.iteritems():
-                    if field.raw_data is not None:
+                    if field.raw_data != []:
                         field.populate_obj(obj, name)
                 self.do_update_log(obj, _("update"))
                 flash(_(u"%(model_name)s %(obj)s was updated and saved",
@@ -294,9 +293,13 @@ class ModelView(object):
             self.session.rollback()
             return False
 
-    def try_view(self):
+    def try_view(self, objs=None):
         """
         control if user could view objects list or object
+        NOTE!!! don't return anything, if you determine that something should't be viewed, 
+        throw PermissionDenied
+
+        :param objs: the objs to be viewed, is None, we are in list view
         """
         pass
 
@@ -306,30 +309,10 @@ class ModelView(object):
         """
         pass
 
-    @property
-    def creation_allowable(self):
-        """
-        control if the create button appears
-        """
-        return self.can_create() if isinstance(self.can_create,
-                                               types.MethodType) else self.can_create
-
-    @property
-    def edit_allowable(self):
-        return self.can_edit() if isinstance(self.can_edit,
-                                             types.MethodType) else self.can_edit
-
-    @property
-    def batchly_edit_allowable(self):
-        return self.can_batchly_edit() if isinstance(self.can_batchly_edit,
-                                                     types.MethodType) else self.can_batchly_edit
-
-
-    def try_edit(self):
+    def try_edit(self, objs=None):
         pass
 
     def create_view(self):
-        self.try_view()
         self.try_create()
 
         return_url = request.args.get('url') or url_for(
@@ -415,7 +398,6 @@ class ModelView(object):
         """
             Edit model view
         """
-        self.try_view()
         if isinstance(id_, int):
             id_list = [id_]
         else:
@@ -431,6 +413,7 @@ class ModelView(object):
         pre_url = next_url = ""
         if len(id_list) == 1:
             model = self.get_one(id_list[0])
+            self.try_view([model]) # first, we test if we could view
             cdx = request.args.get("cdx", 0, int)
             if cdx:
                 page, order_by, desc = self._parse_args()
@@ -458,8 +441,10 @@ class ModelView(object):
 
             form = self.get_edit_form(obj=model)
 
+            preprocessed_obj = self.preprocess(model)
+            # we must validate batch edit as well
             if form.validate_on_submit():
-                self.try_edit()
+                self.try_edit(preprocessed_obj)
                 ret = self.update_objs(form, [model])
                 if ret:
                     if isinstance(ret, werkzeug.wrappers.BaseResponse) and ret.status_code == 302:
@@ -469,10 +454,16 @@ class ModelView(object):
             compound_form = self.get_compound_edit_form(obj=model, form=form)
             hint_message = _(u"edit %(model_name)s-%(obj)s",
                              model_name=self.model_name,
-                             obj=unicode(model)) if self.can_edit else _("you are viewing %(model_name)s-%(obj)s, since you have only read permission", model_name=self.model_name, obj=unicode(model))
-            actions = self._get_customized_actions([self.preprocess(model)])
+                             obj=unicode(model)) 
+            try:
+                self.try_edit(preprocessed_obj)
+                actions = self._get_customized_actions([preprocessed_obj])
+            except PermissionDenied:
+                actions = []
         else:
             model_list = [self.get_one(id_) for id_ in id_list]
+            preprocessed_objs = [self.preprocess(obj) for obj in model_list]
+            self.try_view(preprocessed_objs) # first, we test if we could view
             model = None
             if request.method == "GET":
                 model = type("_temp", (object,), {})()
@@ -485,9 +476,12 @@ class ModelView(object):
                            model_list):
                         setattr(model, attr, default_value)
 
-            form = self.get_batch_edit_form(obj=model)
-            if form.is_submitted():
-                self.try_edit()
+            if model:
+                form = self.get_batch_edit_form(model, model_list)
+            else:
+                form = self.get_batch_edit_form(request.form, model_list)
+            if form.validate_on_submit():
+                self.try_edit(model_list)
                 ret = self.update_objs(form, model_list)
                 if ret:
                     if isinstance(ret, werkzeug.wrappers.BaseResponse) and ret.status_code == 302:
@@ -497,8 +491,12 @@ class ModelView(object):
             hint_message = _(u"edit %(model_name)s-%(objs)s",
                              model_name=self.model_name, objs=",".join(
                     unicode(model) for model in
-                    model_list)) if self.can_edit else ""
-            actions = self._get_customized_actions(model_list)
+                    model_list)) 
+            try:
+                self.try_edit(preprocessed_objs)
+                actions = self._get_customized_actions(model_list)
+            except PermissionDenied:
+                actions = []
 
         grouper_info = {}
         for col in self._model_columns(model):
@@ -586,7 +584,15 @@ class ModelView(object):
 
 
     def _model_columns(self, obj):
-        # select the model columns from __form_columns__
+        """
+        select the model columns from __form_columns__
+        """
+        try:
+            self.try_edit([obj])
+            read_only = False
+        except PermissionDenied:
+            read_only = True
+
         form_columns = self.get_form_columns()
         if not form_columns:
             return []
@@ -602,10 +608,16 @@ class ModelView(object):
         for col in form_columns:
             if isinstance(col, InputColumnSpec):
                 col_name = col.col_name
-                if isinstance(col.read_only, types.FunctionType):
-                    col.read_only = col.read_only(obj)
+                # try_edit will override the field's read_only attribute
+                if read_only:
+                    col.read_only = True
+                else:
+                    if isinstance(col.read_only, types.FunctionType):
+                        col.read_only = col.read_only(obj)
             elif isinstance(col, basestring) and (not '.' in col):
                 col_name = col
+                if read_only:
+                    col = InputColumnSpec(col_name, read_only=True)
             else:
                 continue
             if col_name in model_clumns:
@@ -698,26 +710,34 @@ class ModelView(object):
                     value_converter(operator.attrgetter(col.col_name)(r), col))
         return FakeForm(form, ret)
 
-    def get_batch_edit_form(self, obj=None):
-        batch_form_columns = self.get_batch_form_columns()
+    def get_batch_edit_form(self, fake_obj, objs):
+        try:
+            self.try_edit(objs)
+            read_only = False
+        except PermissionDenied:
+            read_only = True
+
         if self.__batch_edit_form__ is None:
-            batch_form_columns = []
+            batch_form_columns = self.get_batch_form_columns()
             if isinstance(batch_form_columns, types.DictType):
-                for col in itertools.chain(*batch_form_columns.values()):
-                    if isinstance(col, InputColumnSpec):
-                        if col.col_name.find(".") == -1:
-                            batch_form_columns.append(col)
-                    elif col.find(".") == -1:
-                        batch_form_columns.append(col)
-            else:
-                for col in batch_form_columns:
-                    if isinstance(col, InputColumnSpec):
-                        if col.col_name.find(".") == -1:
-                            batch_form_columns.append(col)
-                    elif col.find(".") == -1:
-                        batch_form_columns.append(col)
-            self.__batch_edit_form__ = self.scaffold_form(batch_form_columns)
-        return self.__batch_edit_form__(obj=obj)
+                batch_form_columns = list(itertools.chain(*batch_form_columns.values()))
+            processed_cols = []
+            for col in batch_form_columns:
+                if isinstance(col, InputColumnSpec):
+                    if col.col_name.find(".") == -1:
+                        if read_only:
+                            col.read_only = True
+                        else:
+                            if isinstance(col.read_only, types.FunctionType):
+                                col.read_only = col.read_only(obj)
+                        processed_cols.append(col)
+                elif col.find(".") == -1:
+                    if read_only:
+                        processed_cols.append(InputColumnSpec(col, read_only=True))
+                    else:
+                        processed_cols.append(col)
+            self.__batch_edit_form__ = self.scaffold_form(processed_cols)
+        return self.__batch_edit_form__(obj=fake_obj)
 
     @property
     def model_name(self):
@@ -768,20 +788,6 @@ class ModelView(object):
                 ".".join([blueprint_name, self.object_view_endpoint]),
                 **kwargs)
 
-
-    def url_for_object_preview(self, model, **kwargs):
-        blueprint_name = "" if isinstance(self.blueprint,
-                                          Flask) else self.blueprint.name
-        if model:
-            return url_for(
-                ".".join([blueprint_name, self.object_view_endpoint]),
-                id_=self.scaffold_pk(model),
-                preview=True, **kwargs)
-        else:
-            return url_for(
-                ".".join([blueprint_name, self.object_view_endpoint]),
-                preview=True, **kwargs)
-
     @property
     def object_view_endpoint(self):
         return re.sub(r"([A-Z]+)", lambda m: "_" + m.groups()[0].lower(),
@@ -816,8 +822,11 @@ class ModelView(object):
             kwargs["__data__"] = self.scaffold_list(data)
             kwargs["__object_url__"] = self.url_for_object(None)
             kwargs["__order_by__"] = lambda col_name: col_name == order_by
-            kwargs["__can_create__"] = self.creation_allowable
-            kwargs["__can_edit__"] = self.edit_allowable
+            try:
+                self.try_create()
+                kwargs["__can_create__"] = True
+            except PermissionDenied:
+                kwargs["__can_create__"] = False
             kwargs["__max_col_len__"] = self.__max_col_len__
             kwargs["model_view"] = self
             if desc:
@@ -837,6 +846,7 @@ class ModelView(object):
             models = self.model.query.filter(
                 getattr(self.model, get_primary_key(self.model)).in_(
                     request.form.getlist('selected-ids'))).all()
+            self.try_edit(models)
             for action in self._get_customized_actions():
                 if action.name == action_name:
                     break
@@ -847,12 +857,6 @@ class ModelView(object):
             try:
                 objs = [self.preprocess(obj) for obj in models]
                 action.op_upon_list(objs, self)
-                #processed_models = []
-                #for model in models:
-                    #model = self.preprocess(model)
-                    #processed_models.append(model)
-                    #action.op(model)
-                    #self.do_update_log(model, action.name)
                 self.session.commit()
                 flash(action.success_message(objs), 'success')
             except Exception, ex:
@@ -871,14 +875,9 @@ class ModelView(object):
         ret = {"total_count": count, "data": [],
                "has_next": page * self.data_browser.page_size < count}
         for idx, row in enumerate(self.scaffold_list(data)):
-            if self.edit_allowable:
-                obj_url = self.url_for_object(row["obj"], url=request.url,
-                                              cdx=(
-                                                      page - 1) * self.data_browser.page_size + idx + 1)
-            else:
-                obj_url = self.url_for_object_preview(row["obj"],
-                                                      url=request.url, cdx=(
-                                                                               page - 1) * self.data_browser.page_size + idx + 1)
+            obj_url = self.url_for_object(row["obj"], url=request.url,
+                                          cdx=(
+                                                  page - 1) * self.data_browser.page_size + idx + 1)
             ret["data"].append(dict(pk=row["pk"], repr_=row["repr_"],
                                     forbidden_actions=row["forbidden_actions"],
                                     obj_url=obj_url))
@@ -933,16 +932,11 @@ class ModelView(object):
         return [dict(label="a", op=dict(name="lt", id="a__lt"))]
 
     def scaffold_actions(self):
-        l = []
-        #if self.edit_allowable and self.batchly_edit_allowable:
-        #l.append({"name": _(u"batch edit"), "forbidden_msg_formats": {}, "css_class": "btn btn-info"})
-
-        l.extend(dict(name=action.name, value=action.name,
+        return [dict(name=action.name, value=action.name,
                       css_class=action.css_class, data_icon=action.data_icon,
                       forbidden_msg_formats=action.get_forbidden_msg_formats(), 
                      warn_msg=action.warn_msg)
-                 for action in self._get_customized_actions())
-        return l
+                 for action in self._get_customized_actions()]
 
     def query_data(self, page, order_by, desc, filters, offset=0):
 
@@ -1210,17 +1204,9 @@ class DataBrowser(object):
             from .utils import get_primary_key
 
             pk = get_primary_key(model)
-            if model_view.edit_allowable:
-                return LinkColumnSpec(col_name=pk, formatter=lambda v,
-                                                                    obj:
-                model_view.url_for_object(
-                    obj, label=label, url=current_url),
-                                      anchor=lambda v: unicode(v))
-            else:
-                return LinkColumnSpec(col_name=pk, formatter=lambda v,
-                                                                    obj: model_view.url_for_object_preview(
-                    obj, label=label, url=current_url),
-                                      anchor=lambda v: unicode(v))
+            return LinkColumnSpec(col_name=pk, 
+                                  formatter=lambda v, obj: model_view.url_for_object(obj, label=label, url=current_url), 
+                                  anchor=lambda v: unicode(v))
         except KeyError:
             return None
 
@@ -1234,10 +1220,7 @@ class DataBrowser(object):
     def get_form_url(self, obj):
         try:
             model_view = self.__registered_view_map[obj.__tablename__]
-            if model_view.edit_allowable:
-                return model_view.url_for_object(obj, url=request.url)
-            else:
-                return model_view.url_for_object_preview(obj, url=request.url)
+            return model_view.url_for_object(obj, url=request.url)
         except KeyError:
             return None
 

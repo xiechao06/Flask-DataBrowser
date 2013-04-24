@@ -49,12 +49,16 @@ def main():
 
         list_template = "accounts/list.html"
         edit_template = create_template = "accounts/form.html"
+        can_batchly_edit = True
 
         def patch_row_css(self, idx, row):
             if row.roll_called == 1:
                 return "box warning"
 
-        from flask.ext.databrowser.column_spec import ImageColumnSpec, TableColumnSpec, PlaceHolderColumnSpec
+        def try_edit(self, objs):
+            raise PermissionDenied()
+
+        from flask.ext.databrowser.column_spec import ImageColumnSpec, TableColumnSpec, PlaceHolderColumnSpec, InputColumnSpec
         __list_columns__ = ["id", "name", "group", "password", "roll_called", "group.name", "create_time", ImageColumnSpec("avatar", alt=u"头像", 
             formatter=lambda v, model: "http://farm9.staticflickr.com/8522/8478415115_152c6f5e55_m.jpg", doc=u"头像，^_^！"), "good"]
         __create_columns__ = OrderedDict()
@@ -65,12 +69,12 @@ def main():
         __form_columns__[u"主要的"] = ["id", "name", "group", "password"]
         __form_columns__[u"次要的"] = ["roll_called", "good", "age", "create_time", ImageColumnSpec("avatar", alt=u"头像", 
                                             formatter=lambda v, model: "http://farm9.staticflickr.com/8522/8478415115_152c6f5e55_m.jpg", doc=u"头像， ^_^!")]
-        __form_columns__[u"额外的"] = [TableColumnSpec("dogs", css_class="table table-striped table-hover table-condensed table-bordered"),
-                            TableColumnSpec("car_list", css_class="table table-striped table-hover table-condensed table-bordered", col_specs=["id", "model"])
-                            ]
+        #__form_columns__[u"额外的"] = [TableColumnSpec("dogs", css_class="table table-striped table-hover table-condensed table-bordered"),
+                            #TableColumnSpec("car_list", css_class="table table-striped table-hover table-condensed table-bordered", col_specs=["id", "model"])
+                            #]
 
         __batch_form_columns__ = OrderedDict()
-        __batch_form_columns__["primary"] = ["name", "group"]
+        __batch_form_columns__["primary"] = ["name", InputColumnSpec("group", read_only=True)]
         __batch_form_columns__["secondary"] = ["age", "roll_called"]
 
         __column_formatters__ = {

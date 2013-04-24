@@ -77,13 +77,17 @@
                             {{ f(disabled=True, value=_("unique field, can't be modified"))|safe }}
                         {% elif not focus_set %}
                             {{ f(autofocus='autofocus', disabled=True)|safe }}
+                            {% if not f.read_only %}
                             <input type="checkbox" name="hold_value" id=""
                             checked="checked">{{ _("keep unchanged") }}
+                            {% endif %}
                             {% set focus_set = True %}
                         {% else %}
                             {{ f(disabled=True)|safe }}
-                            <input type="checkbox" name="hold_value" id=""
-                              checked="checked">{{ _("keep unchanged") }}
+                            {% if not f.read_only %}
+                              <input type="checkbox" name="hold_value" id=""
+                                checked="checked">{{ _("keep unchanged") }}
+                            {% endif %}
                         {% endif %}
                     {% else %}
                         {% if not focus_set %}

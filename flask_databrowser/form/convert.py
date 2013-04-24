@@ -457,6 +457,7 @@ def get_form(model, converter,
     # (property_name, property, column_spec)+
     properties = ((p.key, p, None) for p in mapper.iterate_properties)
 
+    # TODO these codes should be rewritten, what a mess
     if only:
         props = dict(prop[:2] for prop in properties)
 
@@ -493,7 +494,6 @@ def get_form(model, converter,
         # Ignore protected properties
         if ignore_hidden and name.startswith('_'):
             continue
-
         field = converter.convert(model, mapper, prop, field_args.get(name), hidden_pk, col_spec)
         if field is not None:
             if col_spec and col_spec.read_only:
