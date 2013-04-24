@@ -14,6 +14,14 @@ class BaseAction(object):
         self.css_class = css_class
         self.data_icon = data_icon
         self.warn_msg = warn_msg
+    
+    def op_upon_list(self, objs, model_view):
+        for obj in objs:
+            self._op(obj, model_view)
+
+    def _op(self, obj, model_view):
+        self.op(obj)
+        model_view.do_update_log(obj, self.name)
 
     def op(self, obj):
         return ""

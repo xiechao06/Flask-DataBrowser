@@ -6,6 +6,7 @@ import itertools
 import copy
 import operator
 import json
+import werkzeug
 from flask import render_template, flash, request, url_for, redirect, abort, Flask
 from flask.ext.principal import PermissionDenied
 from flask.ext.babel import ngettext, gettext as _
@@ -226,67 +227,69 @@ class ModelView(object):
             ret.append(fltr)
         return ret
 
-    def get_customized_actions(self, obj=None):
+    def get_customized_actions(self):
         return self.__customized_actions__
 
-    def _get_customized_actions(self, obj=None):
+    def _get_customized_actions(self):
         ret = []
-        for action in self.get_customized_actions(obj):
+        for action in self.get_customized_actions():
             action.model_view = self
             ret.append(action)
         return ret
 
-    def update_model(self, form, model):
+    def update_objs(self, form, objs):
         """
-            Update model from form.
+            Update objs from form.
             :param form:
                 Form instance
-            :param model:
-                Model instance
+            :param objs:
+                a list of Model instance
         """
         action_name = request.form["action"]
 
-        for action in self._get_customized_actions(model):
+        for action in self._get_customized_actions():
             if action.name == action_name:
                 action.try_()
-                ret_code = action.test_enabled(model)
-                if ret_code != 0:
-                    flash(_(u"can't apply %(action)s due to %(reason)s",
-                            action=action.name,
-                            reason=action.get_forbidden_msg_formats()[
-                                       ret_code] % unicode(model)),
-                          'error')
-                    return False
+                for obj in objs:
+                    ret_code = action.test_enabled(obj)
+                    if ret_code != 0:
+                        flash(_(u"can't apply %(action)s due to %(reason)s",
+                                action=action.name,
+                                reason=action.get_forbidden_msg_formats()[
+                                           ret_code] % unicode(obj)),
+                              'error')
+                        return False
                 try:
-                    model = self.preprocess(model)
-                    action.op(model)
+                    ret = action.op_upon_list([self.preprocess(obj) for obj in objs], self)
+                    if isinstance(ret, werkzeug.wrappers.BaseResponse) and ret.status_code == 302:
+                        return ret
                     self.session.commit()
-                    self.do_update_log(model, action.name)
-                    flash(action.success_message([model]), 'success')
+                    flash(action.success_message(objs), 'success')
                     return True
                 except Exception, ex:
                     flash(_(
-                        'Failed to update %(model_name)s %(model)s due to %('
+                        'Failed to update %(model_name)s %(objs)s due to %('
                         'error)s',
-                        model_name=self.model_name, model=unicode(model),
+                        model_name=self.model_name, objs=",".join(unicode(obj) for obj in objs),
                         error=str(ex)),
                           'error')
                     self.session.rollback()
                     raise
         try:
-            for name, field in form._fields.iteritems():
-                if field.raw_data is not None:
-                    field.populate_obj(model, name)
-            self.do_update_log(model, _("update"))
-            flash(_(u"%(model_name)s %(model)s was updated and saved",
-                    model_name=self.model_name, model=unicode(model)))
-            self.on_model_change(form, model)
-            self.session.commit()
+            for obj in objs:
+                for name, field in form._fields.iteritems():
+                    if field.raw_data is not None:
+                        field.populate_obj(obj, name)
+                self.do_update_log(obj, _("update"))
+                flash(_(u"%(model_name)s %(obj)s was updated and saved",
+                        model_name=self.model_name, obj=unicode(obj)))
+                self.on_model_change(form, obj)
+                self.session.commit()
             return True
         except Exception, ex:
             flash(
-                _('Failed to update %(model_name)s %(model)s due to %(error)s',
-                  model_name=self.model_name, model=unicode(model),
+                _('Failed to update %(model_name)s %(obj)s due to %(error)s',
+                  model_name=self.model_name, model=",".join([unicode(obj) for obj in objs]),
                   error=str(ex)), 'error')
             self.session.rollback()
             return False
@@ -457,13 +460,17 @@ class ModelView(object):
 
             if form.validate_on_submit():
                 self.try_edit()
-                if self.update_model(form, model):
-                    return redirect(return_url)
+                ret = self.update_objs(form, [model])
+                if ret:
+                    if isinstance(ret, werkzeug.wrappers.BaseResponse) and ret.status_code == 302:
+                        return ret
+                    else:
+                        return redirect(return_url)
             compound_form = self.get_compound_edit_form(obj=model, form=form)
             hint_message = _(u"edit %(model_name)s-%(obj)s",
                              model_name=self.model_name,
                              obj=unicode(model)) if self.can_edit else ""
-            actions = self._get_customized_actions(self.preprocess(model))
+            actions = self._get_customized_actions()
         else:
             model_list = [self.get_one(id_) for id_ in id_list]
             model = None
@@ -481,8 +488,12 @@ class ModelView(object):
             form = self.get_batch_edit_form(obj=model)
             if form.is_submitted():
                 self.try_edit()
-                if all(self.update_model(form, model) for model in model_list):
-                    return redirect(return_url)
+                ret = self.update_objs(form, model_list)
+                if ret:
+                    if isinstance(ret, werkzeug.wrappers.BaseResponse) and ret.status_code == 302:
+                        return ret
+                    else:
+                        return redirect(return_url)
             hint_message = _(u"edit %(model_name)s-%(objs)s",
                              model_name=self.model_name, objs=",".join(
                     unicode(model) for model in
@@ -834,14 +845,16 @@ class ModelView(object):
                     _('invalid action %(action)s', action=action_name))
             action.try_()
             try:
-                processed_models = []
-                for model in models:
-                    model = self.preprocess(model)
-                    processed_models.append(model)
-                    action.op(model)
-                    self.do_update_log(model, action.name)
+                objs = [self.preprocess(obj) for obj in models]
+                action.op_upon_list(objs, self)
+                #processed_models = []
+                #for model in models:
+                    #model = self.preprocess(model)
+                    #processed_models.append(model)
+                    #action.op(model)
+                    #self.do_update_log(model, action.name)
                 self.session.commit()
-                flash(action.success_message(processed_models), 'success')
+                flash(action.success_message(objs), 'success')
             except Exception, ex:
                 self.session.rollback()
                 raise
