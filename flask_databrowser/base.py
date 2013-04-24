@@ -469,7 +469,7 @@ class ModelView(object):
             compound_form = self.get_compound_edit_form(obj=model, form=form)
             hint_message = _(u"edit %(model_name)s-%(obj)s",
                              model_name=self.model_name,
-                             obj=unicode(model)) if self.can_edit else ""
+                             obj=unicode(model)) if self.can_edit else _("you are viewing %(model_name)s-%(obj)s, since you have only read permission", model_name=self.model_name, obj=unicode(model))
             actions = self._get_customized_actions()
         else:
             model_list = [self.get_one(id_) for id_ in id_list]
