@@ -7,6 +7,8 @@ import uuid
 from wtforms.widgets import HTMLString, html_params
 from wtforms.compat import text_type, string_types, iteritems
 from flask.ext.databrowser.column_spec import ColumnSpec
+from flask.ext.sqlalchemy import Model
+from flask.ext.databrowser.utils import get_primary_key
 
 class Image(object):
     def __init__(self, src, alt):
@@ -41,23 +43,28 @@ class PlainText(object):
 
 class TableWidget(object):
 
-    def __init__(self, rows, model_view, col_specs=None, sum_fields=[]):
+    def __init__(self, rows, model_view, col_specs=None, sum_fields=[], preprocess=None):
         self.rows = rows
         self.model_view = model_view
         self.col_specs = col_specs
         self.sum_fields = sum_fields
         if self.sum_fields:
             self.sum_row = {}
+        self.preprocess = preprocess or (lambda v: v)
 
     def __call__(self, field, **kwargs):
         from flask.ext.databrowser.convert import ValueConverter
         html = ['<table %s>\n' % html_params(**kwargs)]
         if self.rows:
+            # get the primary key of rows if possible
+            pk = str(uuid.uuid1()) # we set pk to a random value at first
+            if self.model_view:
+                model = self.rows[0].__class__ 
+                pk = get_primary_key(model)
             col_specs = self.col_specs or [ColumnSpec(col) for col in dir(self.rows[0]) if not col.startswith("_")]
-            from .utils import get_primary_key
             for i in xrange(len(col_specs)):
                 if isinstance(col_specs[i], basestring):
-                    if self.model_view and get_primary_key(self.rows[0].__class__) == col_specs[i]:
+                    if col_specs[i] == pk:
                         col_specs[i] = self.model_view.data_browser.create_object_link_column_spec(self.rows[0].__class__, "") or ColumnSpec(col_specs[i])
                     else:
                         col_specs[i] = ColumnSpec(col_specs[i])
@@ -69,17 +76,18 @@ class TableWidget(object):
             html.append('  </thead>\n')
             # data rows
             for row in self.rows:
+                preprocessed_row = self.preprocess(row)
                 s = "  <tr>\n"
                 if self.sum_fields:
                     s += "    <td></td>\n"
                 for sub_col_spec in col_specs:
                     converter = ValueConverter(row, self.model_view)
-                    s += "    <td>%s</td>\n" % converter(operator.attrgetter(sub_col_spec.col_name)(row), sub_col_spec)()
+                    s += "    <td>%s</td>\n" % converter(operator.attrgetter(sub_col_spec.col_name)(preprocessed_row), sub_col_spec)()
                     if sub_col_spec.col_name in self.sum_fields:
                         try:
-                            self.sum_row[sub_col_spec.col_name] += operator.attrgetter(sub_col_spec.col_name)(row)
+                            self.sum_row[sub_col_spec.col_name] += operator.attrgetter(sub_col_spec.col_name)(preprocessed_row)
                         except KeyError:
-                            self.sum_row[sub_col_spec.col_name] = operator.attrgetter(sub_col_spec.col_name)(row)
+                            self.sum_row[sub_col_spec.col_name] = operator.attrgetter(sub_col_spec.col_name)(preprocessed_row)
                 s += "  </tr>\n"
                 html.append(s)
             if self.sum_fields:

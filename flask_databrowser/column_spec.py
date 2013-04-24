@@ -35,11 +35,15 @@ class LinkColumnSpec(ColumnSpec):
 class TableColumnSpec(ColumnSpec):
 
     def __init__(self, col_name, col_specs=[], anchor="", doc="", formatter=None, label="", css_class="table table-condensed table-bordered", 
-        sum_fields=[]):
+        sum_fields=[], preprocess=None):
+        """
+        :param col_name: the col_name of the object must return an iterable, and each item must be of 'db.Model'
+        """
         super(TableColumnSpec, self).__init__(col_name, genre=TABLE, doc=doc, formatter=formatter, label=label, css_class=css_class)
         self.anchor = anchor
         self.col_specs = col_specs
         self.sum_fields = sum_fields
+        self.preprocess = preprocess
     
     def __iter__(self):
         return iter(self.col_specs)
