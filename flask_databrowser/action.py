@@ -6,18 +6,14 @@ _raised_when_model_view_unset = raised_when(lambda inst, *args, **kwargs: not in
                                        RuntimeError(r'field "model view" unset, you should set it'))
 
 
-IN_LIST = 1
-IN_FORM = 2
-
 class BaseAction(object):
 
-    def __init__(self, name, css_class="btn btn-info", data_icon="", warn_msg="", where=IN_LIST|IN_FORM):
+    def __init__(self, name, css_class="btn btn-info", data_icon="", warn_msg=""):
         self.name = name
         self.model_view = None
         self.css_class = css_class
         self.data_icon = data_icon
         self.warn_msg = warn_msg
-        self.where = where
     
     def op_upon_list(self, objs, model_view):
         for obj in objs:
