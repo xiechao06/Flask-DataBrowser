@@ -28,90 +28,111 @@
   </div>
 {% endmacro %}
 {% macro render_form_fields(form, focus_set=False) %}
-    {{ form.hidden_tag() if form.hidden_tag is defined }}
-
-    {% for fieldset, fields in fieldset_list %}
+  {{ form.hidden_tag() if form.hidden_tag is defined }}
+  {% if fieldset_list|length == 1 %}
+    {% set fieldset, fields = fieldset_list %}
     <fieldset>
       {% if fieldset %}
-        <legend>{{fieldset}}</legend>
+        <legend>{{ fieldset }}</legend>
       {% endif %}
-      {% for f in fields if f.type != 'HiddenField' and f.type != 'CSRFTokenField' %}
-        <div class="control-group{{ ' error' if f.errors }}">
-          {% if f.label.text %} 
-            <div class="control-label">
-                <strong>{{ f.label.text }}</strong>
-                {% if f.type != 'ReadOnlyField' and h.is_required_form_field(f) %}
-                    <strong style="color: red">&#42;</strong>
-                {% else %}
-                    &nbsp;
-                {% endif %}
+      {{ render_fields(fields) }}
+    </fieldset>
+  {% else %}
+    <div class="accordion" id="accordion_div">
+      {% for fieldset, fields in fieldset_list %}
+        <div class="accordion-group">
+          <div class="accordion-heading">
+            <a class="accordion-toggle" data-toggle="collapse" href="#collapse_{{ loop.index }}">
+              {{ fieldset }}
+            </a>
+          </div>
+          <div id="collapse_{{ loop.index }}" class="accordion-body collapse in">
+            <div class="accordion-inner">
+              {{ render_fields(fields) }}
             </div>
-          {% else%}
-            {% if f.type != 'ReadOnlyField' and h.is_required_form_field(f) %}
-                <strong style="color: red">&#42;</strong>
-            {% else %}
-                &nbsp;
-            {% endif %}
-          {% endif %}
-            {% if h.is_batch_edit() %}
-                <script type="text/javascript">
-                    $(function () {
-                        $("[name=hold_value]").click(function () {
-                            if (this.checked) {
-                                $(this).parent("div").children("select").select2("disable");
-                                $(this).parent("div").children().not($(this)).attr("disabled", true);
-                            } else {
-                                $(this).parent("div").children("select").select2("enable").attr("disabled", false);
-                                $(this).parent("div").children().not($(this)).attr("disabled", false);
-                            }
-                        });
-                    })
-                </script>
-            {% endif %}
-            {% if f.label.text %}
-            <div class="controls">
-            {% endif %}
-                <div>
-                    {% if h.is_batch_edit() %}
-                        {% if h.is_disabled_form_field(f) %}
-                            {{ f(disabled=True, value=_("unique field, can't be modified"))|safe }}
-                        {% elif not focus_set %}
-                            {{ f(autofocus='autofocus', disabled=True)|safe }}
-                            <input type="checkbox" name="hold_value" id=""
-                            checked="checked">{{ _("keep unchanged") }}
-                            {% set focus_set = True %}
-                        {% else %}
-                            {{ f(disabled=True)|safe }}
-                            <input type="checkbox" name="hold_value" id=""
-                              checked="checked">{{ _("keep unchanged") }}
-                        {% endif %}
-                    {% else %}
-                        {% if not focus_set %}
-                            {{ f(autofocus='autofocus')|safe }}
-                            {% set focus_set = True %}
-                        {% else %}
-                            {{ f()|safe }}
-                        {% endif %}
-                        {% if f.name in create_url_map %}
-                        <a href="{{ create_url_map[f.name] }}" data-role="new-related-obj" data-target="{{f.name}}" class="btn btn-primary">{{ _("create") }}</a>
-                        {% endif %}
-                    {% endif %}
-                    {% if f.errors %}
-                      <span class="alert alert-error">{{ f.errors|join("; ")}}</span>
-                    {% endif %}
-
-                    {% if f.description %}
-                      <span class="help-inline">* <i class="text-info">{{ f.description }}</i></span>
-                    {% endif %}
-                </div>
-            {% if f.label.text %}
-            </div>
-            {%endif%}
+          </div>
         </div>
       {% endfor %}
-    </fieldset>
-    {% endfor %}
+    </div>
+  {% endif %}
 {% endmacro %}
+{% macro render_fields(fields) %}
+  {% for f in fields if f.type != 'HiddenField' and f.type != 'CSRFTokenField' %}
+    <div class="control-group{{ ' error' if f.errors }}">
+      {% if f.label.text %}
+        <div class="control-label">
+          <strong>{{ f.label.text }}</strong>
+          {% if f.type != 'ReadOnlyField' and h.is_required_form_field(f) %}
+            <strong style="color: red">&#42;</strong>
+          {% else %}
+            &nbsp;
+          {% endif %}
+        </div>
+      {% else %}
+        {% if f.type != 'ReadOnlyField' and h.is_required_form_field(f) %}
+          <strong style="color: red">&#42;</strong>
+        {% else %}
+          &nbsp;
+        {% endif %}
+      {% endif %}
+      {% if h.is_batch_edit() %}
+        <script type="text/javascript">
+          $(function () {
+            $("[name=hold_value]").click(function () {
+              if (this.checked) {
+                $(this).parent("div").children("select").select2("disable");
+                $(this).parent("div").children().not($(this)).attr("disabled", true);
+              } else {
+                $(this).parent("div").children("select").select2("enable").attr("disabled", false);
+                $(this).parent("div").children().not($(this)).attr("disabled", false);
+              }
+            });
+          })
+        </script>
+      {% endif %}
+      {% if f.label.text %}
+        <div class="controls">
+      {% endif %}
+      <div>
+        {% if h.is_batch_edit() %}
+          {% if h.is_disabled_form_field(f) %}
+            {{ f(disabled=True, value=_("unique field, can't be modified"))|safe }}
+          {% elif not focus_set %}
+            {{ f(autofocus='autofocus', disabled=True)|safe }}
+            <input type="checkbox" name="hold_value" id=""
+                   checked="checked">{{ _("keep unchanged") }}
+            {% set focus_set = True %}
+          {% else %}
+            {{ f(disabled=True)|safe }}
+            <input type="checkbox" name="hold_value" id=""
+                   checked="checked">{{ _("keep unchanged") }}
+          {% endif %}
+        {% else %}
+          {% if not focus_set %}
+            {{ f(autofocus='autofocus')|safe }}
+            {% set focus_set = True %}
+          {% else %}
+            {{ f()|safe }}
+          {% endif %}
+          {% if f.name in create_url_map %}
+            <a href="{{ create_url_map[f.name] }}" data-role="new-related-obj" data-target="{{ f.name }}" class="btn btn-primary">{{ _("create") }}</a>
+          {% endif %}
+        {% endif %}
+        {% if f.errors %}
+          <span class="alert alert-error">{{ f.errors|join("; ") }}</span>
+        {% endif %}
+
+        {% if f.description %}
+          <span class="help-inline">* <i class="text-info">{{ f.description }}</i></span>
+        {% endif %}
+      </div>
+      {% if f.label.text %}
+        </div>
+      {% endif %}
+    </div>
+  {% endfor %}
+{% endmacro %}
+
 
 {% macro form_tag() %}
     <form action="" method="POST" class="form-horizontal"{% if form.has_file_field %} enctype="multipart/form-data"{% endif %}>
