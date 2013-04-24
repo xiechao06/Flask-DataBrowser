@@ -383,8 +383,7 @@ class ModelView(object):
                            fieldset_list=fieldset_list,
                            create_url_map=create_url_map,
                            return_url=return_url, extra="" if on_fly else "create",
-                           hint_message=_(u"create %(model_name)s",
-                                          model_name=self.model_name),
+                           hint_message=self.create_hint_message(),
                            **kwargs)
 
     def do_update_log(self, obj, action):
@@ -410,6 +409,29 @@ class ModelView(object):
               model_name=self.model_name, model=unicode(obj)),
             extra={"obj": obj, "obj_pk": self.scaffold_pk(obj),
                    "action": _(u"create"), "actor": current_user})
+
+    def batch_edit_hint_message(self, objs):
+        if self.can_edit:
+            return _(u"edit %(model_name)s-%(objs)s",
+                     model_name=self.model_name,
+                     objs=",".join(unicode(model) for model in objs))
+        else:
+            return ""
+
+    def edit_hint_message(self,obj):
+        if self.can_edit:
+            return _(u"edit %(model_name)s-%(obj)s",
+                     model_name=self.model_name,
+                     obj=unicode(obj))
+        else:
+            return _(
+                "you are viewing %(model_name)s-%(obj)s, "
+                "since you have only read permission",
+                model_name=self.model_name, obj=unicode(obj))
+
+    def create_hint_message(self):
+        return _(u"create %(model_name)s", model_name=self.model_name)
+
 
     def edit_view(self, id_):
         """
@@ -467,9 +489,7 @@ class ModelView(object):
                     else:
                         return redirect(return_url)
             compound_form = self.get_compound_edit_form(obj=model, form=form)
-            hint_message = _(u"edit %(model_name)s-%(obj)s",
-                             model_name=self.model_name,
-                             obj=unicode(model)) if self.can_edit else _("you are viewing %(model_name)s-%(obj)s, since you have only read permission", model_name=self.model_name, obj=unicode(model))
+            hint_message = self.edit_hint_message(model)
             actions = self._get_customized_actions([self.preprocess(model)])
         else:
             model_list = [self.get_one(id_) for id_ in id_list]
@@ -494,10 +514,7 @@ class ModelView(object):
                         return ret
                     else:
                         return redirect(return_url)
-            hint_message = _(u"edit %(model_name)s-%(objs)s",
-                             model_name=self.model_name, objs=",".join(
-                    unicode(model) for model in
-                    model_list)) if self.can_edit else ""
+            hint_message = self.batch_edit_hint_message(model_list)
             actions = self._get_customized_actions(model_list)
 
         grouper_info = {}
