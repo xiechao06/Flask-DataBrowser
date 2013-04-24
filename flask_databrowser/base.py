@@ -227,12 +227,12 @@ class ModelView(object):
             ret.append(fltr)
         return ret
 
-    def get_customized_actions(self):
+    def get_customized_actions(self, model_list=None):
         return self.__customized_actions__
 
-    def _get_customized_actions(self):
+    def _get_customized_actions(self, model_list=None):
         ret = []
-        for action in self.get_customized_actions():
+        for action in self.get_customized_actions(model_list):
             action.model_view = self
             ret.append(action)
         return ret
@@ -247,7 +247,7 @@ class ModelView(object):
         """
         action_name = request.form["action"]
 
-        for action in self._get_customized_actions():
+        for action in self._get_customized_actions(objs):
             if action.name == action_name:
                 action.try_()
                 for obj in objs:
@@ -470,7 +470,7 @@ class ModelView(object):
             hint_message = _(u"edit %(model_name)s-%(obj)s",
                              model_name=self.model_name,
                              obj=unicode(model)) if self.can_edit else _("you are viewing %(model_name)s-%(obj)s, since you have only read permission", model_name=self.model_name, obj=unicode(model))
-            actions = self._get_customized_actions()
+            actions = self._get_customized_actions([self.preprocess(model)])
         else:
             model_list = [self.get_one(id_) for id_ in id_list]
             model = None
@@ -498,7 +498,7 @@ class ModelView(object):
                              model_name=self.model_name, objs=",".join(
                     unicode(model) for model in
                     model_list)) if self.can_edit else ""
-            actions = self._get_customized_actions()
+            actions = self._get_customized_actions(model_list)
 
         grouper_info = {}
         for col in self._model_columns(model):
