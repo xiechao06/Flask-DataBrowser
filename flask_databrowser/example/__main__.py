@@ -116,7 +116,7 @@ def main():
             return [filters.NotEqualTo("name", value=u"Type")]
 
 
-        from flask.ext.databrowser.action import BaseAction
+        from flask.ext.databrowser.action import BaseAction, IN_FORM
 
         class RollCall(BaseAction):
 
@@ -148,7 +148,7 @@ def main():
             if row.name == "Tyde":
                 return {"title": u"测试"}
 
-        __customized_actions__ = [MyDeleteAction(u"删除", admin_permission), RollCall(u"点名", warn_msg=u"点名后就是弱智！")]
+        __customized_actions__ = [MyDeleteAction(u"删除", admin_permission), RollCall(u"点名", warn_msg=u"点名后就是弱智！", where=IN_FORM)]
 
     user_model_view = UserModelView(User, u"用户")
     browser.register_model_view(user_model_view, accounts_bp, extra_params={"form_view": {"company": "xc"}})

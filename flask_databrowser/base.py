@@ -11,7 +11,7 @@ from flask import render_template, flash, request, url_for, redirect, abort, Fla
 from flask.ext.principal import PermissionDenied
 from flask.ext.babel import ngettext, gettext as _
 from .utils import get_primary_key, named_actions, get_doc_from_table_def, request_from_mobile
-from .action import DeleteAction
+from .action import DeleteAction, IN_LIST, IN_FORM
 from flask.ext.databrowser.convert import ValueConverter
 from flask.ext.databrowser.column_spec import LinkColumnSpec, ColumnSpec, \
     InputColumnSpec
@@ -227,12 +227,12 @@ class ModelView(object):
             ret.append(fltr)
         return ret
 
-    def get_customized_actions(self):
-        return self.__customized_actions__
+    def get_customized_actions(self, where):
+        return [action for action in self.__customized_actions__ if (action.where & where)]
 
-    def _get_customized_actions(self):
+    def _get_customized_actions(self, where):
         ret = []
-        for action in self.get_customized_actions():
+        for action in self.get_customized_actions(where):
             action.model_view = self
             ret.append(action)
         return ret
@@ -247,7 +247,7 @@ class ModelView(object):
         """
         action_name = request.form["action"]
 
-        for action in self._get_customized_actions():
+        for action in self._get_customized_actions(IN_FORM):
             if action.name == action_name:
                 action.try_()
                 for obj in objs:
@@ -470,7 +470,7 @@ class ModelView(object):
             hint_message = _(u"edit %(model_name)s-%(obj)s",
                              model_name=self.model_name,
                              obj=unicode(model)) if self.can_edit else ""
-            actions = self._get_customized_actions()
+            actions = self._get_customized_actions(IN_FORM)
         else:
             model_list = [self.get_one(id_) for id_ in id_list]
             model = None
@@ -498,7 +498,7 @@ class ModelView(object):
                              model_name=self.model_name, objs=",".join(
                     unicode(model) for model in
                     model_list)) if self.can_edit else ""
-            actions = self._get_customized_actions()
+            actions = self._get_customized_actions(IN_FORM)
 
         grouper_info = {}
         for col in self._model_columns(model):
@@ -806,7 +806,7 @@ class ModelView(object):
             kwargs["__list_columns__"] = self.scaffold_list_columns(order_by,
                                                                     desc)
             kwargs["__filters__"] = column_filters
-            kwargs["__actions__"] = self.scaffold_actions()
+            kwargs["__actions__"] = self.scaffold_actions(IN_LIST)
             kwargs["__action_2_forbidden_message_formats__"] = dict(
                 (action["name"], action["forbidden_msg_formats"]) for action in
                 kwargs["__actions__"])
@@ -837,7 +837,7 @@ class ModelView(object):
             models = self.model.query.filter(
                 getattr(self.model, get_primary_key(self.model)).in_(
                     request.form.getlist('selected-ids'))).all()
-            for action in self._get_customized_actions():
+            for action in self._get_customized_actions(IN_FORM):
                 if action.name == action_name:
                     break
             else:
@@ -932,7 +932,7 @@ class ModelView(object):
     def scaffold_filters(self):
         return [dict(label="a", op=dict(name="lt", id="a__lt"))]
 
-    def scaffold_actions(self):
+    def scaffold_actions(self, where):
         l = []
         #if self.edit_allowable and self.batchly_edit_allowable:
         #l.append({"name": _(u"batch edit"), "forbidden_msg_formats": {}, "css_class": "btn btn-info"})
@@ -941,7 +941,7 @@ class ModelView(object):
                       css_class=action.css_class, data_icon=action.data_icon,
                       forbidden_msg_formats=action.get_forbidden_msg_formats(), 
                      warn_msg=action.warn_msg)
-                 for action in self._get_customized_actions())
+                 for action in self._get_customized_actions(where))
         return l
 
     def query_data(self, page, order_by, desc, filters, offset=0):
@@ -999,7 +999,7 @@ class ModelView(object):
                            repr_=self.repr_obj(r),
                            obj=r,
                            forbidden_actions=[action.name for action in
-                                              self._get_customized_actions() if
+                                              self._get_customized_actions(IN_LIST) if
                                               action.test_enabled(r) != 0])
 
         return [] if not models else g()
@@ -1095,7 +1095,7 @@ class ModelView(object):
 
     def get_rows_action_desc(self, models):
         ret = {}
-        customized_actions = self._get_customized_actions()
+        customized_actions = self._get_customized_actions(IN_LIST)
         if customized_actions:
             for model in models:
                 id = self.scaffold_pk(model)
