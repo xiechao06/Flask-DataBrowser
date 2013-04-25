@@ -11,7 +11,7 @@ from flask import render_template, flash, request, url_for, redirect, abort, Fla
 from flask.ext.principal import PermissionDenied
 from flask.ext.babel import ngettext, gettext as _
 from .utils import get_primary_key, named_actions, get_doc_from_table_def, request_from_mobile
-from .action import DeleteAction
+from .action import DeleteAction, LinkAction
 from flask.ext.databrowser.convert import ValueConverter
 from flask.ext.databrowser.column_spec import LinkColumnSpec, ColumnSpec, \
     InputColumnSpec
@@ -177,16 +177,6 @@ class ModelView(object):
         """
         pass
 
-    def on_model_delete(self, model):
-        """
-            Allow to do some actions before a model will be deleted.
-
-            Called from delete_model in the same transaction
-            (if it has any meaning for a store backend).
-
-            By default do nothing.
-        """
-        pass
 
         # Model handlers
 
@@ -226,12 +216,12 @@ class ModelView(object):
             ret.append(fltr)
         return ret
 
-    def get_customized_actions(self, model_list=None):
+    def get_customized_actions(self, processed_objs=None):
         return self.__customized_actions__
 
-    def _get_customized_actions(self, model_list=None):
+    def _get_customized_actions(self, processed_objs=None):
         ret = []
-        for action in self.get_customized_actions(model_list):
+        for action in self.get_customized_actions(processed_objs):
             action.model_view = self
             ret.append(action)
         return ret
@@ -245,11 +235,12 @@ class ModelView(object):
                 a list of Model instance
         """
         action_name = request.form["action"]
+        processed_objs = [self.preprocess(obj) for obj in objs]
 
-        for action in self._get_customized_actions(objs):
+        for action in self._get_customized_actions(processed_objs):
             if action.name == action_name:
                 action.try_()
-                for obj in objs:
+                for obj in processed_objs:
                     ret_code = action.test_enabled(obj)
                     if ret_code != 0:
                         flash(_(u"can't apply %(action)s due to %(reason)s",
@@ -259,22 +250,23 @@ class ModelView(object):
                               'error')
                         return False
                 try:
-                    ret = action.op_upon_list([self.preprocess(obj) for obj in objs], self)
+                    ret = action.op_upon_list(processed_objs, self)
                     if isinstance(ret, werkzeug.wrappers.BaseResponse) and ret.status_code == 302:
                         return ret
                     self.session.commit()
-                    flash(action.success_message(objs), 'success')
+                    flash(action.success_message(processed_objs), 'success')
                     return True
                 except Exception, ex:
                     flash(_(
                         'Failed to update %(model_name)s %(objs)s due to %('
                         'error)s',
-                        model_name=self.model_name, objs=",".join(unicode(obj) for obj in objs),
+                        model_name=self.model_name, objs=",".join(unicode(obj) for obj in processed_objs),
                         error=str(ex)),
                           'error')
                     self.session.rollback()
                     raise
         try:
+            # note, it's objs here
             for obj in objs:
                 for name, field in form._fields.iteritems():
                     if field.raw_data != []:
@@ -293,7 +285,7 @@ class ModelView(object):
             self.session.rollback()
             return False
 
-    def try_view(self, objs=None):
+    def try_view(self, processed_objs=None):
         """
         control if user could view objects list or object
         NOTE!!! don't return anything, if you determine that something should't be viewed, 
@@ -309,7 +301,7 @@ class ModelView(object):
         """
         pass
 
-    def try_edit(self, objs=None):
+    def try_edit(self, processed_objs=None):
         pass
 
     def create_view(self):
@@ -455,11 +447,13 @@ class ModelView(object):
             hint_message = _(u"edit %(model_name)s-%(obj)s",
                              model_name=self.model_name,
                              obj=unicode(model)) 
+            all_customized_actions = self._get_customized_actions([preprocessed_obj])
             try:
                 self.try_edit(preprocessed_obj)
-                actions = self._get_customized_actions([preprocessed_obj])
+                actions = all_customized_actions
             except PermissionDenied:
-                actions = []
+                # we only get read only actions 
+                actions = [action for action in all_customized_actions if isinstance(action, LinkAction)] 
         else:
             model_list = [self.get_one(id_) for id_ in id_list]
             preprocessed_objs = [self.preprocess(obj) for obj in model_list]
@@ -492,11 +486,12 @@ class ModelView(object):
                              model_name=self.model_name, objs=",".join(
                     unicode(model) for model in
                     model_list)) 
+            all_customized_actions = self._get_customized_actions(preprocessed_objs)
             try:
                 self.try_edit(preprocessed_objs)
-                actions = self._get_customized_actions(model_list)
+                actions = all_customized_actions
             except PermissionDenied:
-                actions = []
+                actions = [action for action in all_customized_actions if isinstance(action, LinkAction)] 
 
         grouper_info = {}
         for col in self._model_columns(model):

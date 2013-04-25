@@ -60,6 +60,13 @@ class BaseAction(object):
     def test_enabled(self, model):
         return 0
 
+class LinkAction(BaseAction):
+    """
+    this is just a "notation" class, means this action is actually a link, it 
+    will not be removed from a "read only" form by default
+    """
+    pass
+
 class DeleteAction(BaseAction):
     
     def __init__(self, name=_("remove"), permission=None, css_class="btn btn-danger", data_icon="delete", warn_msg=""):
