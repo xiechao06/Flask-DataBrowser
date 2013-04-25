@@ -65,7 +65,7 @@ class InputColumnSpec(ColumnSpec):
         self.group_by = group_by
         self.read_only = read_only
         self.filter_ = filter_ or (lambda v: v)
-        self.opt_filter = opt_filter (lambda obj: True)
+        self.opt_filter = opt_filter or (lambda obj: True)
         self.validators = validators or []
     
     @property
