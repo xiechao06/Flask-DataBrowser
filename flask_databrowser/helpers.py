@@ -22,6 +22,5 @@ def is_disabled_form_field(field):
                 return True
     return False
 
-
 def is_batch_edit():
     return len(posixpath.basename(urlparse.urlparse(urlparse.unquote(request.url)).path).split(',')) > 1
