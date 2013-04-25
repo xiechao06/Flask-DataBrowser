@@ -288,7 +288,7 @@ class ModelView(object):
     def try_view(self, processed_objs=None):
         """
         control if user could view objects list or object
-        NOTE!!! don't return anything, if you determine that something should't be viewed, 
+        NOTE!!! don't return anything, if you determine that something should't be viewed,
         throw PermissionDenied
 
         :param objs: the objs to be viewed, is None, we are in list view
@@ -323,10 +323,10 @@ class ModelView(object):
                     return redirect(self.url_for_object(None, url=return_url))
                 else:
                     if on_fly:
-                        return render_template("__data_browser__/on_fly_result.haml", 
-                                               model_cls=self.model_name, 
-                                               obj=unicode(model), 
-                                               obj_pk=self.scaffold_pk(model), 
+                        return render_template("__data_browser__/on_fly_result.haml",
+                                               model_cls=self.model_name,
+                                               obj=unicode(model),
+                                               obj_pk=self.scaffold_pk(model),
                                                target=request.args.get("target"))
                     else:
                         return redirect(return_url)
@@ -345,7 +345,7 @@ class ModelView(object):
             if isinstance(v, types.FunctionType):
                 v = v(self)
             kwargs[k] = v
-        
+
         fieldset_list = []
         create_columns = self.get_create_columns()
         if isinstance(create_columns, types.DictType):
@@ -387,19 +387,25 @@ class ModelView(object):
                    "action": _(u"create"), "actor": current_user})
 
     def batch_edit_hint_message(self, objs):
-        if self.try_edit(objs):
+        try:
+            self.try_edit(objs)
             return _(u"edit %(model_name)s-%(objs)s",
                      model_name=self.model_name,
                      objs=",".join(unicode(model) for model in objs))
-        else:
-            return ""
+        except PermissionDenied:
+            return _(
+                u"you are viewing %(model_name)s-%(obj)s, "
+                u"since you have only read permission",
+                model_name=self.model_name,
+                obj=",".join(unicode(model) for model in objs))
 
     def edit_hint_message(self,obj):
-        if self.try_edit([obj]):
+        try:
+            self.try_edit([obj])
             return _(u"edit %(model_name)s-%(obj)s",
                      model_name=self.model_name,
                      obj=unicode(obj))
-        else:
+        except PermissionDenied:
             return _(
                 u"you are viewing %(model_name)s-%(obj)s, "
                 u"since you have only read permission",
@@ -467,15 +473,15 @@ class ModelView(object):
                     else:
                         return redirect(return_url)
             compound_form = self.get_compound_edit_form(obj=model, form=form)
-            hint_message = self.batch_edit_hint_message(preprocessed_obj)
+            hint_message = self.edit_hint_message(preprocessed_obj)
             all_customized_actions = self._get_customized_actions([preprocessed_obj])
             help_message = self.get_edit_help(preprocessed_obj)
             try:
                 self.try_edit(preprocessed_obj)
                 actions = all_customized_actions
             except PermissionDenied:
-                # we only get read only actions 
-                actions = [action for action in all_customized_actions if isinstance(action, LinkAction)] 
+                # we only get read only actions
+                actions = [action for action in all_customized_actions if isinstance(action, LinkAction)]
         else:
             model_list = [self.get_one(id_) for id_ in id_list]
             preprocessed_objs = [self.preprocess(obj) for obj in model_list]
@@ -511,7 +517,7 @@ class ModelView(object):
                 self.try_edit(preprocessed_objs)
                 actions = all_customized_actions
             except PermissionDenied:
-                actions = [action for action in all_customized_actions if isinstance(action, LinkAction)] 
+                actions = [action for action in all_customized_actions if isinstance(action, LinkAction)]
 
         grouper_info = {}
         for col in self._model_columns(model):
@@ -570,7 +576,7 @@ class ModelView(object):
 
     def get_create_help(self):
         return ""
-    
+
     def get_edit_help(self, objs):
         return ""
 
@@ -654,7 +660,7 @@ class ModelView(object):
             self.__create_form__ = self.scaffold_form(create_columns)
         # if request specify some fields, then use these fields
         default_args = {}
-        
+
         for k, v in request.args.items():
             if hasattr(self.model, k):
                 col = getattr(self.model, k)
@@ -668,11 +674,11 @@ class ModelView(object):
                 #setattr(obj, k, v)
             return self.__create_form__(obj=obj)
         return self.__create_form__()
-                    
+
     def get_edit_form(self, obj=None):
         if self.__edit_form__ is None:
             self.__edit_form__ = self.scaffold_form(self._model_columns(obj))
-        # if request specify some fields, then we override fields with this value 
+        # if request specify some fields, then we override fields with this value
         for k, v in request.args.items():
             if hasattr(self.model, k):
                 col = getattr(self.model, k)
@@ -954,7 +960,7 @@ class ModelView(object):
     def scaffold_actions(self):
         return [dict(name=action.name, value=action.name,
                       css_class=action.css_class, data_icon=action.data_icon,
-                      forbidden_msg_formats=action.get_forbidden_msg_formats(), 
+                      forbidden_msg_formats=action.get_forbidden_msg_formats(),
                      warn_msg=action.warn_msg)
                  for action in self._get_customized_actions()]
 
@@ -1061,9 +1067,9 @@ class ModelView(object):
         """
         get the real list template, there're 2 scenarios:
 
-            * you access site from DESKTOP. if you specify option "ModelView.list_template", else 
+            * you access site from DESKTOP. if you specify option "ModelView.list_template", else
                 "/__data_browser/list.haml" will be used
-            * you access site from mobile device. if you specify option "ModelView.list_template_mob", else 
+            * you access site from mobile device. if you specify option "ModelView.list_template_mob", else
                 "/__data_browser/list_mob.html" will be used
         """
         return self.list_template_mob if request_from_mobile() else self.list_template
@@ -1072,9 +1078,9 @@ class ModelView(object):
         """
         get the real create template, there're 2 scenarios:
 
-            * you access site from DESKTOP. if you specify option "ModelView.create_template", else 
+            * you access site from DESKTOP. if you specify option "ModelView.create_template", else
                 "/__data_browser/form.haml" will be used
-            * you access site from mobile device. if you specify option "ModelView.create_template_mob", else 
+            * you access site from mobile device. if you specify option "ModelView.create_template_mob", else
                 "/__data_browser/form_mob.html" will be used
         """
         return self.create_template_mob if request_from_mobile() else self.create_template
@@ -1083,9 +1089,9 @@ class ModelView(object):
         """
         get the real edit template, there're 2 scenarios:
 
-            * you access site from DESKTOP. if you specify option "ModelView.edit_template", else 
+            * you access site from DESKTOP. if you specify option "ModelView.edit_template", else
                 "/__data_browser/form.haml" will be used
-            * you access site from mobile device. if you specify option "ModelView.edit_template_mob", else 
+            * you access site from mobile device. if you specify option "ModelView.edit_template_mob", else
                 "/__data_browser/form_mob.html" will be used
         """
         if self.edit_template is None:
