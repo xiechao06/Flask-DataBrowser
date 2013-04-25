@@ -87,10 +87,18 @@ def raised(E, test, *args, **kwargs):
 
 def make_disabled_field(field):
     class FakeField(field.field_class):
-        
+
         def __call__(self, **kwargs):
             kwargs["disabled"] = True
             return super(FakeField, self).__call__(**kwargs)
+
+        def validate(self, form, extra_validators=()):
+            return True
+
+        # dirty trick
+        @property
+        def read_only(self):
+            return True
 
     field.field_class = FakeField
     return field

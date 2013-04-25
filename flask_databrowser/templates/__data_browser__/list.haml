@@ -162,7 +162,7 @@
           -block actions
             .alert.alert-block
               %span#actions
-                -if model_view.edit_allowable and model_view.batchly_edit_allowable
+                -if model_view.batchly_editable
                   %a href="#" class="btn btn-info" << {{ _('batch edit') }}
                 -for action in __actions__:
                   %input value="{{action.name}}" type="submit" name="action" class="{{action.css_class}}" data-warn="{{action.warn_msg}}"

@@ -133,7 +133,6 @@
   {% endfor %}
 {% endmacro %}
 
-
 {% macro form_tag() %}
     <form action="" method="POST" class="form-horizontal"{% if form.has_file_field %} enctype="multipart/form-data"{% endif %}>
       {{ caller() }}

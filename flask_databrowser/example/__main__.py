@@ -32,7 +32,7 @@ def main():
 
 
     from flask.ext import databrowser
-    from flask.ext.databrowser.action import DeleteAction
+    from flask.ext.databrowser.action import DeleteAction, LinkAction
 
     from models import User, Car
     accounts_bp = Blueprint("accounts", __name__, static_folder="static", 
@@ -49,11 +49,16 @@ def main():
 
         list_template = "accounts/list.html"
         edit_template = create_template = "accounts/form.html"
+        can_batchly_edit = True
 
         def patch_row_css(self, idx, row):
             if row.roll_called == 1:
                 return "box warning"
 
+        def try_edit(self, objs):
+            raise PermissionDenied()
+
+        from flask.ext.databrowser.column_spec import ImageColumnSpec, TableColumnSpec, PlaceHolderColumnSpec, InputColumnSpec
         def get_create_help(self):
             return "<h3>this is create view</h3>"
         
@@ -79,7 +84,7 @@ def main():
                             #]
 
         __batch_form_columns__ = OrderedDict()
-        __batch_form_columns__["primary"] = ["name", "group"]
+        __batch_form_columns__["primary"] = ["name", InputColumnSpec("group", read_only=True)]
         __batch_form_columns__["secondary"] = ["age", "roll_called"]
 
         __column_formatters__ = {
@@ -157,7 +162,12 @@ def main():
             if row.name == "Tyde":
                 return {"title": u"测试"}
 
-        __customized_actions__ = [MyDeleteAction(u"删除", admin_permission), RollCall(u"点名", warn_msg=u"点名后就是弱智！")]
+        class ReadOnlyAction(LinkAction):
+
+            def op_upon_list(self, model, model_view):
+                return redirect("http://www.sohu.com")
+
+        __customized_actions__ = [MyDeleteAction(u"删除", admin_permission), RollCall(u"点名", warn_msg=u"点名后就是弱智！"), ReadOnlyAction(u"打酱油的")]
 
     user_model_view = UserModelView(User, u"用户")
     browser.register_model_view(user_model_view, accounts_bp, extra_params={"form_view": {"company": "xc"}})
