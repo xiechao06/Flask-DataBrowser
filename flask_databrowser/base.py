@@ -250,6 +250,8 @@ class ModelView(object):
                               'error')
                         return False
                 try:
+                    if not isinstance(action, ReadOnlyAction): # we omit read only actions
+                        self.try_edit(processed_objs)
                     ret = action.op_upon_list(processed_objs, self)
                     if isinstance(ret, werkzeug.wrappers.BaseResponse) and ret.status_code == 302:
                         return ret
@@ -267,6 +269,7 @@ class ModelView(object):
                     raise
         try:
             # note, it's objs here
+            self.try_edit(processed_objs)
             for obj in objs:
                 for name, field in form._fields.iteritems():
                     if field.raw_data is not None:
@@ -386,30 +389,28 @@ class ModelView(object):
             extra={"obj": obj, "obj_pk": self.scaffold_pk(obj),
                    "action": _(u"create"), "actor": current_user})
 
-    def batch_edit_hint_message(self, objs):
-        try:
-            self.try_edit(objs)
-            return _(u"edit %(model_name)s-%(objs)s",
-                     model_name=self.model_name,
-                     objs=",".join(unicode(model) for model in objs))
-        except PermissionDenied:
+    def batch_edit_hint_message(self, objs, read_only=False):
+        if read_only:
             return _(
                 u"you are viewing %(model_name)s-%(obj)s, "
                 u"since you have only read permission",
                 model_name=self.model_name,
                 obj=",".join(unicode(model) for model in objs))
-
-    def edit_hint_message(self,obj):
-        try:
-            self.try_edit([obj])
-            return _(u"edit %(model_name)s-%(obj)s",
+        else:
+            return _(u"edit %(model_name)s-%(objs)s",
                      model_name=self.model_name,
-                     obj=unicode(obj))
-        except PermissionDenied:
+                     objs=",".join(unicode(model) for model in objs))
+
+    def edit_hint_message(self,obj, read_only=False):
+        if read_only:
             return _(
                 u"you are viewing %(model_name)s-%(obj)s, "
                 u"since you have only read permission",
                 model_name=self.model_name, obj=unicode(obj))
+        else:
+            return _(u"edit %(model_name)s-%(obj)s",
+                     model_name=self.model_name,
+                     obj=unicode(obj))
 
     def create_hint_message(self):
         return _(u"create %(model_name)s", model_name=self.model_name)
@@ -460,28 +461,31 @@ class ModelView(object):
                     except IndexError:
                         pass
 
-            form = self.get_edit_form(obj=model)
-
             preprocessed_obj = self.preprocess(model)
-            # we must validate batch edit as well
-            if form.validate_on_submit():
-                self.try_edit(preprocessed_obj)
+            try:
+                self.try_edit([preprocessed_obj])
+                read_only = False
+            except PermissionDenied:
+                read_only = True
+
+            form = self.get_edit_form(obj=model, read_only=read_only)
+            if form.validate_on_submit(): # ON POST
                 ret = self.update_objs(form, [model])
                 if ret:
                     if isinstance(ret, werkzeug.wrappers.BaseResponse) and ret.status_code == 302:
                         return ret
                     else:
                         return redirect(return_url)
+            # ON GET
             compound_form = self.get_compound_edit_form(obj=model, form=form)
-            hint_message = self.edit_hint_message(preprocessed_obj)
+            hint_message = self.edit_hint_message(preprocessed_obj, read_only)
             all_customized_actions = self._get_customized_actions([preprocessed_obj])
             help_message = self.get_edit_help(preprocessed_obj)
-            try:
-                self.try_edit(preprocessed_obj)
-                actions = all_customized_actions
-            except PermissionDenied:
+            if read_only:
                 # we only get read only actions
                 actions = [action for action in all_customized_actions if isinstance(action, ReadOnlyAction)]
+            else:
+                actions = all_customized_actions
         else:
             model_list = [self.get_one(id_) for id_ in id_list]
             preprocessed_objs = [self.preprocess(obj) for obj in model_list]
@@ -497,30 +501,35 @@ class ModelView(object):
                                    attr) == default_value for model_ in
                            model_list):
                         setattr(model, attr, default_value)
+            try:
+                self.try_edit(preprocessed_objs)
+                read_only = False
+            except PermissionDenied:
+                read_only = True
 
             if model:
-                form = self.get_batch_edit_form(model, model_list)
+                form = self.get_batch_edit_form(model, model_list, read_only)
             else:
-                form = self.get_batch_edit_form(request.form, model_list)
-            if form.validate_on_submit():
-                self.try_edit(model_list)
+                form = self.get_batch_edit_form(request.form, model_list, read_only)
+            # we must validate batch edit as well
+            if form.validate_on_submit(): # ON POST
                 ret = self.update_objs(form, model_list)
                 if ret:
                     if isinstance(ret, werkzeug.wrappers.BaseResponse) and ret.status_code == 302:
                         return ret
                     else:
                         return redirect(return_url)
-            hint_message = self.batch_edit_hint_message(preprocessed_objs)
+
+            # ON GET
+            hint_message = self.batch_edit_hint_message(preprocessed_objs, read_only)
             all_customized_actions = self._get_customized_actions(preprocessed_objs)
             help_message = self.get_edit_help(preprocessed_objs)
-            try:
-                self.try_edit(preprocessed_objs)
-                actions = all_customized_actions
-            except PermissionDenied:
+            if read_only:
                 actions = [action for action in all_customized_actions if isinstance(action, ReadOnlyAction)]
-
+            else:
+                actions = all_customized_actions
         grouper_info = {}
-        for col in self._model_columns(model):
+        for col in self._model_columns(model, read_only):
             grouper_2_cols = {}
             if isinstance(col, InputColumnSpec) and col.group_by:
                 for row in self.session.query(getattr(self.model,
@@ -614,16 +623,10 @@ class ModelView(object):
     #     return form_class
 
 
-    def _model_columns(self, obj):
+    def _model_columns(self, obj, read_only):
         """
         select the model columns from __form_columns__
         """
-        try:
-            self.try_edit([obj])
-            read_only = False
-        except PermissionDenied:
-            read_only = True
-
         form_columns = self.get_form_columns()
         if not form_columns:
             return []
@@ -675,9 +678,9 @@ class ModelView(object):
             return self.__create_form__(obj=obj)
         return self.__create_form__()
 
-    def get_edit_form(self, obj=None):
+    def get_edit_form(self, obj=None, read_only=False):
         if self.__edit_form__ is None:
-            self.__edit_form__ = self.scaffold_form(self._model_columns(obj))
+            self.__edit_form__ = self.scaffold_form(self._model_columns(obj, read_only))
         # if request specify some fields, then we override fields with this value
         for k, v in request.args.items():
             if hasattr(self.model, k):
@@ -688,9 +691,9 @@ class ModelView(object):
                     setattr(obj, k, v)
         return self.__edit_form__(obj=obj)
 
-    def get_compound_edit_form(self, obj=None, form=None):
+    def get_compound_edit_form(self, obj=None, form=None, read_only=False):
         if not form:
-            form = self.get_edit_form(obj=obj)
+            form = self.get_edit_form(obj=obj, read_only=read_only)
 
         form_columns = self.get_form_columns()
         if not form_columns:
@@ -738,12 +741,7 @@ class ModelView(object):
                     value_converter(operator.attrgetter(col.col_name)(r), col))
         return FakeForm(form, ret)
 
-    def get_batch_edit_form(self, fake_obj, objs):
-        try:
-            self.try_edit(objs)
-            read_only = False
-        except PermissionDenied:
-            read_only = True
+    def get_batch_edit_form(self, fake_obj, objs, read_only):
 
         if self.__batch_edit_form__ is None:
             batch_form_columns = self.get_batch_form_columns()
@@ -872,7 +870,6 @@ class ModelView(object):
             models = self.model.query.filter(
                 getattr(self.model, get_primary_key(self.model)).in_(
                     request.form.getlist('selected-ids'))).all()
-            self.try_edit(models)
             for action in self._get_customized_actions():
                 if action.name == action_name:
                     break
@@ -880,11 +877,13 @@ class ModelView(object):
                 raise ValidationError(
                     _('invalid action %(action)s', action=action_name))
             action.try_()
+            processed_objs = [self.preprocess(obj) for obj in models]
+            if isinstance(action, ReadOnlyAction):
+                self.try_edit(processed_objs)
             try:
-                objs = [self.preprocess(obj) for obj in models]
-                action.op_upon_list(objs, self)
+                action.op_upon_list(processed_objs, self)
                 self.session.commit()
-                flash(action.success_message(objs), 'success')
+                flash(action.success_message(processed_objs), 'success')
             except Exception, ex:
                 self.session.rollback()
                 raise
