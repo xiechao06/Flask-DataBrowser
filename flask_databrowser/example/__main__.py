@@ -32,7 +32,7 @@ def main():
 
 
     from flask.ext import databrowser
-    from flask.ext.databrowser.action import DeleteAction, LinkAction
+    from flask.ext.databrowser.action import DeleteAction, ReadOnlyAction
 
     from models import User, Car
     accounts_bp = Blueprint("accounts", __name__, static_folder="static", 
@@ -162,7 +162,7 @@ def main():
             if row.name == "Tyde":
                 return {"title": u"测试"}
 
-        class ReadOnlyAction(LinkAction):
+        class ReadOnlyAction(ReadOnlyAction):
 
             def op_upon_list(self, model, model_view):
                 return redirect("http://www.sohu.com")

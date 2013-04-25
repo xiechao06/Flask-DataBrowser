@@ -11,7 +11,7 @@ from flask import render_template, flash, request, url_for, redirect, abort, Fla
 from flask.ext.principal import PermissionDenied
 from flask.ext.babel import ngettext, gettext as _
 from .utils import get_primary_key, named_actions, get_doc_from_table_def, request_from_mobile
-from .action import DeleteAction, LinkAction
+from .action import DeleteAction, ReadOnlyAction
 from flask.ext.databrowser.convert import ValueConverter
 from flask.ext.databrowser.column_spec import LinkColumnSpec, ColumnSpec, \
     InputColumnSpec
@@ -481,7 +481,7 @@ class ModelView(object):
                 actions = all_customized_actions
             except PermissionDenied:
                 # we only get read only actions
-                actions = [action for action in all_customized_actions if isinstance(action, LinkAction)]
+                actions = [action for action in all_customized_actions if isinstance(action, ReadOnlyAction)]
         else:
             model_list = [self.get_one(id_) for id_ in id_list]
             preprocessed_objs = [self.preprocess(obj) for obj in model_list]
@@ -517,7 +517,7 @@ class ModelView(object):
                 self.try_edit(preprocessed_objs)
                 actions = all_customized_actions
             except PermissionDenied:
-                actions = [action for action in all_customized_actions if isinstance(action, LinkAction)]
+                actions = [action for action in all_customized_actions if isinstance(action, ReadOnlyAction)]
 
         grouper_info = {}
         for col in self._model_columns(model):

@@ -60,9 +60,10 @@ class BaseAction(object):
     def test_enabled(self, model):
         return 0
 
-class LinkAction(BaseAction):
+
+class ReadOnlyAction(BaseAction):
     """
-    this is just a "notation" class, means this action is actually a link, it 
+    this is just a "notation" class, it
     will not be removed from a "read only" form by default
     """
     pass
