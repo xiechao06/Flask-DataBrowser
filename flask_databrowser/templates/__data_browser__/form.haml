@@ -47,7 +47,7 @@
               $.each(grouper_info[grouper_e.attr("name")][grouper_e.val()], function (idx, entry) {
                 input_e.append('<option value="' + entry.id + '">' + entry.text + "</option>");
               });
-              input_e.select2()
+              input_e.select2({width:"resolve"})
             }
               })(grouper_e, input_e))
         }
