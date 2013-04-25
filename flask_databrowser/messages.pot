@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2013-04-24 11:48+0800\n"
+"POT-Creation-Date: 2013-04-24 21:03+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -62,7 +62,7 @@ msgstr ""
 msgid "Failed to update %(model_name)s %(obj)s due to %(error)s"
 msgstr ""
 
-#: base.py:346 base.py:410
+#: base.py:346 base.py:411
 #, python-format
 msgid "%(model_name)s %(model)s was created successfully"
 msgstr ""
@@ -72,35 +72,35 @@ msgstr ""
 msgid "create %(model_name)s"
 msgstr ""
 
-#: base.py:395
+#: base.py:396
 #, python-format
 msgid "%(user)s performed %(action)s"
 msgstr ""
 
-#: base.py:412 templates/__data_browser__/list.haml:116
+#: base.py:413 templates/__data_browser__/list.haml:116
 #: templates/__data_browser__/list_mob.html:97
 #: templates/__data_browser__/macro.html:96
 msgid "create"
 msgstr ""
 
-#: base.py:472
+#: base.py:474
 #, python-format
 msgid "edit %(model_name)s-%(obj)s"
 msgstr ""
 
-#: base.py:472
+#: base.py:474
 #, python-format
 msgid ""
 "you are viewing %(model_name)s-%(obj)s, since you have only read "
 "permission"
 msgstr ""
 
-#: base.py:499
+#: base.py:502
 #, python-format
 msgid "edit %(model_name)s-%(objs)s"
 msgstr ""
 
-#: base.py:845
+#: base.py:860
 #, python-format
 msgid "invalid action %(action)s"
 msgstr ""
@@ -190,12 +190,27 @@ msgstr ""
 msgid "back"
 msgstr ""
 
-#: templates/__data_browser__/form.haml:37
+#: templates/__data_browser__/form.haml:13
+#: templates/__data_browser__/list.haml:175
+msgid "help"
+msgstr ""
+
+#: templates/__data_browser__/form.haml:21
+#: templates/__data_browser__/list.haml:180
+msgid "Help"
+msgstr ""
+
+#: templates/__data_browser__/form.haml:25
+#: templates/__data_browser__/list.haml:184
+msgid "close"
+msgstr ""
+
+#: templates/__data_browser__/form.haml:53
 #, python-format
 msgid "Are you sure to %%s these items?"
 msgstr ""
 
-#: templates/__data_browser__/form.haml:39
+#: templates/__data_browser__/form.haml:55
 #, python-format
 msgid "Are you sure to %%s this item?"
 msgstr ""
@@ -206,7 +221,7 @@ msgid "commit"
 msgstr ""
 
 #: templates/__data_browser__/form_mob.html:79
-#: templates/__data_browser__/list.haml:214
+#: templates/__data_browser__/list.haml:228
 #: templates/__data_browser__/macro.html:131
 msgid "reset"
 msgstr ""
@@ -246,18 +261,18 @@ msgstr ""
 msgid "no results matched!"
 msgstr ""
 
-#: templates/__data_browser__/list.haml:175
+#: templates/__data_browser__/list.haml:189
 msgid "refine search"
 msgstr ""
 
-#: templates/__data_browser__/list.haml:203
-#: templates/__data_browser__/list.haml:205
-#: templates/__data_browser__/list.haml:207
+#: templates/__data_browser__/list.haml:217
+#: templates/__data_browser__/list.haml:219
+#: templates/__data_browser__/list.haml:221
 #, python-format
 msgid "input %(label)s here"
 msgstr ""
 
-#: templates/__data_browser__/list.haml:213
+#: templates/__data_browser__/list.haml:227
 msgid "refresh"
 msgstr ""
 

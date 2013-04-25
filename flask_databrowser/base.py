@@ -383,6 +383,7 @@ class ModelView(object):
                            fieldset_list=fieldset_list,
                            create_url_map=create_url_map,
                            return_url=return_url, extra="" if on_fly else "create",
+                           help_message=self.get_create_help(),
                            hint_message=self.create_hint_message(),
                            **kwargs)
 
@@ -453,6 +454,7 @@ class ModelView(object):
         pre_url = next_url = ""
         if len(id_list) == 1:
             model = self.get_one(id_list[0])
+            processed_model = self.preprocess(model)
             cdx = request.args.get("cdx", 0, int)
             if cdx:
                 page, order_by, desc = self._parse_args()
@@ -482,7 +484,7 @@ class ModelView(object):
 
             if form.validate_on_submit():
                 self.try_edit()
-                ret = self.update_objs(form, [model])
+                ret = self.update_objs(form, [processed_model])
                 if ret:
                     if isinstance(ret, werkzeug.wrappers.BaseResponse) and ret.status_code == 302:
                         return ret
@@ -491,6 +493,7 @@ class ModelView(object):
             compound_form = self.get_compound_edit_form(obj=model, form=form)
             hint_message = self.edit_hint_message(model)
             actions = self._get_customized_actions([self.preprocess(model)])
+            help_message = self.get_edit_help(processed_model)
         else:
             model_list = [self.get_one(id_) for id_ in id_list]
             model = None
@@ -516,6 +519,7 @@ class ModelView(object):
                         return redirect(return_url)
             hint_message = self.batch_edit_hint_message(model_list)
             actions = self._get_customized_actions(model_list)
+            help_message = self.get_edit_help([self.preprocess(obj) for obj in model_list])
 
         grouper_info = {}
         for col in self._model_columns(model):
@@ -569,7 +573,17 @@ class ModelView(object):
                            grouper_info=grouper_info,
                            actions=actions,
                            return_url=return_url, hint_message=hint_message,
+                           help_message=help_message,
                            **kwargs)
+
+    def get_create_help(self):
+        return ""
+    
+    def get_edit_help(self, objs):
+        return ""
+
+    def get_list_help(self):
+        return ""
 
     def scaffold_form(self, columns):
         """
@@ -843,6 +857,7 @@ class ModelView(object):
                                                   self.data_browser.page_size,
                                                   count, kwargs["__data__"])
             list_kwargs = self.extra_params.get("list_view", {})
+            kwargs["help_message"] = self.get_list_help()
             for k, v in list_kwargs.items():
                 if isinstance(v, types.FunctionType):
                     v = v(self)
