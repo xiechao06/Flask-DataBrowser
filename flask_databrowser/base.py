@@ -1224,17 +1224,10 @@ class DataBrowser(object):
             from .utils import get_primary_key
 
             pk = get_primary_key(model)
-            if model_view.edit_allowable:
-                return LinkColumnSpec(col_name=pk, formatter=lambda v,
-                                                                    obj:
-                model_view.url_for_object(
-                    obj, label=label, url=current_url),
-                                      anchor=lambda v: unicode(v))
-            else:
-                return LinkColumnSpec(col_name=pk, formatter=lambda v,
-                                                                    obj: model_view.url_for_object_preview(
-                    obj, label=label, url=current_url),
-                                      anchor=lambda v: unicode(v))
+
+            return LinkColumnSpec(col_name=pk,
+                                  formatter=lambda v, obj: model_view.url_for_object(obj, label=label, url=current_url),
+                                  anchor=lambda v: unicode(v))
         except KeyError:
             return None
 
