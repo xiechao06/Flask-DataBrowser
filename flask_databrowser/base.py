@@ -387,7 +387,7 @@ class ModelView(object):
                    "action": _(u"create"), "actor": current_user})
 
     def batch_edit_hint_message(self, objs):
-        if self.can_edit:
+        if self.try_edit(objs):
             return _(u"edit %(model_name)s-%(objs)s",
                      model_name=self.model_name,
                      objs=",".join(unicode(model) for model in objs))
@@ -395,14 +395,14 @@ class ModelView(object):
             return ""
 
     def edit_hint_message(self,obj):
-        if self.can_edit:
+        if self.try_edit([obj]):
             return _(u"edit %(model_name)s-%(obj)s",
                      model_name=self.model_name,
                      obj=unicode(obj))
         else:
             return _(
-                "you are viewing %(model_name)s-%(obj)s, "
-                "since you have only read permission",
+                u"you are viewing %(model_name)s-%(obj)s, "
+                u"since you have only read permission",
                 model_name=self.model_name, obj=unicode(obj))
 
     def create_hint_message(self):
