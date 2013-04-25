@@ -30,7 +30,7 @@
 {% macro render_form_fields(form, focus_set=False) %}
   {{ form.hidden_tag() if form.hidden_tag is defined }}
   {% if fieldset_list|length == 1 %}
-    {% set fieldset, fields = fieldset_list %}
+    {% set fieldset, fields = fieldset_list[0] %}
     <fieldset>
       {% if fieldset %}
         <legend>{{ fieldset }}</legend>
