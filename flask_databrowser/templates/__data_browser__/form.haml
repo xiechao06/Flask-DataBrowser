@@ -9,8 +9,8 @@
         * {{ hint_message }}
         -if help_message
           .pull-right
-            %a href="#" data-toggle="modal" data-target="#help-modal" 
-              %strong.text-error << {{ _("help") }}
+            %a href="#" data-toggle="modal" data-target="#help-modal" data-role="help-link"
+              %strong.text-success << {{ _("help") }}
               %i.icon-question-sign
           
   %div.container
