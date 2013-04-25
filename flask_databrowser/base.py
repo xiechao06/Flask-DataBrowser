@@ -532,8 +532,9 @@ class ModelView(object):
         for col in self._model_columns(model, read_only):
             grouper_2_cols = {}
             if isinstance(col, InputColumnSpec) and col.group_by:
-                for row in self.session.query(getattr(self.model,
-                                                      col.col_name).property.mapper.class_).all():
+                rows = [row for row in col.filter_(self.session.query(getattr(self.model,
+                                                                              col.col_name).property.mapper.class_)).all() if col.opt_filter(row)]
+                for row in rows:
                     # should use pk here
                     grouper_2_cols.setdefault(
                         getattr(row, col.group_by.property.key).id, []).append(
