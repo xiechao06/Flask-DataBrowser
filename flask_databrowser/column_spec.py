@@ -64,8 +64,8 @@ class InputColumnSpec(ColumnSpec):
         super(InputColumnSpec, self).__init__(col_name, genre=INPUT, doc=doc, formatter=formatter, label=label, css_class=css_class)
         self.group_by = group_by
         self.read_only = read_only
-        self.filter_ = filter_
-        self.opt_filter = opt_filter
+        self.filter_ = filter_ or (lambda v: v)
+        self.opt_filter = opt_filter or (lambda obj: True)
         self.validators = validators or []
     
     @property

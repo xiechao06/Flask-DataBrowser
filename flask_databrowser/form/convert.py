@@ -212,9 +212,9 @@ class AdminModelConverter(ModelConverterBase):
                                     pk = get_primary_key(model)
                                     for row in session.query(col_spec.group_by.property.mapper.class_).all():
                                         yield getattr(row, pk), unicode(row), getattr(row, pk) == self.data
-
                             s = grouper(FakeField(self.col_spec.grouper_input_name, 
-                                                  getattr(self.data, col_spec.group_by.property.local_remote_pairs[0][0].name))) + "   -    "
+                                                  getattr(self.data, col_spec.group_by.property.local_remote_pairs[0][0].name)), 
+                                        **({"disabled": True} if kwargs.get("disabled") else {})) + "   -    "
                             s += super(QuerySelectField_, self).__call__(**kwargs)
                             return s
                     return QuerySelectField_(col_spec, widget=form.Select2Widget(), **kwargs)
