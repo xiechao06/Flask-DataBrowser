@@ -77,4 +77,9 @@
         win.focus();
         return false;
       });
+      $("[data-role=fieldset-body]").on("shown", function () {
+        $("#"+$(this).attr("id")+"_notation").attr("class", "icon-chevron-down");
+      }).on("hidden", function () {
+        $("#"+$(this).attr("id")+"_notation").attr("class", "icon-chevron-up");
+      });
     });

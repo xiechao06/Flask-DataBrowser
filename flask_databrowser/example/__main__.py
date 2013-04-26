@@ -79,9 +79,9 @@ def main():
         __form_columns__[u"主要的"] = ["id", "name", "group", "password"]
         __form_columns__[u"次要的"] = ["roll_called", "good", "age", "create_time", ImageColumnSpec("avatar", alt=u"头像", 
                                             formatter=lambda v, model: "http://farm9.staticflickr.com/8522/8478415115_152c6f5e55_m.jpg", doc=u"头像， ^_^!")]
-        #__form_columns__[u"额外的"] = [TableColumnSpec("dogs", css_class="table table-striped table-hover table-condensed table-bordered"),
-                            #TableColumnSpec("car_list", css_class="table table-striped table-hover table-condensed table-bordered", col_specs=["id", "model"])
-                            #]
+        __form_columns__[u"额外的"] = [TableColumnSpec("dogs", css_class="table table-striped table-hover table-condensed table-bordered"),
+                            TableColumnSpec("car_list", css_class="table table-striped table-hover table-condensed table-bordered", col_specs=["id", "model"])
+                            ]
 
         __batch_form_columns__ = OrderedDict()
         __batch_form_columns__["primary"] = ["name", InputColumnSpec("group", read_only=True)]
