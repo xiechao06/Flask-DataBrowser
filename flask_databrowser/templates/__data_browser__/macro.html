@@ -40,18 +40,19 @@
   {% else %}
     <div class="accordion" id="accordion_div">
       {% for fieldset, fields in fieldset_list %}
+      <fieldset>
         <div class="accordion-group">
           <div class="accordion-heading">
-            <a class="accordion-toggle" data-toggle="collapse" href="#collapse_{{ loop.index }}">
-              {{ fieldset }}
-            </a>
-          </div>
-          <div id="collapse_{{ loop.index }}" class="accordion-body collapse in">
+          <a class="accordion-toggle" data-toggle="collapse" href="#collapse_{{ loop.index }}">
+            <h4>{{ fieldset }}<i class="icon-chevron-down" id="collapse_{{ loop.index }}_notation" data-role="fieldset-notation"></i></h4>
+          </a></div>
+          <div id="collapse_{{ loop.index }}" class="accordion-body collapse in" data-role="fieldset-body">
             <div class="accordion-inner">
               {{ render_fields(fields) }}
             </div>
           </div>
         </div>
+      </fieldset>
       {% endfor %}
     </div>
   {% endif %}

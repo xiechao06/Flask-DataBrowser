@@ -116,3 +116,7 @@ legend {
     text-align: center;
     opacity: 1.0;
 }
+
+legend i[data-role="fieldset-notation"] {
+    vertical-align: middle;
+}
