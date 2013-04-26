@@ -60,7 +60,8 @@ class TableWidget(object):
             pk = str(uuid.uuid1()) # we set pk to a random value at first
             if self.model_view:
                 model = self.rows[0].__class__ 
-                pk = get_primary_key(model)
+                if hasattr(model, "_sa_class_manager"):
+                    pk = get_primary_key(model)
             col_specs = self.col_specs or [ColumnSpec(col) for col in dir(self.rows[0]) if not col.startswith("_")]
             for i in xrange(len(col_specs)):
                 if isinstance(col_specs[i], basestring):

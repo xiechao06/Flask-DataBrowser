@@ -118,11 +118,15 @@ def fslice(iterable, predict):
 def get_description(view, col_name, obj, col_spec=None):
     if col_spec and col_spec.doc:
             return col_spec.doc
+    # TODO this model should be the one registered in model view
     if view.__column_docs__:
         ret = view.__column_docs__.get(col_name)
         if ret:
             return ret
-    return get_doc_from_table_def(obj.__class__, col_name)
+    # if this model is actually a model
+    if hasattr(obj.__class__, "_sa_class_manager"):
+        return get_doc_from_table_def(obj.__class__, col_name)
+    return ""
 
 
 def get_doc_from_table_def(model, col_name):
