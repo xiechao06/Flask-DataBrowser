@@ -234,6 +234,7 @@ class ModelView(object):
             :param objs:
                 a list of Model instance
         """
+        
         action_name = request.form["action"]
         processed_objs = [self.preprocess(obj) for obj in objs]
 
@@ -268,11 +269,14 @@ class ModelView(object):
                     self.session.rollback()
                     raise
         try:
-            # note, it's objs here
             self.try_edit(processed_objs)
+            # compute the field should be holded
+            import pudb; pudb.set_trace()
+            
+            holded_fields = set(name[len("hold-value-"):] for name, field in request.form.iteritems() if name.startswith("hold-value-"))
             for obj in objs:
                 for name, field in form._fields.iteritems():
-                    if field.raw_data is not None:
+                    if name not in holded_fields and field.data is not None:
                         field.populate_obj(obj, name)
                 self.do_update_log(obj, _("update"))
                 flash(_(u"%(model_name)s %(obj)s was updated and saved",

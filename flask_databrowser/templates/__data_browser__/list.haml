@@ -121,7 +121,7 @@
             %table#list-table class="{{ __css_classes__.list_table_class }}"
               %thead
                 %tr
-                  -if __actions__
+                  -if __actions__ or model_view.can_batchly_edit
                     -if not model_view.as_radio_group
                       %th.span1 -> %input type="checkbox" name="rowtoggle"
                     -else
@@ -143,7 +143,7 @@
               %tbody
                 -for row in __data__
                   %tr {% if row.css %}class="{{row.css}}"{% endif %} {%if row.attrs %} {%for k,v in row.attrs.items() %}{{ k }}="{{ v }}"{% endfor %}{% endif %}
-                    -if __actions__
+                    -if __actions__ or model_view.can_batchly_edit
                       -if model_view.as_radio_group
                         %td.span1 -> %input type="radio" value="{{ row.pk }}" name="selected-ids"
                       -else

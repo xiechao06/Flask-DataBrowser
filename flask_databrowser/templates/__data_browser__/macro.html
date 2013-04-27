@@ -76,21 +76,6 @@
           &nbsp;
         {% endif %}
       {% endif %}
-      {% if h.is_batch_edit() %}
-        <script type="text/javascript">
-          $(function () {
-            $("[name=hold_value]").click(function () {
-              if (this.checked) {
-                $(this).parent("div").children("select").select2("disable");
-                $(this).parent("div").children().not($(this)).attr("disabled", true);
-              } else {
-                $(this).parent("div").children("select").select2("enable").attr("disabled", false);
-                $(this).parent("div").children().not($(this)).attr("disabled", false);
-              }
-            });
-          })
-        </script>
-      {% endif %}
       {% if f.label.text %}
         <div class="controls">
       {% endif %}
@@ -100,14 +85,12 @@
             {{ f(disabled=True, value=_("unique field, can't be modified"))|safe }}
           {% elif not focus_set %}
             {{ f(autofocus='autofocus', disabled=True)|safe }}
-            <input type="checkbox" name="hold_value" id=""
-                   checked="checked">{{ _("keep unchanged") }}
             {% set focus_set = True %}
           {% else %}
             {{ f(disabled=True)|safe }}
-            <input type="checkbox" name="hold_value" id=""
-                   checked="checked">{{ _("keep unchanged") }}
           {% endif %}
+          <input type="checkbox" data-role="hold_value" name="hold-value-{{f.name}}"
+                 checked="checked">{{ _("keep unchanged") }}
         {% else %}
           {% if not focus_set %}
             {{ f(autofocus='autofocus')|safe }}
