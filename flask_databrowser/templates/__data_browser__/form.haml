@@ -82,4 +82,13 @@
       }).on("hidden", function () {
         $("#"+$(this).attr("id")+"_notation").attr("class", "icon-chevron-up");
       });
+      $("[data-role=hold_value]").click(function () {
+        if (this.checked) {
+          $(this).parent("div").children("select").select2("disable");
+          $(this).parent("div").children().not($(this)).attr("disabled", true);
+        } else {
+          $(this).parent("div").children("select").select2("enable").attr("disabled", false);
+          $(this).parent("div").children().not($(this)).attr("disabled", false);
+        }
+      });
     });
