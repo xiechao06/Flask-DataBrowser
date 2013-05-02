@@ -634,16 +634,17 @@ class ModelView(object):
         """
         form_columns = self.get_form_columns()
         if not form_columns:
-            return []
-        model_clumns = set(
-            [p.key for p in self.model.__mapper__.iterate_properties])
-        ret = []
+            # if no form columns given, use the model's attribute
+            mapper = self.model._sa_class_manager.mapper
+            form_columns = [p.key for p in mapper.iterate_properties]
+            if read_only:
+                return [InputColumnSpec(col_name, read_only=True) for col_name in form_columns]
 
         if isinstance(form_columns, types.DictType):
             form_columns = list(itertools.chain(*form_columns.values()))
-        else:
-            form_columns = self.get_form_columns()
-
+        ret = []
+        model_clumns = set(
+            [p.key for p in self.model.__mapper__.iterate_properties])
         for col in form_columns:
             if isinstance(col, InputColumnSpec):
                 col_name = col.col_name
@@ -883,10 +884,12 @@ class ModelView(object):
                     _('invalid action %(action)s', action=action_name))
             action.try_()
             processed_objs = [self.preprocess(obj) for obj in models]
-            if isinstance(action, ReadOnlyAction):
+            if not isinstance(action, ReadOnlyAction):
                 self.try_edit(processed_objs)
             try:
-                action.op_upon_list(processed_objs, self)
+                ret = action.op_upon_list(processed_objs, self)
+                if isinstance(ret, werkzeug.wrappers.BaseResponse) and ret.status_code == 302:
+                    return ret
                 self.session.commit()
                 flash(action.success_message(processed_objs), 'success')
             except Exception, ex:
