@@ -121,7 +121,7 @@
             %table#list-table class="{{ __css_classes__.list_table_class }}"
               %thead
                 %tr
-                  -if __actions__ or model_view.can_batchly_edit
+                  -if __actions__ 
                     -if not model_view.as_radio_group
                       %th.span1 -> %input type="checkbox" name="rowtoggle"
                     -else
@@ -155,19 +155,19 @@
                         %td << {{ v() }}
             -from "__data_browser__/macro.html" import render_pagination
             {{ render_pagination(__pagination__, __count__) }}
+            -block actions
+              .alert.alert-block
+                %span#actions
+                  -if model_view.batchly_editable
+                    %a href="#" class="btn btn-info" << {{ _('batch edit') }}
+                  -for action in __actions__:
+                    %input value="{{action.name}}" type="submit" name="action" class="{{action.css_class}}" data-warn="{{action.warn_msg}}"
+                %span#action-fillings
+                  -block action_fillings
           -else
             %p.text-error << {{ _("no results matched!") }}
 
 
-          -block actions
-            .alert.alert-block
-              %span#actions
-                -if model_view.batchly_editable
-                  %a href="#" class="btn btn-info" << {{ _('batch edit') }}
-                -for action in __actions__:
-                  %input value="{{action.name}}" type="submit" name="action" class="{{action.css_class}}" data-warn="{{action.warn_msg}}"
-              %span#action-fillings
-                -block action_fillings
       .span2
         -if help_message
           .pull-right
