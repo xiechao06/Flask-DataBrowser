@@ -110,11 +110,17 @@ class BaseFilter(TemplateParam):
         """
         set the query filter/join criterions
         """
-        if hasattr(self.attr.property, 'direction'):
+        attrs = self.col_name.split(".")
+        last_join_model = self.model
+        for rel in attrs[:-1]:
+            last_join_model = getattr(last_join_model, rel).property.mapper.class_
+            q = q.join(last_join_model)
+        attr = getattr(last_join_model, attrs[-1])
+        if hasattr(attr.property, 'direction'):
             # translate the relation
-            filter_criterion = self.__operator__(self.attr.property.local_remote_pairs[0][0], self.value)
+            filter_criterion = self.__operator__(attr.property.local_remote_pairs[0][0], self.value)
         else:
-            filter_criterion = self.__operator__(self.attr, self.value)
+            filter_criterion = self.__operator__(attr, self.value)
         q = q.filter(filter_criterion)
         return q
 
