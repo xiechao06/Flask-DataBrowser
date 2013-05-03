@@ -984,7 +984,8 @@ class ModelView(object):
             for order_by in order_by_list[:-1]:
                 last_join_model = getattr(last_join_model,
                                           order_by).property.mapper.class_
-                q = q.join(last_join_model)
+                if last_join_model not in q._join_entities: # not joined before
+                    q = q.join(last_join_model)
             order_criterion = getattr(last_join_model, order_by_list[-1])
             if hasattr(order_criterion.property, 'direction'):
                 #order_criterion = enumerate(order_criterion.property.local_columns).next()[1]
