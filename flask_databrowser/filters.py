@@ -49,7 +49,11 @@ class BaseFilter(TemplateParam):
         if self.options:
             return "select",
         else:
-            attr = getattr(self.model, self.col_name)
+            attrs = self.col_name.split(".")
+            last_join_model = self.model
+            for rel in attrs[:-1]:
+                last_join_model = getattr(last_join_model, rel).property.mapper.class_
+            attr = getattr(last_join_model, attrs[-1])
             if hasattr(attr, 'property'):
                 col_type = type(attr.property.columns[0].type).__name__
                 if col_type == 'Integer':
@@ -69,7 +73,7 @@ class BaseFilter(TemplateParam):
         if self.__options:
             return [(md5(",".join(str(o[0]) for o in self.__options)).hexdigest(), u'--%s--' % _(u"all"))] + self.__options
         else:
-            # if column is a relation, then we should find all of them
+            # if column is a relation, then we should find all of them, else return []
             attrs = self.col_name.split(".")
             last_join_model = self.model
             for rel in attrs[:-1]:
