@@ -38,7 +38,6 @@ class ModelView(object):
 
     language = "en"
     column_hide_backrefs = True
-    can_batchly_edit = False
     __create_form__ = __edit_form__ = __batch_edit_form__ = None
     list_template = "__data_browser__/list.haml"
     create_template = edit_template = "__data_browser__/form.haml"
@@ -88,11 +87,6 @@ class ModelView(object):
 
         kwargs['h'] = helpers
         return render_template(template, **kwargs)
-
-    @property
-    def batchly_editable(self):
-        return self.can_batchly_edit() if isinstance(self.can_batchly_edit,
-                                                     types.MethodType) else self.can_batchly_edit
 
     # Various helpers
     def prettify_name(self, name):
