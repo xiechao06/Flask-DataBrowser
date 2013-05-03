@@ -34,12 +34,25 @@ class Link(object):
 
 class PlainText(object):
 
-    def __init__(self, s):
+    def __init__(self, s, trunc):
         self.s = s
+        self.trunc = trunc
     
     def __call__(self, field, **kwargs):
-
-        return HTMLString('<span %s>%s</span>' % (html_params(**kwargs), self.s))
+        need_trunc = False
+        s = self.s
+        if self.trunc:
+            if len(self.s) > self.trunc:
+                s = self.s[:self.trunc-3]
+                need_trunc = True
+        content = []
+        for i in xrange(len(self.s)):
+            content.append(self.s[i:i+24])
+            i += 24 
+        if not need_trunc:
+            return HTMLString('<span %s>%s</span>' % (html_params(**kwargs), s))
+        else:
+            return HTMLString('<span %s>%s<a href="#" data-toggle="popover" data-role="popover-link" data-placement="bottom" data-trigger="hover" data-content="%s">...</a></span>' % (html_params(**kwargs), s, "\n".join(content)))
 
 class TableWidget(object):
 
