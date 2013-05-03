@@ -974,14 +974,17 @@ class ModelView(object):
             if not filter_.model_view:
                 filter_.model_view = self
             q = filter_.set_sa_criterion(q)
-            joined_tables.extend(filter_.joined_tables)
+            for t in filter_.joined_tables:
+                if t not in joined_tables:
+                    joined_tables.append(t)
 
         for filter_ in filters:
             if filter_.has_value():
                 q = filter_.set_sa_criterion(q)
-                joined_tables.extend(filter_.joined_tables)
+                for t in filter_.joined_tables:
+                    if t not in joined_tables:
+                        joined_tables.append(t)
 
-        joined_tables = set(joined_tables)
         if order_by:
             last_join_model = self.model
             order_by_list = order_by.split(".")
@@ -989,7 +992,7 @@ class ModelView(object):
                 last_join_model = getattr(last_join_model,
                                           order_by).property.mapper.class_
                 if last_join_model not in joined_tables: # not joined before
-                    joined_tables.add(last_join_model)
+                    joined_tables.append(last_join_model)
             order_criterion = getattr(last_join_model, order_by_list[-1])
             if hasattr(order_criterion.property, 'direction'):
                 order_criterion = order_criterion.property.local_remote_pairs[0][0]
