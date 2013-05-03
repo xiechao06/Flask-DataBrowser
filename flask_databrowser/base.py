@@ -1243,7 +1243,7 @@ class DataBrowser(object):
 
             return LinkColumnSpec(col_name=pk,
                                   formatter=lambda v, obj: model_view.url_for_object(obj, label=label, url=current_url),
-                                  anchor=lambda v: unicode(v))
+                                  anchor=lambda v: unicode(v), label=label)
         except KeyError:
             return None
 
