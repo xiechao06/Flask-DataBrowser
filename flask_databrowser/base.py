@@ -968,31 +968,36 @@ class ModelView(object):
     def query_data(self, page, order_by, desc, filters, offset=0):
 
         q = self.model.query
+        joined_tables = []
 
         for filter_ in self.__list_filters__():
             if not filter_.model_view:
                 filter_.model_view = self
             q = filter_.set_sa_criterion(q)
+            joined_tables.extend(filter_.joined_tables)
 
         for filter_ in filters:
             if filter_.has_value():
                 q = filter_.set_sa_criterion(q)
+                joined_tables.extend(filter_.joined_tables)
 
+        joined_tables = set(joined_tables)
         if order_by:
             last_join_model = self.model
             order_by_list = order_by.split(".")
             for order_by in order_by_list[:-1]:
                 last_join_model = getattr(last_join_model,
                                           order_by).property.mapper.class_
-                if last_join_model not in q._join_entities: # not joined before
-                    q = q.join(last_join_model)
+                if last_join_model not in joined_tables: # not joined before
+                    joined_tables.add(last_join_model)
             order_criterion = getattr(last_join_model, order_by_list[-1])
             if hasattr(order_criterion.property, 'direction'):
-                #order_criterion = enumerate(order_criterion.property.local_columns).next()[1]
                 order_criterion = order_criterion.property.local_remote_pairs[0][0]
             if desc:
                 order_criterion = order_criterion.desc()
             q = q.order_by(order_criterion)
+        for t in joined_tables:
+            q = q.join(t)
         count = q.count()
         if offset:
             q = q.offset(offset)

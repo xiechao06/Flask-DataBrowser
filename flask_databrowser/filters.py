@@ -73,6 +73,16 @@ class BaseFilter(TemplateParam):
         attr = getattr(last_join_model, attrs[-1])
         return attr
 
+    @cached_property
+    def joined_tables(self):
+        ret = []
+        attrs = self.col_name.split(".")
+        last_join_model = self.model
+        for rel in attrs[:-1]:
+            last_join_model = getattr(last_join_model, rel).property.mapper.class_
+            ret.append(last_join_model)
+        return ret
+
     @property
     def options(self):
         if self.__options:
@@ -110,17 +120,12 @@ class BaseFilter(TemplateParam):
         """
         set the query filter/join criterions
         """
-        attrs = self.col_name.split(".")
-        last_join_model = self.model
-        for rel in attrs[:-1]:
-            last_join_model = getattr(last_join_model, rel).property.mapper.class_
-            q = q.join(last_join_model)
-        attr = getattr(last_join_model, attrs[-1])
-        if hasattr(attr.property, 'direction'):
+        # NOTE! we don't join table here
+        if hasattr(self.attr.property, 'direction'):
             # translate the relation
-            filter_criterion = self.__operator__(attr.property.local_remote_pairs[0][0], self.value)
+            filter_criterion = self.__operator__(self.attr.property.local_remote_pairs[0][0], self.value)
         else:
-            filter_criterion = self.__operator__(attr, self.value)
+            filter_criterion = self.__operator__(self.attr, self.value)
         q = q.filter(filter_criterion)
         return q
 
@@ -198,20 +203,13 @@ class Only(BaseFilter):
         """
         set the query filter/join criterions
         """
+        # NOTE! we don't join table here
         if self.value:
-            attrs = self.col_name.split(".")
-            last_join_model = self.model
-            for attr in attrs[:-1]:
-                last_join_model = getattr(last_join_model, attr).property.mapper.class_
-                q = q.join(last_join_model)
-
-            # convert attr to InstrumentedAttribute
-            attr = getattr(last_join_model, attrs[-1])
-            if hasattr(attr.property, 'direction'):
+            if hasattr(self.attr.property, 'direction'):
                 # translate the relation
-                filter_criterion = self.test(attr.property.local_remote_pairs[0][0])
+                filter_criterion = self.test(self.attr.property.local_remote_pairs[0][0])
             else:
-                filter_criterion = self.test(attr)
+                filter_criterion = self.test(self.attr)
             q = q.filter(filter_criterion)
         return q
 
