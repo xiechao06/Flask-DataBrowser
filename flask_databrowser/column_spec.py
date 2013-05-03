@@ -16,7 +16,7 @@ class ColumnSpec(object):
         self.genre = genre
         self.formatter = formatter
         self.doc = doc
-        self.label = col_name if (label is None) else label
+        self.label = label
         self.css_class = css_class
         self.trunc = trunc
 

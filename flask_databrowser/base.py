@@ -141,6 +141,7 @@ class ModelView(object):
                 else:
                     assert isinstance(col, ColumnSpec)
                     col_spec = col
+                    col_spec.label = col.label or self.__column_labels__.get(col.col_name, col.col_name)
 
                 self.__list_column_specs.append(col_spec)
 

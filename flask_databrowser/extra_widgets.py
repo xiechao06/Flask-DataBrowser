@@ -52,7 +52,7 @@ class PlainText(object):
         if not need_trunc:
             return HTMLString('<span %s>%s</span>' % (html_params(**kwargs), s))
         else:
-            return HTMLString('<span %s>%s<a href="#" data-toggle="popover" data-role="popover-link" data-placement="bottom" data-trigger="hover" data-content="%s">...</a></span>' % (html_params(**kwargs), s, "\n".join(content)))
+            return HTMLString('<span data-toggle="tooltip" data-html="true" data-placement="bottom" title="%s" %s>%s<a href="#" >...</a></span>' % ("\n".join(content), html_params(**kwargs), s))
 
 class TableWidget(object):
 
