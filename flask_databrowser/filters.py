@@ -7,6 +7,7 @@ from collections import namedtuple, Iterable
 import operator
 from .utils import TemplateParam, raised_when, get_primary_key
 from flask.ext.babel import gettext as _
+from werkzeug.utils import cached_property
 
 _raised_when_model_unset = raised_when(lambda inst, *args, **kwargs: not inst.model_view, 
                                        RuntimeError(r'field "model view" unset, you should set it'))
@@ -49,13 +50,8 @@ class BaseFilter(TemplateParam):
         if self.options:
             return "select",
         else:
-            attrs = self.col_name.split(".")
-            last_join_model = self.model
-            for rel in attrs[:-1]:
-                last_join_model = getattr(last_join_model, rel).property.mapper.class_
-            attr = getattr(last_join_model, attrs[-1])
-            if hasattr(attr, 'property'):
-                col_type = type(attr.property.columns[0].type).__name__
+            if hasattr(self.attr, 'property'):
+                col_type = type(self.attr.property.columns[0].type).__name__
                 if col_type == 'Integer':
                     return 'number',
                 elif col_type == 'DateTime':
@@ -68,20 +64,24 @@ class BaseFilter(TemplateParam):
     def input_class(self):
         return 'numeric-filter'
 
+    @cached_property
+    def attr(self):
+        attrs = self.col_name.split(".")
+        last_join_model = self.model
+        for rel in attrs[:-1]:
+            last_join_model = getattr(last_join_model, rel).property.mapper.class_
+        attr = getattr(last_join_model, attrs[-1])
+        return attr
+
     @property
     def options(self):
         if self.__options:
             return [(md5(",".join(str(o[0]) for o in self.__options)).hexdigest(), u'--%s--' % _(u"all"))] + self.__options
         else:
             # if column is a relation, then we should find all of them, else return []
-            attrs = self.col_name.split(".")
-            last_join_model = self.model
-            for rel in attrs[:-1]:
-                last_join_model = getattr(last_join_model, rel).property.mapper.class_
-            attr = getattr(last_join_model, attrs[-1])
             ret = []
-            if hasattr(attr, 'property') and hasattr(attr.property, 'direction'):
-                model = attr.property.mapper.class_
+            if hasattr(self.attr, 'property') and hasattr(self.attr.property, 'direction'):
+                model = self.attr.property.mapper.class_
                 ret.extend((getattr(row, get_primary_key(model)), self.opt_formatter(row) if self.opt_formatter else row) 
                         for row in model.query.all())
                 if not ret:
