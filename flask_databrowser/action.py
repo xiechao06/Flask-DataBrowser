@@ -1,4 +1,5 @@
 # -*- coding: UTF-8 -*-
+from flask import redirect, request
 from flask.ext.babel import gettext as _
 from .utils import raised_when, raised
 
@@ -73,6 +74,11 @@ class DeleteAction(BaseAction):
     def __init__(self, name=_("remove"), permission=None, css_class="btn btn-danger", data_icon="delete", warn_msg=""):
         super(DeleteAction, self).__init__(name, css_class, data_icon, warn_msg)
         self.permission = permission
+
+    def op_upon_list(self, objs, model_view):
+        for obj in objs:
+            self._op(obj, model_view)
+        return redirect(request.args.get('url', request.url))
 
     def op(self, obj):
         # even a model-like object could be deleted

@@ -250,6 +250,7 @@ class ModelView(object):
                         self.try_edit(processed_objs)
                     ret = action.op_upon_list(processed_objs, self)
                     if isinstance(ret, werkzeug.wrappers.BaseResponse) and ret.status_code == 302:
+                        flash(action.success_message(processed_objs), 'success')
                         return ret
                     self.session.commit()
                     flash(action.success_message(processed_objs), 'success')
@@ -266,8 +267,6 @@ class ModelView(object):
         try:
             self.try_edit(processed_objs)
             # compute the field should be holded
-            import pudb; pudb.set_trace()
-            
             holded_fields = set(name[len("hold-value-"):] for name, field in request.form.iteritems() if name.startswith("hold-value-"))
             for obj in objs:
                 for name, field in form._fields.iteritems():
@@ -474,7 +473,7 @@ class ModelView(object):
                     if isinstance(ret, werkzeug.wrappers.BaseResponse) and ret.status_code == 302:
                         return ret
                     else:
-                        return redirect(return_url)
+                        return redirect(request.url)
             # ON GET
             compound_form = self.get_compound_edit_form(obj=model, form=form)
             hint_message = self.edit_hint_message(preprocessed_obj, read_only)
@@ -517,7 +516,7 @@ class ModelView(object):
                     if isinstance(ret, werkzeug.wrappers.BaseResponse) and ret.status_code == 302:
                         return ret
                     else:
-                        return redirect(return_url)
+                        return redirect(request.url)
 
             # ON GET
             hint_message = self.batch_edit_hint_message(preprocessed_objs, read_only)
@@ -884,6 +883,7 @@ class ModelView(object):
             try:
                 ret = action.op_upon_list(processed_objs, self)
                 if isinstance(ret, werkzeug.wrappers.BaseResponse) and ret.status_code == 302:
+                    flash(action.success_message(processed_objs), 'success')
                     return ret
                 self.session.commit()
                 flash(action.success_message(processed_objs), 'success')
