@@ -23,7 +23,7 @@ class ValueConverter(object):
         obj = self.obj
         if self.model_view and hasattr(v, "__mapper__"):
             ref_col_spec = self.model_view.data_browser.create_object_link_column_spec(
-                v.__mapper__.class_, col_spec.label or self.model_view.__column_labels__.get(col_spec.col_name, col_spec.col_name))
+                v.__mapper__.class_, self.model_view.__column_labels__.get(col_spec.col_name, col_spec.col_name) if (col_spec.label is None) else col_spec.label)
             if ref_col_spec:
                 obj = v # why we do this, see ModelView.create_object_link_column_spec
                 if col_spec and col_spec.genre == column_spec.PLAIN_TEXT:
@@ -69,6 +69,6 @@ class ValueConverter(object):
                 return self.widget(self, **kwargs)
 
         description = get_description(self.model_view, col_spec.col_name, self.obj, col_spec)
-        label = col_spec.label or self.model_view.__column_labels__.get(col_spec.col_name, col_spec.col_name)
+        label = self.model_view.__column_labels__.get(col_spec.col_name, col_spec.col_name) if (col_spec.label is None) else col_spec.label
         return FakeField(dict(text=label), name=col_spec.col_name if col_spec else "", widget=w, css_class=css_class, description=description)
 
