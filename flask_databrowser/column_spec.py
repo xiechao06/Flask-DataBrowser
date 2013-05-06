@@ -82,6 +82,6 @@ class ListColumnSpec(ColumnSpec):
 
 class PlaceHolderColumnSpec(ColumnSpec):
 
-    def __init__(self, col_name, label, template_fname):
-        super(PlaceHolderColumnSpec, self).__init__(col_name, genre=PLACE_HOLDER, label=label)
+    def __init__(self, col_name, label, template_fname, doc=""):
+        super(PlaceHolderColumnSpec, self).__init__(col_name, genre=PLACE_HOLDER, label=label, doc=doc)
         self.template_fname = template_fname
