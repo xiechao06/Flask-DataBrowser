@@ -120,3 +120,8 @@ legend {
 legend i[data-role="fieldset-notation"] {
     vertical-align: middle;
 }
+
+table td .accordion-inner {
+    padding: 0;
+    text-align: center;
+}
