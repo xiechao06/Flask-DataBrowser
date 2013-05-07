@@ -25,6 +25,9 @@ def main():
     login_manager.setup_app(app)
     principal = Principal(app)
 
+    @app.route("/favicon.ico")
+    def favicon():
+        return ""
 
     @login_manager.user_loader
     def load_user(userid):
@@ -126,8 +129,8 @@ def main():
                              filters.Contains("name", name=u"包含")
                              ]
 
-        def __list_filters__(self):
-            return [filters.NotEqualTo("name", value=u"Type")]
+        #def __list_filters__(self):
+            #return [filters.NotEqualTo("name", value=u"Type")]
 
 
         from flask.ext.databrowser.action import BaseAction

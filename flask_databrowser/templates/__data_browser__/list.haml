@@ -4,6 +4,7 @@
 
   %script
     $(function(){
+      var navigation = responsiveNav("#actions");
       $(".collapse[data-builtin=true]").collapse();
       $("select").select2();
       $(".collapse[data-builtin=true]").on("show", function () {
@@ -110,79 +111,111 @@
     .row-fluid
       -block lists
         %form#main-form method="POST" class={% if __filters__ %}"span10"{% endif %}
-          -if __can_create__
-            %a.btn.btn-success href="{{ "?url=".join([__object_url__, request.url|urlencode]) }}" style="margin-bottom: 5px"
-              %span.add-on.icon-plus
-              {{ _("create") + ' ' + model_view.model_name }}
+          %div
+            -if model_view.request_from_mobile
+              -if __can_create__
+                %a.btn.btn-success href="{{ "?url=".join([__object_url__, request.url|urlencode]) }}"
+                  %span.add-on.icon-plus
+            -else
+              -if __can_create__
+                %a.btn.btn-success href="{{ "?url=".join([__object_url__, request.url|urlencode]) }}" style="margin-bottom: 5px"
+                  %span.add-on.icon-plus
+                  {{ _("create") + ' ' + model_view.model_name }}
+            -if help_message
+              .pull-right
+                %a href="#" data-toggle="modal" data-target="#help-modal" data-role="help-link"
+                  %strong.text-success << {{ _("help") }}
+                  %i.icon-question-sign
+
+          #help-modal.modal.hide.fade
+            .modal-header
+              %h3 << {{ _("Help") }}
+            .modal-body
+              {{ help_message|safe }}
+            .modal-footer
+              %button.btn data-dismiss="modal" aria-hidden="true" << {{ _("close") }}
+
 
           -block __data_browser__hint_block
 
           -if __data__
-            %table#list-table class="{{ __css_classes__.list_table_class }}"
-              %thead
-                %tr
-                  -if __actions__ 
-                    -if not model_view.as_radio_group
-                      %th.span1 -> %input type="checkbox" name="rowtoggle"
-                    -else
-                      %th
-                  -for c in __list_columns__
-                    %th title={% if c.doc %} {{c.doc}} {% endif %} 
-                      -if c.sort_url
-                        %a href="{{ c.sort_url }}"
+            -if model_view.request_from_mobile
+              %ul.nav.nav-tabs.nav-stacked
+                 -for row in __data__
+                   %tr {% if row.css %}class="{{row.css}}"{% endif %} {%if row.attrs %} {%for k,v in row.attrs.items() %}{{ k }}="{{ v }}"{% endfor %}{% endif %}
+                     -if __actions__ or model_view.can_batchly_edit
+                       -if model_view.as_radio_group
+                         %td.span1 -> %input type="radio" value="{{ row.pk }}" name="selected-ids"
+                   %li 
+                     %a href="#" 
+                       -if __actions__ or model_view.can_batchly_edit
+                         -if model_view.as_radio_group
+                           %input.span1 type="radio" value="{{ row.pk }}" name="selected-ids"
+                         -else
+                           %input.span1 type="checkbox" value="{{ row.pk }}" name="selected-ids"
+                       =row.repr_|safe
+                       %i.icon-chevron-right.pull-right
+            -else 
+              %table#list-table class="{{ __css_classes__.list_table_class }}"
+                %thead
+                  %tr
+                    -if __actions__ 
+                      -if not model_view.as_radio_group
+                        %th.span1 -> %input type="checkbox" name="rowtoggle"
+                      -else
+                        %th
+                    -for c in __list_columns__
+                      %th title={% if c.doc %} {{c.doc}} {% endif %} 
+                        -if c.sort_url
+                          %a href="{{ c.sort_url }}"
+                            {{ c.label }}
+                            -if __order_by__(c.name) 
+                              -if __desc__
+                                %i.icon-chevron-down
+                              -else
+                                %i.icon-chevron-up
+                        -else
                           {{ c.label }}
-                          -if __order_by__(c.name) 
-                            -if __desc__
-                              %i.icon-chevron-down
-                            -else
-                              %i.icon-chevron-up
-                      -else
-                        {{ c.label }}
-                      -if c.doc
-                        <i class="icon-info-sign"></i>
-              %tbody
-                -for row in __data__
-                  %tr {% if row.css %}class="{{row.css}}"{% endif %} {%if row.attrs %} {%for k,v in row.attrs.items() %}{{ k }}="{{ v }}"{% endfor %}{% endif %}
-                    -if __actions__ or model_view.can_batchly_edit
-                      -if model_view.as_radio_group
-                        %td.span1 -> %input type="radio" value="{{ row.pk }}" name="selected-ids"
-                      -else
-                        %td.span1 -> %input type="checkbox" value="{{ row.pk }}" name="selected-ids"
-                    -for v in row.fields:
-                      -if v.link
-                        %td -> %a href="{{ v.link }}" << {{ v.value }}
-                      -else
-                        %td << {{ v() }}
+                        -if c.doc
+                          <i class="icon-info-sign"></i>
+                %tbody
+                  -for row in __data__
+                    %tr {% if row.css %}class="{{row.css}}"{% endif %} {%if row.attrs %} {%for k,v in row.attrs.items() %}{{ k }}="{{ v }}"{% endfor %}{% endif %}
+                      -if __actions__ or model_view.can_batchly_edit
+                        -if model_view.as_radio_group
+                          %td.span1 -> %input type="radio" value="{{ row.pk }}" name="selected-ids"
+                        -else
+                          %td.span1 -> %input type="checkbox" value="{{ row.pk }}" name="selected-ids"
+                      -for v in row.fields:
+                        -if v.link
+                          %td -> %a href="{{ v.link }}" << {{ v.value }}
+                        -else
+                          %td << {{ v() }}
             -from "__data_browser__/macro.html" import render_pagination
             {{ render_pagination(__pagination__, __count__) }}
             -block actions
-              .alert.alert-block
-                %span#actions
-                  -if model_view.batchly_editable
-                    %a href="#" class="btn btn-info" << {{ _('batch edit') }}
-                  -for action in __actions__:
-                    %input value="{{action.name}}" type="submit" name="action" class="{{action.css_class}}" data-warn="{{action.warn_msg}}"
-                %span#action-fillings
-                  -block action_fillings
+              -if model_view.request_from_mobile
+                .navbar.navbar-fixed-bottom.pal
+                  %ul.nav.btn-group#actions
+                    -if model_view.batchly_editable
+                      %li -> %a href="#" class="btn btn-info" << {{ _('batch edit') }}
+                    -for action in __actions__:
+                      %li -> %input value="{{action.name}}" type="submit" name="action" class="{{action.css_class}}" data-warn="{{action.warn_msg}}"
+              -else
+                .alert.alert-block
+                  %span#actions
+
+                    -if model_view.batchly_editable
+                      %a href="#" class="btn btn-info" << {{ _('batch edit') }}
+                    -for action in __actions__:
+                      %input value="{{action.name}}" type="submit" name="action" class="{{action.css_class}}" data-warn="{{action.warn_msg}}"
+                  %span#action-fillings
+                    -block action_fillings
           -else
             %p.text-error << {{ _("no results matched!") }}
 
 
       .span2
-        -if help_message
-          .pull-right
-            %a href="#" data-toggle="modal" data-target="#help-modal" data-role="help-link"
-              %strong.text-success << {{ _("help") }}
-              %i.icon-question-sign
-
-        #help-modal.modal.hide.fade
-          .modal-header
-            %h3 << {{ _("Help") }}
-          .modal-body
-            {{ help_message|safe }}
-          .modal-footer
-            %button.btn data-dismiss="modal" aria-hidden="true" << {{ _("close") }}
-
         -block filters
           -if __filters__
             %div class="{{ __css_classes__.filters_class }}"

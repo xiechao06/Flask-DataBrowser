@@ -109,7 +109,9 @@ legend {
     border-radius: 8px;
 }
 .navbar-fixed-bottom {
-    opacity: 0.8
+    opacity: 0.8;
+    padding-top: 0;
+    padding-bottom: 0;
 }
 
 .navbar-fixed-bottom div {
@@ -123,5 +125,17 @@ legend i[data-role="fieldset-notation"] {
 
 table td .accordion-inner {
     padding: 0;
+    text-align: center;
+}
+
+#main-form ul li input {
+    margin-top: 0;
+}
+
+body {
+    padding-bottom: 30px;
+}
+
+#main-form .navbar-fixed-bottom {
     text-align: center;
 }

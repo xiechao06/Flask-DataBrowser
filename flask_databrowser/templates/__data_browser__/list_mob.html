@@ -93,7 +93,7 @@
   {% block header %}
     <div data-role="header" data-position="fixed">
       <h1>{{ model_view.model_name + _("list") }}</h1>
-      {% if model_view.creation_allowable %}
+      {% if __can_create__ %}
       <a href="{{ model_view.url_for_object(None, url=request.url) }}" data-role="button" data-icon="plus" class="ui-btn-right" data-theme="b">{{ _("create") }}</a>
       {% endif %}
     </div>
@@ -104,11 +104,7 @@
     <ul id="rows" data-role="listview" data-position="" data-inset="true" data-filter="true">
       {% for row in __data__ %}
         <li class="row" id="row-{{ row.pk }}" data-pk="{{ row.pk }}" data-forbidden-actions="{{ ",".join(row.forbidden_actions) }}">
-        {% if model_view.edit_allowable %}
           <a href="{{ model_view.url_for_object(row.obj, url=request.url, cdx=loop.index) }}">{{ row.repr_|safe }}</a>
-        {% else %}
-          <a href="{{ model_view.url_for_object_preview(row.obj, url=request.url, cdx=loop.index) }}">{{ row.repr_|safe }}</a>
-        {% endif %}
         </li>
         {% endfor %}
         {% if __pagination__.has_next %}
