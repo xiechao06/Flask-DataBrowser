@@ -172,7 +172,7 @@ class ErrorHandler(object):
 
     def __call__(self, error):
         from werkzeug.exceptions import NotFound
-        template_fname = self.data_browser.error_template_mob if request_from_mobile() else self.data_browser.error_template
+        template_fname = self.data_browser.error_template
 
         if isinstance(error, PermissionDenied):
             permissions = []
