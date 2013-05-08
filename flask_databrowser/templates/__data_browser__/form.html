@@ -99,11 +99,17 @@
         }
       });
       {% if model_view.request_from_mobile %}
-        $("input[type=checkbox]").before('<i class="icon-check-empty icon-2x"></i>').hide();
+        $("input[type=checkbox]").each(function(){
+          if(this.checked){
+            $(this).before('<i class="icon-check icon-2x"></i>').hide();
+          }else{
+            $(this).before('<i class="icon-check-empty icon-2x"></i>').hide();
+          }
+        });
         $("i.icon-check, i.icon-check-empty").click(function () {
+          $("input#submit-btn").attr("disabled", false).attr("title", "");
           var e = $(this).next("input");
-          var checked = e[0].checked;
-          e.attr("checked", !checked);
+          e.attr("checked", !e[0].checked);
           if (e[0].checked) {
             $(this).removeClass("icon-check-empty").addClass("icon-check");
           } else {
