@@ -144,3 +144,7 @@ body {
 #main-form .navbar-fixed-bottom {
     text-align: center;
 }
+
+.icon-check-empty, .icon-check {
+    cursor: pointer;
+}
