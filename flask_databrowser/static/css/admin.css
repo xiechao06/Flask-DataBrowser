@@ -128,13 +128,18 @@ table td .accordion-inner {
     text-align: center;
 }
 
-#main-form ul li input {
-    margin-top: 0;
+#main-form .checkbox {
+    margin-bottom: 0;
 }
 
 body {
     padding-bottom: 30px;
 }
+
+/*#main-form .nav-stacked li {*/
+  /*border: 1px solid #DDDDDD;*/
+  /*padding: 15px 5px;*/
+/*}*/
 
 #main-form .navbar-fixed-bottom {
     text-align: center;

@@ -39,8 +39,8 @@ class ModelView(object):
     language = "en"
     column_hide_backrefs = True
     __create_form__ = __edit_form__ = __batch_edit_form__ = None
-    list_template = "__data_browser__/list.haml"
-    create_template = edit_template = "__data_browser__/form.haml"
+    list_template = "__data_browser__/list.html"
+    create_template = edit_template = "__data_browser__/form.html"
     as_radio_group = False
     form_class = form.BaseForm
 
@@ -351,7 +351,7 @@ class ModelView(object):
                     return redirect(self.url_for_object(None, url=return_url))
                 else:
                     if on_fly:
-                        return render_template("__data_browser__/on_fly_result.haml",
+                        return render_template("__data_browser__/on_fly_result.html",
                                                model_cls=self.model_name,
                                                obj=unicode(model),
                                                obj_pk=self.scaffold_pk(model),
@@ -388,6 +388,7 @@ class ModelView(object):
                            return_url=return_url, extra="" if on_fly else "create",
                            help_message=self.get_create_help(),
                            hint_message=self.create_hint_message(),
+                           model_view=self,
                            **kwargs)
 
     def do_update_log(self, obj, action):
@@ -606,6 +607,7 @@ class ModelView(object):
                            actions=actions,
                            return_url=return_url, hint_message=hint_message,
                            help_message=help_message,
+                           model_view=self,
                            **kwargs)
 
     def get_create_help(self):
@@ -1059,13 +1061,13 @@ class ModelView(object):
     def get_edit_template(self):
         """
         get the real edit template, if you specify option "ModelView.edit_template", 
-        it will be used, else "/__data_browser/form.haml" will be used
+        it will be used, else "/__data_browser/form.html" will be used
         """
         if self.edit_template is None:
             import posixpath
 
             self.edit_template = posixpath.join(
-                self.data_browser.blueprint.name, "form.haml")
+                self.data_browser.blueprint.name, "form.html")
         return self.edit_template
 
     def get_list_columns(self):
@@ -1111,12 +1113,8 @@ class DataBrowser(object):
         self.app = app
         self.db = db
         self.logger = logger or app.logger
-        from hamlish_jinja import HamlishExtension
         from . import utils
 
-        app.jinja_env.add_extension(HamlishExtension)
-        app.jinja_env.hamlish_mode = 'debug'
-        app.jinja_env.hamlish_enable_div_shortcut = True
         app.jinja_env.globals['url_for_other_page'] = utils.url_for_other_page
         import urllib
         from jinja2 import Markup

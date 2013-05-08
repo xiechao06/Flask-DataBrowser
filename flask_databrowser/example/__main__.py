@@ -53,6 +53,7 @@ def main():
         list_template = "accounts/list.html"
         edit_template = create_template = "accounts/form.html"
         can_batchly_edit = True
+        #as_radio_group = True
 
         def patch_row_css(self, idx, row):
             if row.roll_called == 1:
@@ -170,7 +171,7 @@ def main():
             def op_upon_list(self, model, model_view):
                 return redirect("http://www.u148.com")
 
-        __customized_actions__ = [MyDeleteAction(u"删除", admin_permission), RollCall(u"点名", warn_msg=u"点名后就是弱智！"), _ReadOnlyAction(u"打酱油的")]
+        __customized_actions__ = [MyDeleteAction(u"删除", admin_permission), RollCall(u"点名", warn_msg=u"点名后就是弱智！"), RollCall(u"点名", warn_msg=u"点名后就是弱智！"),RollCall(u"点名", warn_msg=u"点名后就是弱智！"),RollCall(u"点名", warn_msg=u"点名后就是弱智！"),RollCall(u"点名", warn_msg=u"点名后就是弱智！"),RollCall(u"点名", warn_msg=u"点名后就是弱智！"),RollCall(u"点名", warn_msg=u"点名后就是弱智！"),_ReadOnlyAction(u"打酱油的")]
 
     user_model_view = UserModelView(User, u"用户")
     browser.register_model_view(user_model_view, accounts_bp, extra_params={"form_view": {"company": "xc"}})

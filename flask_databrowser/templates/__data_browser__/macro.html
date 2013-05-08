@@ -1,13 +1,25 @@
-{% macro render_pagination(pagination, __count__) %}
+{% macro render_pagination(pagination, __count__, mobile) %}
   <div class="pagination">
     <ul>
       {% if not pagination.has_prev %}
-        <li class="disabled">
-          <a>{{ _("prev") }}</a>
+        <li class="disabled previous">
+          <a href="#">
+            {% if mobile %}
+              <img src="{{ url_for("__data_browser__.static", filename="images/pager/previous.png") }}" alt="" />
+            {% else %}
+              {{ _("prev") }}
+            {% endif %}
+          </a>
         </li>
       {% else %}
-        <li>
-          <a href="{{ url_for_other_page(page=pagination.page - 1 if pagination.page > 1 else 1) }}">{{ _("prev") }}</a>
+        <li class="previous">
+          <a href="{{ url_for_other_page(page=pagination.page - 1 if pagination.page > 1 else 1) }}">
+            {% if mobile %}
+              <img src="{{ url_for("__data_browser__.static", filename="images/pager/previous.png") }}" alt="" />
+            {% else %}
+              {{ _("prev") }}
+            {% endif %}
+          </a>
         </li>
       {% endif %}
       {% for page in pagination.iter_pages() %}
@@ -19,9 +31,32 @@
           <li class="disabled"><a>...</a></li>
         {% endif %}
       {% endfor %}
+      {% if not pagination.has_next %}
+        <li class="disabled next">
+          <a href="#">
+            {% if mobile %}
+              <img src="{{ url_for("__data_browser__.static", filename="images/pager/next.png") }}" alt="" />
+            {% else %}
+              {{ _("next") }}
+            {% endif %}
+          </a>
+        </li>
+      {% else %}
+        <li class="next">
+          <a href="{{ url_for_other_page(page=pagination.page + 1) }}">
+            {% if mobile %}
+              <img src="{{ url_for("__data_browser__.static", filename="images/pager/next.png") }}" alt="" />
+            {% else %}
+              {{ _("next") }}
+            {% endif %}
+          </a>
+        </li>
+      {% endif %}
       {% if __count__ %}
         <li class="disabled">
-          <a>{{ _("totally matched records: %(count)d", count=__count__) }}</a>
+          {% if not mobile %}
+            <a>{{ _("totally matched records: %(count)d", count=__count__) }}</a>
+          {% endif %}
         </li>
       {% endif %}
     </ul>

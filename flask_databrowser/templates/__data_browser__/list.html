@@ -1,0 +1,298 @@
+{% extends "__data_browser__/layout.html" %}
+
+{% block __data_browser__builtin_head_block %}
+   <style type="text/css">
+      {% if model_view.request_from_mobile %}
+         body {
+            margin-top: 40px;
+         }
+         #list-table-body li a {
+            font-size: 1.5em;
+            text-decoration: none;
+            padding: 0px;
+         }
+         #main-form .pagination li.previous a {
+            padding-left: 30px;
+            padding-right: 30px;
+         }
+         #main-form .pagination li.next a {
+            padding-left: 30px;
+            padding-right: 30px;
+         }
+         #main-form .pagination li:not(.previous):not(.next) a {
+            margin-left: 20px;
+            margin-right: 20px;
+         }{% endif %}</style>
+
+   <script>
+      $(function(){
+         {% if model_view.request_from_mobile %}
+            $$("input[name=action]:disabled").tap(function (e) {
+               $($$(this)[0]).tooltip('toggle');
+            });
+            $("input[type=checkbox]").hide();
+            $("#list-table-body li a i").click(function (e) {
+               var e = $(this).next()
+               var checked = e[0].checked
+               e.attr("checked", !checked)
+               if (e.attr("checked") == "checked") {
+                  $(this).attr("class", "icon-check icon-large")
+               } else {
+                  $(this).attr("class", "icon-check-empty icon-large")
+               }
+                  return false;
+            });{% endif %}
+         $(".collapse[data-builtin=true]").collapse();
+         $("select").select2();
+         $(".collapse[data-builtin=true]").on("show", function () {
+            $(this).prev().attr("class", "icon-chevron-up")
+         }).on("hide", function () {
+            $(this).prev().attr("class", "icon-chevron-down")
+         });
+         $('input[data-role="date"]').datepicker();
+         $('input[data-role="datetime"]').datepicker({displayTime: true});
+         $('span#actions a').click(function () {
+            window.location = "{{__object_url__}}" + "/" + $.map($("#list-table-body input:checked"), function (e) { return $(e).val() }).join() + "?url=" + window.location;
+         })
+         {% for filter in __filters__: %}
+            var filter_values = {{ filter.value|tojson }};
+            {% if filter.multiple: %}
+               $("[name='{{ filter.op.id }}']").val(filter_values).trigger("change");
+            {% else: %}
+               $("[name='{{ filter.op.id }}']").each(function(idx, val) {
+                  var val = filter_values
+                  if ($.isArray(filter_values)){
+                     val = filter_values[idx]
+                  }
+                  {% if filter.input_type[0] == 'checkbox' %}
+                     {% if filter.value: %}
+                        $(this).attr("checked", "true"){% endif %}
+                  {% else %}
+                     $(this).val(val).trigger("change");{% endif %}
+               }){% endif %}{% endfor %}
+         $("input[name=rowtoggle]").click(function () {
+            $("#list-table-body input[type=checkbox]").attr("checked", this.checked);
+         });
+         $("#main-form #actions input[name=action]").click(function(){
+            var list_val = "";
+            $("#list-table-body input:checked").each(function(){
+               list_val += $(this).val() +",";
+            });
+            if (list_val == ""){
+               alert("{{ _("please choose one item!") }}");
+               return false;
+            }
+            if ($(this).val() == "{{ _('batch edit') }}"){
+               $("#main-form").attr("method", "GET");
+               $("#main-form").attr("action", "{{ __object_url__ }}/"+ list_val);
+                  return true;
+            }
+            var hint = sprintf("{{ _("Are you sure to %%s selected item(s)?") }}", $(this).val());
+            var warn = $(this).attr("data-warn");
+            if (warn.length > 0) {
+               hint += "\n\n\n  - "+ '{{ _("Attention!") }}' + ' ' + warn;
+            }
+            return confirm(hint);
+         });
+         $("#reset-button").click(function(){
+            $("select").select2("val","");
+         });
+         {% if __rows_action_desc__ %}
+            var rows_action_desc = {{ __rows_action_desc__|tojson|safe }}; // row -> (name: row.name, actions: action_name-> forbidden_code)
+            var actions = {{ __action_2_forbidden_message_formats__ | tojson | safe }}; // action_name -> ()
+            $("#list-table-body input").click(function () {
+               var action_2_rows = {}; // action -> (forbidden_code -> [rows])
+               $("#list-table-body input:checked").each(function () {
+                  var model_repr = rows_action_desc[$(this).val()].name;
+                  var action_2_forbidden_code = rows_action_desc[$(this).val()].actions;
+                  for (var action_name in action_2_forbidden_code) {
+                     var forbidden_code = action_2_forbidden_code[action_name];
+                     if (forbidden_code == 0) {
+                        continue;
+                     }
+                     if (!(action_name in action_2_rows)) {
+                        action_2_rows[action_name] = new Array();
+                     }
+                     if (!(forbidden_code in action_2_rows[action_name])) {
+                        action_2_rows[action_name][forbidden_code] = new Array();
+                     }
+                     action_2_rows[action_name][forbidden_code].push(model_repr);
+                  }
+               });
+               $("input[name=action]").each(function () {
+                  var tooltip = "";
+                  if ($(this).val() in action_2_rows) {
+                     $(this).attr("disabled", true);
+                     var forbidden_code_2_rows = action_2_rows[$(this).val()];
+                     for (var forbidden_code in forbidden_code_2_rows) {
+                        var rows = forbidden_code_2_rows[forbidden_code];
+                        var format = actions[$(this).val()][forbidden_code];
+                        if (format == undefined) {
+                           format = actions[$(this).val()][-1];
+                        }
+                        tooltip += sprintf(format, rows.toString()) + '\n';
+                     }
+                     tooltip = tooltip.substr(0, tooltip.length-1);
+                  } else {
+                     $(this).attr("disabled", false);
+                  }
+                  $(this).attr("title", tooltip);
+               });
+            });{% endif %}
+      });</script>{% endblock %}
+
+
+{% block body %}
+   <div class="container-fluid">
+      <div class="row-fluid">
+         {% block lists %}
+            <form id="main-form" method="POST" class={% if __filters__ %}"span10"{% endif %}>
+               {% if model_view.request_from_mobile %}
+                  <div class="navbar navbar-fixed-top alert alert-info" style="margin-left: 0px; position: fixed; padding-top:0px">
+                     {% if __can_create__ %}
+                        <a class="btn btn-success btn-large" href="{{ "?url=".join([__object_url__, request.url|urlencode]) }}">
+                           <span class="add-on icon-plus"></span></a>{% endif %}                     {% if help_message %}
+                        <div class="pull-right">
+                           <a href="#" data-toggle="modal" data-target="#help-modal" data-role="help-link">
+                              <strong class="text-success">{{ _("help") }}</strong>
+                              <i class="icon-question-sign"></i></a></div>{% endif %}                     <a class="btn btn-info btn-large" href="#filter" role="button" data-toggle="modal">
+                        <i class="icon-filter"></i></a>                     <div class="muted" style="float: right; margin-top: 8px; margin-right: 80px">
+                        <strong>{{ _("totally: %(count)d", count=__count__) }}</strong></div></div>
+               {% else %}
+                  <div>
+                     {% if __can_create__ %}
+                        <a class="btn btn-success" href="{{ "?url=".join([__object_url__, request.url|urlencode]) }}" style="margin-bottom: 5px">
+                           <span class="add-on icon-plus"></span>                           {{ _("create") + ' ' + model_view.model_name }}</a>{% endif %}</div>
+                  {% if help_message %}
+                     <div class="pull-right">
+                        <a href="#" data-toggle="modal" data-target="#help-modal" data-role="help-link">
+                           <strong class="text-success">{{ _("help") }}</strong>
+                           <i class="icon-question-sign"></i></a></div>{% endif %}{% endif %}
+               <div id="help-modal" class="modal hide fade">
+                  <div class="modal-header">
+                     <h3>{{ _("Help") }}</h3></div>
+                  <div class="modal-body">
+                     {{ help_message|safe }}</div>
+                  <div class="modal-footer">
+                     <button class="btn" data-dismiss="modal" aria-hidden="true">{{ _("close") }}</button></div></div>
+
+               {% block __data_browser__hint_block %}{% endblock %}
+               {% if __data__ %}
+                  {% if model_view.request_from_mobile %}
+                     <ul id="list-table-body" class="nav nav-tabs nav-stacked">
+                        {% for row in __data__ %}
+                           <li>
+                              {% if __actions__ or model_view.can_batchly_edit %}
+                                 {% if model_view.as_radio_group %}
+                                    <a href="#">
+                                       <label class="radio">
+                                          <span class="icon"></span>                                          <span class="icon-to-fade"></span>                                          <input type="radio" value="{{ row.pk }}" name="selected-ids" id="checkbox-{{ row.pk }}" /></label>
+                                       {{ row.repr_|safe }}
+                                       <i class="icon-chevron-right pull-right"></i></a>                                 {% else %}
+                                    <a href="{{ model_view.url_for_object(row.obj, url=request.url, cdx=loop.index) }}">
+                                       <i class="icon-check-empty icon-large" style="padding: 20px 20px"></i>                                       <input type="checkbox" value="{{ row.pk }}" name="selected-ids" id="checkbox-{{ row.pk }}" style="padding: 20px 20px" />
+                                       {{ row.repr_|safe }}</a>{% endif %}{% endif %}</li>{% endfor %}</ul>
+                  {% else %}
+                     <table id="list-table" class="{{ __css_classes__.list_table_class }}">
+                        <thead>
+                           <tr>
+                              {% if __actions__ %}
+                                 {% if not model_view.as_radio_group %}
+                                    <th class="span1"><input type="checkbox" name="rowtoggle" /></th>
+                                 {% else %}
+                                    <th></th>{% endif %}{% endif %}                              {% for c in __list_columns__ %}
+                                 <th title={% if c.doc %} {{c.doc}} {% endif %}>
+                                    {% if c.sort_url %}
+                                       <a href="{{ c.sort_url }}">
+                                          {{ c.label }}
+                                          {% if __order_by__(c.name) %}
+                                             {% if __desc__ %}
+                                                <i class="icon-chevron-down"></i>                                             {% else %}
+                                                <i class="icon-chevron-up"></i>{% endif %}{% endif %}</a>                                    {% else %}
+                                       {{ c.label }}{% endif %}
+                                    {% if c.doc %}
+                                       <i class="icon-info-sign"></i>{% endif %}</th>{% endfor %}</tr></thead>
+                        <tbody id="list-table-body">
+                           {% for row in __data__ %}
+                              <tr {% if row.css %}class="{{row.css}}"{% endif %} {%if row.attrs %} {%for k,v in row.attrs.items() %}{{ k }}="{{ v }}"{% endfor %}{% endif %}>
+                                 {% if __actions__ or model_view.can_batchly_edit %}
+                                    {% if model_view.as_radio_group %}
+                                       <td class="span1"><input type="radio" value="{{ row.pk }}" name="selected-ids" /></td>
+                                    {% else %}
+                                       <td class="span1"><input type="checkbox" value="{{ row.pk }}" name="selected-ids" /></td>
+{% endif %}{% endif %}                                 {% for v in row.fields: %}
+                                    {% if v.link %}
+                                       <td><a href="{{ v.link }}">{{ v.value }}</a></td>
+                                    {% else %}
+                                       <td>{{ v() }}</td>{% endif %}{% endfor %}</tr>{% endfor %}</tbody></table>{% endif %}
+                  {% from "__data_browser__/macro.html" import render_pagination %}
+                  {{ render_pagination(__pagination__, __count__, model_view.request_from_mobile) }}
+                  {% block actions %}
+                     {% if model_view.request_from_mobile %}
+                        <div class="navbar navbar-fixed-bottom" style="position: fixed; margin-left: 0px">
+                           <div class="navbar-inner">
+                              <ul class="nav btn-group" id="actions">
+                                 {% if model_view.batchly_editable %}
+                                    <li><a href="#" class="btn btn-info btn-large">{{ _('batch edit') }}</a></li>{% endif %}
+                                 {% for action in __actions__: %}
+                                    <li><input value="{{action.name}}" type="submit" name="action" class="{{action.css_class}} btn-large" data-warn="{{action.warn_msg}}" /></li>
+{% endfor %}</ul></div></div>                     {% else %}
+                        <div class="alert alert-block">
+                           <span id="actions">
+
+                              {% if model_view.batchly_editable %}
+                                 <a href="#" class="btn btn-info">{{ _('batch edit') }}</a>{% endif %}
+                              {% for action in __actions__: %}
+                                 <input value="{{action.name}}" type="submit" name="action" class="{{action.css_class}}" data-warn="{{action.warn_msg}}" />{% endfor %}</span>
+                           <span id="action-fillings">
+                              {% block action_fillings %}{% endblock %}</span></div>{% endif %}{% endblock %}               {% else %}
+                  <p class="text-error">{{ _("no results matched!") }}</p>{% endif %}</form>{% endblock %}
+
+
+         <div class="span2">
+            {% block filters %}
+               {% if __filters__ %}
+                  <div id="filter" class="{{ __css_classes__.filters_class }} {% if model_view.request_from_mobile %}modal hide fade{% endif %}">
+                     {% if model_view.request_from_mobile %}
+                        <button class="btn pull-right" type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>{% endif %}
+                     <h4>{{ _("refine search") }}</h4>
+                     <hr />
+                     <form class="form-inline">
+                        {% for k, v in request.args.lists(): %}
+                           {% if k=="order_by" or k=="desc": %}
+                              {% for i in v: %}
+                                 <input type=hidden name="{{k}}" value="{{i}}" />{% endfor %}{% endif %}{% endfor %}
+                        <fieldset class="pagination-centered">
+                           {% for filter in __filters__ %}
+                              {% if not filter.hidden %}
+                                 <div class="control-group">
+                                    {% if filter.input_type[0] == "checkbox": %}
+                                       <label class="checkbox">
+                                          <input type="checkbox" name="{{filter.op.id}}" class="{{ __css_classes__[filter.input_class] }}" />
+                                          {{ filter.label }}</label>
+
+                                    {% else %}
+                                       <label class="control-label">
+                                          {{ filter.label }}
+                                          <i>&nbsp;{{ filter.op.name }}&nbsp;&nbsp;</i></label>
+                                       <div class="controls">
+                                          {% if filter.options %}
+                                             <select name="{{ filter.op.id }}" class="input-medium" {% if filter.multiple %} multiple="multiple" {% endif %}>
+                                                {% for opt in filter.options: %}
+                                                   <option value="{{opt[0]}}">{{ opt[1] }}</option>{% endfor %}</select>
+                                          {% else %}
+                                             {% for input_type in filter.input_type %}
+                                                {% if input_type == 'date' %}
+                                                   <input type="text" data-role="date" name="{{ filter.op.id }}" class="{{ __css_classes__[filter.input_class] }}" min=0 placeholder="{{ _("input %(label)s here", label=filter.label) }}" />
+                                                {% elif input_type == "datetime" %}
+                                                   <input type="text" data-role="datetime" name="{{ filter.op.id }}" class="{{ __css_classes__[filter.input_class] }}" min=0 placeholder="{{ _("input %(label)s here", label=filter.label) }}" />
+                                                {% else %}
+                                                   <input type="{{ input_type }}" name="{{ filter.op.id }}" class="{{ __css_classes__[filter.input_class] }}" placeholder="{{ _("input %(label)s here", label=filter.label) }}" />{% endif %}
+                                                {% if not loop.last %}
+                                                   <div>{{ filter.sep }}</div>{% endif %}{% endfor %}{% endif %}</div>{% endif %}</div>{% endif %}{% endfor %}</fieldset>
+                        <hr />
+                        <div class="control-group pagination-centered">
+                           <div class="controls">
+                              <input class="btn btn-primary" type="submit" value={{ _("refresh") }} />
+                              <input class="btn btn-danger" type="reset" value={{ _("reset") }} id="reset-button" /></div></div></form></div>{% endif %}{% endblock %}</div></div></div>{% endblock %}
+
