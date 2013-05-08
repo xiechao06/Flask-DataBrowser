@@ -98,6 +98,26 @@
           $(this).parent("div").children().not($(this)).attr("disabled", false);
         }
       });
+      {% if model_view.request_from_mobile %}
+        $("input[type=checkbox]").each(function(){
+          if(this.checked){
+            $(this).before('<i class="icon-check icon-2x"></i>').hide();
+          }else{
+            $(this).before('<i class="icon-check-empty icon-2x"></i>').hide();
+          }
+        });
+        $("i.icon-check, i.icon-check-empty").click(function () {
+          $("input#submit-btn").attr("disabled", false).attr("title", "");
+          var e = $(this).next("input");
+          e.attr("checked", !e[0].checked);
+          if (e[0].checked) {
+            $(this).removeClass("icon-check-empty").addClass("icon-check");
+          } else {
+            $(this).removeClass("icon-check").addClass("icon-check-empty");
+          }
+          return false;
+        });
+      {% endif %}
     });
   </script>
 {% endblock %}

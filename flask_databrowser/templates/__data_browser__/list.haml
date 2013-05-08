@@ -1,10 +1,48 @@
 -extends "__data_browser__/layout.haml"
 
 -block __data_browser__builtin_head_block
+  %style type="text/css"
+    -if model_view.request_from_mobile
+      body {
+        height: 100%;
+        margin-top: 40px;
+      }
+      \#list-table-body li a {
+        font-size: 1.5em;
+        text-decoration: none;
+        padding: 0px;
+      }
+      \#main-form .pagination li.previous a {
+        padding-left: 30px;
+        padding-right: 30px;
+      }
+      \#main-form .pagination li.next a {
+        padding-left: 30px;
+        padding-right: 30px;
+      }
+      \#main-form .pagination li:not(.previous):not(.next) a {
+        margin-left: 20px;
+        margin-right: 20px;
+      }
 
   %script
     $(function(){
-      var navigation = responsiveNav("#actions");
+      -if model_view.request_from_mobile
+        $$("input[name=action]:disabled").tap(function (e) {
+          $($$(this)[0]).tooltip('toggle');
+        });
+        $("input[type=checkbox]").hide();
+        $("#list-table-body li a i").click(function (e) {
+          var e = $(this).next()
+          var checked = e[0].checked
+          e.attr("checked", !checked) 
+          if (e.attr("checked") == "checked") {
+            $(this).attr("class", "icon-check icon-large")
+          } else {
+            $(this).attr("class", "icon-check-empty icon-large")
+          }
+            return false;
+        });
       $(".collapse[data-builtin=true]").collapse();
       $("select").select2();
       $(".collapse[data-builtin=true]").on("show", function () {
@@ -15,7 +53,7 @@
       $('input[data-role="date"]').datepicker(); 
       $('input[data-role="datetime"]').datepicker({displayTime: true});
       $('span#actions a').click(function () {
-        window.location = "{{__object_url__}}" + "/" + $.map($("#list-table tbody input:checked"), function (e) { return $(e).val() }).join() + "?url=" + window.location;
+        window.location = "{{__object_url__}}" + "/" + $.map($("#list-table-body input:checked"), function (e) { return $(e).val() }).join() + "?url=" + window.location;
       })
       -for filter in __filters__:
         var filter_values = {{ filter.value|tojson }};
@@ -34,11 +72,11 @@
               $(this).val(val).trigger("change");
           })
       $("input[name=rowtoggle]").click(function () {
-        $("#list-table tbody input[type=checkbox]").attr("checked", this.checked);
+        $("#list-table-body input[type=checkbox]").attr("checked", this.checked);
       });
       $("#main-form #actions input[name=action]").click(function(){
         var list_val = "";
-        $("#list-table tbody input:checked").each(function(){
+        $("#list-table-body input:checked").each(function(){
           list_val += $(this).val() +",";
         });
         if (list_val == ""){
@@ -63,9 +101,9 @@
       -if __rows_action_desc__
         var rows_action_desc = {{ __rows_action_desc__|tojson|safe }}; // row -> (name: row.name, actions: action_name-> forbidden_code)
         var actions = {{ __action_2_forbidden_message_formats__ | tojson | safe }}; // action_name -> ()
-        $("#list-table tbody input").click(function () {
+        $("#list-table-body input").click(function () {
           var action_2_rows = {}; // action -> (forbidden_code -> [rows])
-          $("#list-table tbody input:checked").each(function () {
+          $("#list-table-body input:checked").each(function () {
             var model_repr = rows_action_desc[$(this).val()].name;
             var action_2_forbidden_code = rows_action_desc[$(this).val()].actions;
             for (var action_name in action_2_forbidden_code) {
@@ -106,17 +144,26 @@
 
 
 -block body
-  
   .container-fluid
     .row-fluid
       -block lists
         %form#main-form method="POST" class={% if __filters__ %}"span10"{% endif %}
-          %div
-            -if model_view.request_from_mobile
+          -if model_view.request_from_mobile
+            .navbar.navbar-fixed-top.alert.alert-info style="margin-left: 0px; position: fixed; padding-top:0px"
               -if __can_create__
-                %a.btn.btn-success href="{{ "?url=".join([__object_url__, request.url|urlencode]) }}"
+                %a.btn.btn-success.btn-large href="{{ "?url=".join([__object_url__, request.url|urlencode]) }}"
                   %span.add-on.icon-plus
-            -else
+              -if help_message
+                .pull-right
+                  %a href="#" data-toggle="modal" data-target="#help-modal" data-role="help-link"
+                    %strong.text-success << {{ _("help") }}
+                    %i.icon-question-sign
+              %a.btn.btn-info.btn-large href="#filter" role="button" data-toggle="modal"
+                %i.icon-filter
+              %div.muted style="float: right; margin-top: 8px; margin-right: 80px"
+                %strong << {{ _("totally: %(count)d", count=__count__) }}
+          -else
+            %div
               -if __can_create__
                 %a.btn.btn-success href="{{ "?url=".join([__object_url__, request.url|urlencode]) }}" style="margin-bottom: 5px"
                   %span.add-on.icon-plus
@@ -135,26 +182,27 @@
             .modal-footer
               %button.btn data-dismiss="modal" aria-hidden="true" << {{ _("close") }}
 
-
           -block __data_browser__hint_block
 
           -if __data__
             -if model_view.request_from_mobile
-              %ul.nav.nav-tabs.nav-stacked
-                 -for row in __data__
-                   %tr {% if row.css %}class="{{row.css}}"{% endif %} {%if row.attrs %} {%for k,v in row.attrs.items() %}{{ k }}="{{ v }}"{% endfor %}{% endif %}
-                     -if __actions__ or model_view.can_batchly_edit
-                       -if model_view.as_radio_group
-                         %td.span1 -> %input type="radio" value="{{ row.pk }}" name="selected-ids"
-                   %li 
-                     %a href="#" 
-                       -if __actions__ or model_view.can_batchly_edit
-                         -if model_view.as_radio_group
-                           %input.span1 type="radio" value="{{ row.pk }}" name="selected-ids"
-                         -else
-                           %input.span1 type="checkbox" value="{{ row.pk }}" name="selected-ids"
-                       =row.repr_|safe
-                       %i.icon-chevron-right.pull-right
+              %ul#list-table-body.nav.nav-tabs.nav-stacked
+                -for row in __data__
+                  %li 
+                    -if __actions__ or model_view.can_batchly_edit
+                      -if model_view.as_radio_group
+                        %a href="#"
+                          %label.radio
+                            %span.icon
+                            %span.icon-to-fade
+                            %input type="radio" value="{{ row.pk }}" name="selected-ids" id="checkbox-{{ row.pk }}"
+                          =row.repr_|safe
+                          %i.icon-chevron-right.pull-right
+                      -else
+                        %a href="{{ model_view.url_for_object(row.obj, url=request.url, cdx=loop.index) }}"
+                          %i.icon-check-empty.icon-large style="padding: 20px 20px"
+                          %input type="checkbox" value="{{ row.pk }}" name="selected-ids" id="checkbox-{{ row.pk }}" style="padding: 20px 20px"
+                          =row.repr_|safe
             -else 
               %table#list-table class="{{ __css_classes__.list_table_class }}"
                 %thead
@@ -178,7 +226,7 @@
                           {{ c.label }}
                         -if c.doc
                           <i class="icon-info-sign"></i>
-                %tbody
+                %tbody#list-table-body
                   -for row in __data__
                     %tr {% if row.css %}class="{{row.css}}"{% endif %} {%if row.attrs %} {%for k,v in row.attrs.items() %}{{ k }}="{{ v }}"{% endfor %}{% endif %}
                       -if __actions__ or model_view.can_batchly_edit
@@ -192,15 +240,16 @@
                         -else
                           %td << {{ v() }}
             -from "__data_browser__/macro.html" import render_pagination
-            {{ render_pagination(__pagination__, __count__) }}
+            {{ render_pagination(__pagination__, __count__, model_view.request_from_mobile) }}
             -block actions
               -if model_view.request_from_mobile
-                .navbar.navbar-fixed-bottom.pal
-                  %ul.nav.btn-group#actions
-                    -if model_view.batchly_editable
-                      %li -> %a href="#" class="btn btn-info" << {{ _('batch edit') }}
-                    -for action in __actions__:
-                      %li -> %input value="{{action.name}}" type="submit" name="action" class="{{action.css_class}}" data-warn="{{action.warn_msg}}"
+                .navbar.navbar-fixed-bottom style="position: fixed; margin-left: 0px"
+                  .navbar-inner
+                    %ul.nav.btn-group#actions
+                      -if model_view.batchly_editable
+                        %li -> %a href="#" class="btn btn-info btn-large" << {{ _('batch edit') }}
+                      -for action in __actions__:
+                        %li -> %input value="{{action.name}}" type="submit" name="action" class="{{action.css_class}} btn-large" data-warn="{{action.warn_msg}}"
               -else
                 .alert.alert-block
                   %span#actions
@@ -218,7 +267,9 @@
       .span2
         -block filters
           -if __filters__
-            %div class="{{ __css_classes__.filters_class }}"
+            %div#filter class="{{ __css_classes__.filters_class }} {% if model_view.request_from_mobile %}modal hide fade{% endif %}"
+              -if model_view.request_from_mobile
+                %button.btn.pull-right type="button" class="close" data-dismiss="modal" aria-hidden="true" << ×
               %h4 << {{ _("refine search") }}
               %hr
               %form.form-inline

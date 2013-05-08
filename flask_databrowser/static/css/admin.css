@@ -191,6 +191,9 @@ body {
     #footer-action-bar .nav-collapse li input {
         width: 50%;
     }
+    .icon-check-empty, .icon-check {
+        cursor: pointer;
+    }
 }
 
 #create-btn {

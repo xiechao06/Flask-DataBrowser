@@ -171,23 +171,49 @@
 {% macro render_form_buttons(cancel_url, extra=None) %}
     <div class="navbar-fixed-bottom alert alert-info">
       <div>
-        <div data-role="trivial-control-group">
+        {% if model_view.request_from_mobile %}
+          <div class="navbar navbar-fixed-bottom" style="position: fixed; margin-left: 0px">
+            <div class="navbar-inner">
+              <ul class="nav btn-group" id="actions">
+                <li>
+                  <input id="submit-btn" name="action" type="submit" class="btn btn-primary btn-large" value="{{ _('commit') }}" disabled="disabled" title="{{ _("no changes made, can't submit!") }}"/>
+                </li>
+                <li>
+                  <input id="reset-btn" type="reset" class="btn btn-primary btn-large" value="{{ _('reset') }}"/>
+                </li>
+                {% if cancel_url %}
+                  <li>
+                    <input class="btn btn-large" type="button" onclick="location='{{ cancel_url }}'" value="{{ _('back') }}"/>
+                  </li>
+                {% endif %}
+                {% for action in actions %}
+                  <li>
+                    <input value="{{ action.name }}" type="submit" name="action" class="{{ action.css_class }} btn-large" data-warn="{{ action.warn_msg }}"/>
+                  </li>
+                {% endfor %}
+              </ul>
+            </div>
+          </div>
+        {% else %}
+
+          <div data-role="trivial-control-group">
             <input id="submit-btn" name="action" type="submit" class="btn btn-primary" value="{{ _('commit') }}" disabled="disabled" title="{{ _("no changes made, can't submit!") }}"/>
-            <input id="reset-btn" type="reset" class="btn btn-primary" value="{{ _('reset') }}" />
+            <input id="reset-btn" type="reset" class="btn btn-primary" value="{{ _('reset') }}"/>
             {% if cancel_url %}
-                <a href="{{ cancel_url }}" class="btn">{{ _('back') }}</a>
+              <a href="{{ cancel_url }}" class="btn">{{ _('back') }}</a>
             {% endif %}
-        </div>
-        {% if extra=="create" or actions %}
-        <div data-role="customized-control-group">
-            {% if extra == "create" %}
+          </div>
+          {% if extra=="create" or actions %}
+            <div data-role="customized-control-group">
+              {% if extra == "create" %}
                 {{ create() }}
-            {% else %}
-              {% for action in actions %}
-              <input name="action" value="{{action.name}}" type="submit" name="action" class="{{action.css_class}}"/>
-              {% endfor %}
-            {% endif %}
-        </div>
+              {% else %}
+                {% for action in actions %}
+                  <input name="action" value="{{ action.name }}" type="submit" name="action" class="{{ action.css_class }}"/>
+                {% endfor %}
+              {% endif %}
+            </div>
+          {% endif %}
         {% endif %}
       </div>
     </div>
