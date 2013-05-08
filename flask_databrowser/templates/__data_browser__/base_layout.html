@@ -15,6 +15,8 @@
     <link href="{{ url_for('__data_browser__.static', filename='css/datepicker.css') }}" rel="stylesheet"/>
     <link href="{{ url_for('__data_browser__.static', filename='css/responsive-nav.css') }}" rel="stylesheet"/>
     <link href="{{ url_for('__data_browser__.static', filename='css/font-awesome.min.css') }}" rel="stylesheet"/>
+    <link href="{{ url_for('__data_browser__.static', filename='css/jquery.pnotify.default.css') }}" rel="stylesheet" />
+    <link href="{{ url_for('__data_browser__.static', filename='css/jquery.pnotify.default.icons.css') }}" rel="stylesheet" />
     {% if model_view.request_from_mobile %}
       <link href="{{ url_for('__data_browser__.static', filename='css/flat-ui.css') }}" rel="stylesheet"/>
     {% endif %}
@@ -25,6 +27,7 @@
     <script src="{{ url_for('__data_browser__.static', filename='js/form.js') }}"></script>
     <script src="{{ url_for('__data_browser__.static', filename='js/sprintf-0.6.js') }}"></script>
     <script src="{{ url_for('__data_browser__.static', filename='js/responsive-nav.min.js') }}"></script>
+    <script src="{{ url_for('__data_browser__.static', filename='js/jquery.pnotify.min.js') }}"></script>
     {% if model_view.request_from_mobile %}
       <script src="{{ url_for('__data_browser__.static', filename='js/custom_checkbox_and_radio.js') }}"></script>
       <script src="{{ url_for('__data_browser__.static', filename='js/custom_radio.js') }}"></script>

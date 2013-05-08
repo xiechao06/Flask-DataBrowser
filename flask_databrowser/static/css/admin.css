@@ -1,4 +1,8 @@
 /* Form customizations */
+html, body {
+    height: 100%;
+}
+
 form.icon {
     display: inline;
 }
@@ -144,3 +148,52 @@ body {
 #main-form .navbar-fixed-bottom {
     text-align: center;
 }
+
+@media only screen and (max-width: 640px) {
+    body {
+        margin-top: 40px;
+    }
+    #list-table-body {
+        min-width: 60%;
+    }
+    #list-table-body li a {
+        font-size: 1.5em;
+        text-decoration: none;
+        padding: 0px;
+    }
+    #list-table-body li i {
+        padding: 20px 20px;
+    }
+    #main-form .pagination li.previous a {
+        padding-left: 30px;
+        padding-right: 30px;
+    }
+    #main-form .pagination li.next a {
+        padding-left: 30px;
+        padding-right: 30px;
+    }
+    #main-form .pagination li:not(.previous):not(.next) a {
+        margin-left: 20px;
+        margin-right: 20px;
+    }
+    #header-action-bar {
+        margin-left: 0px; 
+        position: fixed; 
+        padding-top:0px;
+    }
+    #footer-action-bar {
+        position: fixed; 
+        margin-left: 0px;
+    }
+    #footer-action-bar .nav-collapse {
+        text-align: right;
+    }
+    #footer-action-bar .nav-collapse li input {
+        width: 50%;
+    }
+}
+
+#create-btn {
+    margin-bottom: 5px;
+}
+

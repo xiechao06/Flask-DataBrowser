@@ -1,53 +1,60 @@
 {% extends "__data_browser__/layout.html" %}
 
 {% block __data_browser__builtin_head_block %}
-<style type="text/css">
-  {% if model_view.request_from_mobile %}
-  body {
-    margin-top: 40px;
-  }
-  #list-table-body li a {
-    font-size: 1.5em;
-    text-decoration: none;
-    padding: 0px;
-  }
-  #list-table-body li i {
-    padding: 20px 20px;
-  }
-  #main-form .pagination li.previous a {
-    padding-left: 30px;
-    padding-right: 30px;
-  }
-  #main-form .pagination li.next a {
-    padding-left: 30px;
-    padding-right: 30px;
-  }
-  #main-form .pagination li:not(.previous):not(.next) a {
-    margin-left: 20px;
-    margin-right: 20px;
-  }
-  #header-action-bar {
-    margin-left: 0px; 
-    position: fixed; 
-    padding-top:0px;
-  }
-  #footer-action-bar {
-    position: fixed; 
-    margin-left: 0px;
-  }
-  {% else %}
-  #create-btn {
-    margin-bottom: 5px;
-  }
-  {% endif %}
-</style>
-
 <script>
   $(function(){
     {% if model_view.request_from_mobile %}
     // tap to show tooltip 
     $$("input[name=action]:disabled").tap(function (e) {
       $($$(this)[0]).tooltip('toggle');
+    });
+    $$(".pagination .disabled a").tap(function (e) {
+      $($$(this)[0]).tooltip('toggle');
+    });
+    $$("body").swipeRight(function (e) {
+      var e = $(".pagination .previous a");
+      var target_url = e.attr('href');
+      if (target_url == "#") {
+        var msg = "{{ _('no previous page!') }}";
+        $.pnotify({
+          text: msg,
+          icon: false,
+          stack: false,
+          delay: 2,
+          history: false,
+          before_open: function(pnotify) {
+            // Position this notice in the center of the screen.
+            pnotify.css({
+                "top": ($(window).height() / 2) - (pnotify.height() / 2),
+                "left": ($(window).width() / 2) - (pnotify.width() / 2)
+            });
+          }
+        });
+      } else {
+        window.location = $(".pagination .previous a").attr("href"); 
+      }
+    });
+    $$("body").swipeLeft(function (e) {
+      var e = $(".pagination .next a");
+      var target_url = e.attr('href');
+      if (target_url == "#") {
+        $.pnotify({
+          text: "{{ _('no more page!') }}",
+          icon: false,
+          stack: false,
+          delay: 2,
+          history: false,
+          before_open: function(pnotify) {
+            // Position this notice in the center of the screen.
+            pnotify.css({
+                "top": ($(window).height() / 2) - (pnotify.height() / 2),
+                "left": ($(window).width() / 2) - (pnotify.width() / 2)
+            });
+          }
+        });
+      } else {
+        window.location = $(".pagination .next a").attr("href"); 
+      }
     });
     {% if model_view.as_radio_group %}
     $("input[type=radio]").hide();
@@ -84,8 +91,9 @@
     });
     $('input[data-role="date"]').datepicker();
     $('input[data-role="datetime"]').datepicker({displayTime: true});
-    $('span#actions a').click(function () {
+    $('#batch-edit').click(function () {
       window.location = "{{__object_url__}}" + "/" + $.map($("#list-table-body input:checked"), function (e) { return $(e).val() }).join() + "?url=" + window.location;
+      return false;
     })
     {% for filter in __filters__ %}
     var filter_values = {% if filter.value is none %}null;{% else %}"{{ filter.value|tojson }}";{%endif%}
@@ -353,27 +361,47 @@
 
 {% macro render_footer_action_bar() %}
 {% if model_view.request_from_mobile %}
-<div id="footer-action-bar" class="navbar navbar-fixed-bottom palette palette-concrete">
-  <div class="navbar-inner palette palette-concrete">
-    <ul class="nav btn-group" id="actions">
-      {% if model_view.batchly_editable %}
+<div id="footer-action-bar" class="navbar navbar-inverse navbar-fixed-bottom">
+  <div class="navbar-inner">
+    {% set displayed_action = 3 %}
+    {% if model_view.can_batchly_edit and not model_view.as_radio_group %}
+      {% set displayed_action = displayed_action - 1 %}
+    {% endif %}
+    <ul class="nav-collapse collapse" >
+      {% for action in __actions__[displayed_action:] %}
       <li>
-      <a href="#" class="btn btn-info btn-large">{{ _('batch edit') }}</a>
+        <input value="{{action.name}}" type="submit" name="action" class="{{action.css_class}} btn-large" data-warn="{{action.warn_msg}}" />
       </li>
-      {% endif %}
-      {% for action in __actions__[] %}
-      <li><input value="{{action.name}}" type="submit" name="action" class="{{action.css_class}} btn-large" data-warn="{{action.warn_msg}}" /></li>
       {% endfor %}
     </ul>
+    <ul class="nav btn-group" id="actions">
+      {% if model_view.can_batchly_edit and not model_view.as_radio_group %}
+        <li>
+          <input id="batch-edit" type="submit" class="btn btn-info btn-large" value="{{ _('batch edit') }}" />
+        </li>
+      {% endif %}
+      {% for action in __actions__[:displayed_action] %}
+      <li>
+        <input value="{{action.name}}" type="submit" name="action" class="{{action.css_class}} btn-large" data-warn="{{action.warn_msg}}"/>
+      </li>
+      {% endfor %}
+    </ul>
+    <button data-target=".nav-collapse" data-toggle="collapse" class="btn btn-navbar" type="button">
+      <span class="icon-bar"></span>
+      <span class="icon-bar"></span>
+      <span class="icon-bar"></span>
+    </button>
   </div>
 </div>         
 {% else %}
 <div class="alert alert-block">
   <span id="actions">
-    {% if model_view.batchly_editable %}
-    <a href="#" class="btn btn-info">{{ _('batch edit') }}</a>{% endif %}
-    {% for action in __actions__: %}
-    <input value="{{action.name}}" type="submit" name="action" class="{{action.css_class}}" data-warn="{{action.warn_msg}}" />{% endfor %}</span>
+    {% if model_view.batchly_editable and not model_view.as_radio_group %}
+      <input id="batch-edit" class="btn btn-info btn-large" value="{{ _('batch edit') }}" />
+    {% endif %}
+    {% for action in __actions__ %}
+    <input value="{{action.name}}" type="submit" name="action" class="{{action.css_class}}" data-warn="{{action.warn_msg}}" />{% endfor %}
+  </span>
   <span id="action-fillings">
     {% block action_fillings %}{% endblock %}
   </span>

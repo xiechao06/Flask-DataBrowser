@@ -40,7 +40,7 @@ def main():
     from models import User, Car
     accounts_bp = Blueprint("accounts", __name__, static_folder="static", 
                             template_folder="templates")
-    browser = databrowser.DataBrowser(app, db, page_size=12)
+    browser = databrowser.DataBrowser(app, db, page_size=4)
 
     from flask.ext.databrowser.utils import ErrorHandler
     error_handler = ErrorHandler(browser)

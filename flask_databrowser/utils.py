@@ -194,5 +194,5 @@ class ErrorHandler(object):
             self.data_browser.app.logger.error(traceback.plaintext)
             err_msg = _(u'Internal error "%(err)s", please contact us!', err=str(error))
 
-        return render_template(template_fname, hint_message=err_msg, error=error, back_url=request.args.get("url", "/")) 
+        return render_template(template_fname, hint_message=err_msg, error=error, back_url=request.args.get("url", "/"), model_view={"request_from_mobile": self.data_browser.request_from_mobile}) 
 
