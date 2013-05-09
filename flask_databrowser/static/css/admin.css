@@ -170,11 +170,22 @@ body {
         position: fixed; 
         margin-left: 0px;
     }
-    #footer-action-bar .nav-collapse {
-        text-align: right;
+    #footer-action-bar .navbar {
+        margin-bottom: 0;
     }
-    #footer-action-bar .nav-collapse li input {
-        width: 50%;
+    #footer-action-bar .collapse {
+        text-align: right;
+        margin-bottom: 0;
+    }
+    #footer-action-bar .dropdown-menu {
+        margin: 0;
+        padding: 0;
+    }
+    #footer-action-bar .dropdown-menu li, #footer-action-bar .dropdown-menu li input {
+        width: 100%;
+    }
+    #footer-action-bar .dropdown-menu li input {
+        border: 1px solid #ecf0f1;
     }
 }
 
