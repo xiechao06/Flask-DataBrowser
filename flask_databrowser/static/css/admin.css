@@ -183,6 +183,9 @@ body {
     #footer-action-bar .nav-collapse li input {
         width: 50%;
     }
+    #footer-action-bar {
+        margin-right: 0;
+    }
 }
 
 #create-btn {
