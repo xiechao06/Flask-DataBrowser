@@ -196,3 +196,7 @@ class ErrorHandler(object):
 
         return render_template(template_fname, hint_message=err_msg, error=error, back_url=request.args.get("url", "/"), model_view={"request_from_mobile": self.data_browser.request_from_mobile}) 
 
+
+def test_request_type():
+    from flask import g
+    g.request_from_mobile = request_from_mobile()

@@ -10,7 +10,7 @@ import werkzeug
 from flask import render_template, flash, request, url_for, redirect, abort, Flask
 from flask.ext.principal import PermissionDenied
 from flask.ext.babel import ngettext, gettext as _
-from .utils import get_primary_key, named_actions, get_doc_from_table_def, request_from_mobile
+from .utils import get_primary_key, named_actions, get_doc_from_table_def, test_request_type
 from .action import DeleteAction, ReadOnlyAction
 from flask.ext.databrowser.convert import ValueConverter
 from flask.ext.databrowser.column_spec import LinkColumnSpec, ColumnSpec, \
@@ -99,10 +99,6 @@ class ModelView(object):
         return re.sub(r"([A-Z]+)", lambda m: "_" + m.groups()[0].lower(),
                       self.model.__name__).lstrip("_")
     
-    @property
-    def request_from_mobile(self):
-        return self.data_browser.request_from_mobile
-
     def before_request_hook(self):
         pass
 
@@ -1158,10 +1154,7 @@ class DataBrowser(object):
         self.page_size = page_size
 
         self.__registered_view_map = {}
-        app.before_request(self._set_request_type)
-
-    def _set_request_type(self):
-        self.request_from_mobile = request_from_mobile()
+        app.before_request(test_request_type)
 
     def register_model(self, model, blueprint=None):
         return self.register_model_view(ModelView(model), blueprint)

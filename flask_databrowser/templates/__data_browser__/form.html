@@ -98,7 +98,7 @@
           $(this).parent("div").children().not($(this)).attr("disabled", false);
         }
       });
-      {% if model_view.request_from_mobile %}
+      {% if g.request_from_mobile %}
         $("input[type=checkbox]").each(function(){
           if(this.checked){
             $(this).before('<i class="icon-check icon-2x"></i>').hide();

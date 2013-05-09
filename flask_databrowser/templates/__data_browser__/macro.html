@@ -171,7 +171,7 @@
 {% macro render_form_buttons(cancel_url, extra=None) %}
     <div class="navbar-fixed-bottom alert alert-info">
       <div>
-        {% if model_view.request_from_mobile %}
+        {% if g.request_from_mobile %}
           <div class="navbar navbar-fixed-bottom" style="position: fixed; margin-left: 0px">
             <div class="navbar-inner">
               <ul class="nav btn-group" id="actions">

@@ -3,7 +3,7 @@
 {% block __data_browser__builtin_head_block %}
 <script>
   $(function(){
-    {% if model_view.request_from_mobile %}
+    {% if g.request_from_mobile %}
     // tap to show tooltip 
     $$("input[name=action]:disabled").tap(function (e) {
       $($$(this)[0]).tooltip('toggle');
@@ -201,13 +201,13 @@
       {% block __data_browser__hint_block %}{% endblock %}
 
       {% if __data__ %}
-        {% if model_view.request_from_mobile %}
+        {% if g.request_from_mobile %}
           {{ render_list() }}
         {% else %} {# not from mobile #}
           {{ render_table() }}
         {% endif %}
         {% from "__data_browser__/macro.html" import render_pagination %}
-        {{ render_pagination(__pagination__, __count__, model_view.request_from_mobile) }}
+        {{ render_pagination(__pagination__, __count__, g.request_from_mobile) }}
         {% block actions %}
           {{ render_footer_action_bar() }}
         {% endblock actions %}               
@@ -227,7 +227,7 @@
 {% endblock body %}
 
 {% macro render_header_action_bar() %}
-  {% if model_view.request_from_mobile %}
+  {% if g.request_from_mobile %}
     <div id="header-action-bar" class="navbar alert alert-info" >
       {% if __can_create__ %}
       <a class="btn btn-success btn-large" href="{{ "?url=".join([__object_url__, request.url|urlencode]) }}">
@@ -360,7 +360,7 @@
 {% endmacro %}
 
 {% macro render_footer_action_bar() %}
-{% if model_view.request_from_mobile %}
+{% if g.request_from_mobile %}
 <div id="footer-action-bar" class="navbar-fixed-bottom">
   {% set displayed_action = 3 %}
   {% if model_view.can_batchly_edit and not model_view.as_radio_group %}
@@ -417,8 +417,8 @@
 
 {% macro render_filter() %}
 {% if __filters__ %}
-<div id="filter" class="{{ __css_classes__.filters_class }} {% if model_view.request_from_mobile %}modal hide fade{% endif %}">
-  {% if model_view.request_from_mobile %}
+<div id="filter" class="{{ __css_classes__.filters_class }} {% if g.request_from_mobile %}modal hide fade{% endif %}">
+  {% if g.request_from_mobile %}
   <button class="btn pull-right" type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
   {% endif %}
   <h4>{{ _("refine search") }}</h4>
