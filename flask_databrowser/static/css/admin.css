@@ -1,8 +1,4 @@
 /* Form customizations */
-html, body {
-    height: 100%;
-}
-
 form.icon {
     display: inline;
 }
@@ -191,12 +187,18 @@ body {
     #footer-action-bar .nav-collapse li input {
         width: 50%;
     }
-    .icon-check-empty, .icon-check {
-        cursor: pointer;
-    }
 }
 
 #create-btn {
     margin-bottom: 5px;
 }
 
+.icon-check-empty {
+    color: #DCE4EC;
+    cursor: pointer;
+}
+
+.icon-check {
+    color: #1abc9c;
+    cursor: pointer;
+}
