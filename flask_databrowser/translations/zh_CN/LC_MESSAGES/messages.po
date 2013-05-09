@@ -309,7 +309,7 @@ msgstr "刷新"
 
 #: templates/__data_browser__/list.html:18
 msgid "no previous page!"
-msgstr "已经是第一条页"
+msgstr "已经是第一页"
 
 #: templates/__data_browser__/macro.html:6
 msgid "no previous page!"
