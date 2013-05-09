@@ -88,9 +88,6 @@ ul.select2-choices {
     padding-top: 5px;
 }
 
-body{
-    padding-top: 30px
-}
 
 legend {
     margin-bottom: 0px;
@@ -170,10 +167,12 @@ body {
         margin-right: 20px;
     }
     #header-action-bar {
-        margin-left: 0px; 
-        position: fixed; 
-        padding-top:0px;
+        margin-left: 0;
     }
+    #header-action-bar .btn {
+        margin:0;
+    }
+
     #footer-action-bar {
         position: fixed; 
         margin-left: 0px;
