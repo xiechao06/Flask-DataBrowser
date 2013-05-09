@@ -146,9 +146,6 @@ body {
 }
 
 @media only screen and (max-width: 640px) {
-    body {
-        margin-top: 40px;
-    }
     #list-table-body {
         min-width: 60%;
     }
