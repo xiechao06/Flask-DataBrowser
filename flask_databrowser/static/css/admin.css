@@ -143,17 +143,6 @@ body {
 }
 
 @media only screen and (max-width: 640px) {
-    #list-table-body {
-        min-width: 60%;
-    }
-    #list-table-body li a {
-        font-size: 1.5em;
-        text-decoration: none;
-        padding: 0px;
-    }
-    #list-table-body li i {
-        padding: 20px 20px;
-    }
     #main-form .pagination li.previous a {
         padding-left: 30px;
         padding-right: 30px;
@@ -166,30 +155,44 @@ body {
         margin-left: 20px;
         margin-right: 20px;
     }
-    #footer-action-bar {
-        position: fixed; 
-        margin-left: 0px;
-    }
-    #footer-action-bar .navbar {
-        margin-bottom: 0;
-    }
-    #footer-action-bar .collapse {
-        text-align: right;
-        margin-bottom: 0;
-    }
-    #footer-action-bar .dropdown-menu {
-        margin: 0;
-        padding: 0;
-    }
-    #footer-action-bar .dropdown-menu li, #footer-action-bar .dropdown-menu li input {
-        width: 100%;
-    }
-    #footer-action-bar .dropdown-menu li input {
-        border: 1px solid #ecf0f1;
-    }
-    #footer-action-bar {
-        margin-right: 0;
-    }
+}
+
+#list-table-body {
+    min-width: 60%;
+}
+#list-table-body li a {
+    font-size: 1.5em;
+    text-decoration: none;
+    padding: 0px;
+}
+#list-table-body li i {
+    padding: 20px 20px;
+}
+
+#footer-action-bar {
+    position: fixed; 
+    margin-left: 0px;
+    margin-right: 0px;
+}
+#footer-action-bar .navbar {
+    margin-bottom: 0;
+}
+#footer-action-bar .collapse {
+    text-align: right;
+    margin-bottom: 0;
+}
+#footer-action-bar .dropdown-menu {
+    margin: 0;
+    padding: 0;
+}
+#footer-action-bar .dropdown-menu li, #footer-action-bar .dropdown-menu li input {
+    width: 100%;
+}
+#footer-action-bar .dropdown-menu li input {
+    border: 1px solid #ecf0f1;
+}
+#footer-action-bar {
+    margin-right: 0;
 }
 
 #create-btn {
