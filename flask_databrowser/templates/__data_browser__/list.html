@@ -361,38 +361,41 @@
 
 {% macro render_footer_action_bar() %}
 {% if model_view.request_from_mobile %}
-<div id="footer-action-bar" class="navbar navbar-inverse navbar-fixed-bottom">
-  <div class="navbar-inner">
-    {% set displayed_action = 3 %}
-    {% if model_view.can_batchly_edit and not model_view.as_radio_group %}
-      {% set displayed_action = displayed_action - 1 %}
-    {% endif %}
-    <ul class="nav-collapse collapse" >
-      {% for action in __actions__[displayed_action:] %}
-      <li>
-        <input value="{{action.name}}" type="submit" name="action" class="{{action.css_class}} btn-large" data-warn="{{action.warn_msg}}" />
-      </li>
-      {% endfor %}
-    </ul>
-    <ul class="nav btn-group" id="actions">
-      {% if model_view.can_batchly_edit and not model_view.as_radio_group %}
+<div id="footer-action-bar" class="navbar-fixed-bottom">
+  {% set displayed_action = 3 %}
+  {% if model_view.can_batchly_edit and not model_view.as_radio_group %}
+  {% set displayed_action = displayed_action - 1 %}
+  {% endif %}
+  <div class="navbar navbar-inverse">
+    <div class="navbar-inner">
+      <ul class="nav btn-group" id="actions">
+        {% if model_view.can_batchly_edit and not model_view.as_radio_group %}
         <li>
-          <input id="batch-edit" type="submit" class="btn btn-info btn-large" value="{{ _('batch edit') }}" />
+        <input id="batch-edit" type="submit" class="btn btn-info btn-large" value="{{ _('batch edit') }}" />
         </li>
-      {% endif %}
-      {% for action in __actions__[:displayed_action] %}
-      <li>
+        {% endif %}
+        {% for action in __actions__[:displayed_action] %}
+        <li>
         <input value="{{action.name}}" type="submit" name="action" class="{{action.css_class}} btn-large" data-warn="{{action.warn_msg}}"/>
-      </li>
-      {% endfor %}
-    </ul>
-    {% if __actions__[displayed_action:]%}
-    <button data-target=".nav-collapse" data-toggle="collapse" class="btn btn-navbar" type="button">
-      <span class="icon-bar"></span>
-      <span class="icon-bar"></span>
-      <span class="icon-bar"></span>
-    </button>
-    {% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+      {% if __actions__[displayed_action:]%}
+      <div class="btn-group dropup">
+        <button class="btn dropdown-toggle" data-toggle="dropdown">
+          <i class="icon-reorder icon-2x"></i>
+        </button>
+        <ul class="dropdown-menu pull-right">
+          {% for action in __actions__[displayed_action:] %}
+          <li>
+            <input value="{{action.name}}" type="submit" name="action" class="{{action.css_class}}" data-warn="{{action.warn_msg}}" />
+          </li>
+          {% endfor %}
+         <!-- dropdown menu links -->
+        </ul>
+      </div>
+      {% endif %}
+    </div>
   </div>
 </div>         
 {% else %}
