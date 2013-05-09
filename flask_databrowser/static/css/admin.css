@@ -187,6 +187,9 @@ body {
     #footer-action-bar .dropdown-menu li input {
         border: 1px solid #ecf0f1;
     }
+    #footer-action-bar {
+        margin-right: 0;
+    }
 }
 
 #create-btn {
