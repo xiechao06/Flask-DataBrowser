@@ -166,13 +166,6 @@ body {
         margin-left: 20px;
         margin-right: 20px;
     }
-    #header-action-bar {
-        margin-left: 0;
-    }
-    #header-action-bar .btn {
-        margin:0;
-    }
-
     #footer-action-bar {
         position: fixed; 
         margin-left: 0px;
