@@ -386,11 +386,13 @@
       </li>
       {% endfor %}
     </ul>
+    {% if __actions__[displayed_action:]%}
     <button data-target=".nav-collapse" data-toggle="collapse" class="btn btn-navbar" type="button">
       <span class="icon-bar"></span>
       <span class="icon-bar"></span>
       <span class="icon-bar"></span>
     </button>
+    {% endif %}
   </div>
 </div>         
 {% else %}
