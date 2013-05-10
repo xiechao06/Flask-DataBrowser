@@ -235,7 +235,8 @@
       </a>
       {% endif %}                     
       {% if help_message %}
-      <div class="pull-right">
+      {# TODO bootstrap has something wrong with modal on mobile device #}
+      <div class="pull-right visible-desktop">
         <a href="#" data-toggle="modal" data-target="#help-modal" data-role="help-link">
           <strong class="text-success">{{ _("help") }}</strong>
           <i class="icon-question-sign"></i>
