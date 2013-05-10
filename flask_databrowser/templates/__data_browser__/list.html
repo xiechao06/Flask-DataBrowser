@@ -96,7 +96,7 @@
       return false;
     })
     {% for filter in __filters__ %}
-    var filter_values = {% if filter.value is none %}null;{% else %}"{{ filter.value|tojson }}";{%endif%}
+    var filter_values = {% if filter.value is none %}null;{% else %}"{{ filter.value }}";{%endif%}
     {% if filter.multiple %}
     $("[name='{{ filter.op.id }}']").val(filter_values).trigger("change");
     {% else %}

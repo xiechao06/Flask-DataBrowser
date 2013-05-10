@@ -50,8 +50,7 @@
 {% block __data_browser__nav_bar_block %}
 {% endblock %}
 {% block page_body %}
-  <div>
-    <div>
+    <div class="page-body">
       {% with messages = get_flashed_messages(with_categories=True) %}
         {% if messages %}
           <div class="flash">
@@ -73,7 +72,6 @@
       {% block body %}
       {% endblock %}
     </div>
-  </div>
 {% endblock %}
 {% block __data_browser__footer_block %}
 {% endblock %}
