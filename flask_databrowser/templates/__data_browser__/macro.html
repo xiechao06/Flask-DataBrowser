@@ -182,11 +182,10 @@
 {% endmacro %}
 
 {% macro render_form_buttons(cancel_url, extra=None) %}
-    <div class="navbar-fixed-bottom alert alert-info">
+    <div class="navbar-fixed-bottom navbar-inverse navbar"  style="position: fixed; margin-left: 0px" id="footer-action-bar">
       <div>
         {% if g.request_from_mobile %}
-          <div class="navbar navbar-fixed-bottom" style="position: fixed; margin-left: 0px">
-            <div class="navbar-inner">
+            <div class="navbar-inner" >
               <ul class="nav btn-group" id="actions">
                 <li>
                   <input id="submit-btn" name="action" type="submit" class="btn btn-primary btn-large" value="{{ _('commit') }}" disabled="disabled" title="{{ _("no changes made, can't submit!") }}"/>
@@ -199,13 +198,20 @@
                     <input class="btn btn-large" type="button" onclick="location='{{ cancel_url }}'" value="{{ _('back') }}"/>
                   </li>
                 {% endif %}
-                {% for action in actions %}
-                  <li>
-                    <input value="{{ action.name }}" type="submit" name="action" class="{{ action.css_class }} btn-large" data-warn="{{ action.warn_msg }}"/>
-                  </li>
-                {% endfor %}
               </ul>
-            </div>
+              <div class="dropup btn-group">
+              <button class="btn dropdown-toggle" data-toggle="dropdown">
+                  <i class="icon-reorder icon-2x"></i>
+                </button>
+                <ul class="dropdown-menu pull-right">
+                  {% for action in actions %}
+                    <li>
+                      <input value="{{ action.name }}" type="submit" name="action" class="{{ action.css_class }}" data-warn="{{ action.warn_msg }}"/>
+                    </li>
+                  {% endfor %}
+                </ul>
+              </div>
+              <a href="#top" class="btn btn-navbar"><i class="icon-arrow-up"></i></a>
           </div>
         {% else %}
 
