@@ -307,7 +307,7 @@
 <table id="list-table" class="{{ __css_classes__.list_table_class }}">
   <thead>
     <tr>
-      {% if __actions__ %}
+      {% if __actions__ or model_view.can_batchly_edit %}
       {% if not model_view.as_radio_group and model_view.can_batchly_edit %}
       <th class="span1"><input type="checkbox" name="rowtoggle" /></th>
       {% else %}
@@ -351,7 +351,7 @@
       {% if v.link %}
       <td><a href="{{ v.link }}">{{ v.value }}</a></td>
       {% else %}
-      <td>{{ v() }}</td>
+      <td>{{ v()|safe }}</td>
       {% endif %}
       {% endfor %}
     </tr>
@@ -403,8 +403,8 @@
 {% else %}
 <div class="alert alert-block">
   <span id="actions">
-    {% if model_view.batchly_editable and not model_view.as_radio_group %}
-      <input id="batch-edit" class="btn btn-info btn-large" value="{{ _('batch edit') }}" />
+    {% if model_view.can_batchly_edit and not model_view.as_radio_group %}
+      <input id="batch-edit" type="submit" class="btn btn-info btn-large" value="{{ _('batch edit') }}" />
     {% endif %}
     {% for action in __actions__ %}
     <input value="{{action.name}}" type="submit" name="action" class="{{action.css_class}}" data-warn="{{action.warn_msg}}" />{% endfor %}
