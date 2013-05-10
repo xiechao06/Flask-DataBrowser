@@ -1,4 +1,8 @@
 /* Form customizations */
+html, body { 
+    height: 100%;
+}
+
 form.icon {
     display: inline;
 }
@@ -10,6 +14,7 @@ form.icon button {
     padding: 0;
     line-height: normal;
 }
+
 
 a.icon {
     text-decoration: none;
