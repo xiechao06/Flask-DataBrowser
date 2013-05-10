@@ -142,20 +142,6 @@ body {
     text-align: center;
 }
 
-@media only screen and (max-width: 640px) {
-    #main-form .pagination li.previous a {
-        padding-left: 30px;
-        padding-right: 30px;
-    }
-    #main-form .pagination li.next a {
-        padding-left: 30px;
-        padding-right: 30px;
-    }
-    #main-form .pagination li:not(.previous):not(.next) a {
-        margin-left: 20px;
-        margin-right: 20px;
-    }
-}
 
 #list-table-body {
     min-width: 60%;

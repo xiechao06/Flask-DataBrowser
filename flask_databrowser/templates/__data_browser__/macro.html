@@ -1,32 +1,56 @@
 {% macro render_pagination(pagination, __count__, mobile) %}
-  <div class="pagination" style="text-align: center">
+  <div class="hidden-desktop">
+    <ul class="pager">
+      {% if not pagination.has_prev %}
+      <li class="disabled previous">
+        <a href="#" title="{{ _("no previous page!") }}">
+          <i class="icon-double-angle-left icon-2x icon-large"></i>
+        </a>
+      </li>
+       {% else %}
+        <li class="previous">
+          <a href="{{ url_for_other_page(page=pagination.page - 1 if pagination.page > 1 else 1) }}">
+            <i class="icon-double-angle-left icon-2x icon-large"></i>
+          </a>
+        </li>
+      {% endif %}
+        <li class="active">
+          <a href="{{ url_for_other_page(page=pagination.page) }}">
+            <span class="icon-2x" style="font-size:31px">{{ pagination.page }}</span>
+          </a>
+        </li>
+    {% if not pagination.has_next %}
+        <li class="disabled next" title="{{ _("no more pages!") }}">
+          <a href="#">
+            <i class="icon-double-angle-right icon-2x icon-large"></i>
+          </a>
+        </li>
+      {% else %}
+        <li class="next">
+          <a href="{{ url_for_other_page(page=pagination.page + 1) }}">
+            <i class="icon-double-angle-right icon-2x icon-large"></i>
+          </a>
+        </li>
+      {% endif %}
+    </ul>
+  </div>
+
+
+  <div class="pagination visible-desktop" style="text-align: center">
     <ul>
       {% if not pagination.has_prev %}
         <li class="disabled previous">
           <a href="#" title="{{ _("no previous page!") }}">
-            {% if mobile %}
-              <img src="{{ url_for("__data_browser__.static", filename="images/pager/previous.png") }}" alt="" />
-            {% else %}
               {{ _("prev") }}
-            {% endif %}
           </a>
         </li>
       {% else %}
         <li class="previous">
           <a href="{{ url_for_other_page(page=pagination.page - 1 if pagination.page > 1 else 1) }}">
-            {% if mobile %}
-              <img src="{{ url_for("__data_browser__.static", filename="images/pager/previous.png") }}" alt="" />
-            {% else %}
               {{ _("prev") }}
-            {% endif %}
           </a>
         </li>
       {% endif %}
-      {% if mobile %}
-        <li class="active">
-          <a href="{{ url_for_other_page(page=pagination.page) }}">{{ pagination.page }}</a>
-        </li>
-      {% else %}
         {% for page in pagination.iter_pages() %}
           {% if page %}
             <li class="{% if page == pagination.page %}active{% endif %}">
@@ -36,33 +60,22 @@
             <li class="disabled"><a>...</a></li>
           {% endif %}
         {% endfor %}
-      {% endif %}
       {% if not pagination.has_next %}
         <li class="disabled next" title="{{ _("no more pages!") }}">
           <a href="#">
-            {% if mobile %}
-              <img src="{{ url_for("__data_browser__.static", filename="images/pager/next.png") }}" alt="" />
-            {% else %}
               {{ _("next") }}
-            {% endif %}
           </a>
         </li>
       {% else %}
         <li class="next">
           <a href="{{ url_for_other_page(page=pagination.page + 1) }}">
-            {% if mobile %}
-              <img src="{{ url_for("__data_browser__.static", filename="images/pager/next.png") }}" alt="" />
-            {% else %}
               {{ _("next") }}
-            {% endif %}
           </a>
         </li>
       {% endif %}
       {% if __count__ %}
         <li class="disabled">
-          {% if not mobile %}
             <a>{{ _("totally matched records: %(count)d", count=__count__) }}</a>
-          {% endif %}
         </li>
       {% endif %}
     </ul>
