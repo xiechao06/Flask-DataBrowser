@@ -589,7 +589,7 @@ class ModelView(object):
                 f.widget.set_args(**kwargs)
 
         form = compound_form or form
-        form_columns = self.get_form_columns() if len(id_list) == 1 else self.get_batch_form_columns()
+        form_columns = self.get_form_columns(preprocessed_obj) if len(id_list) == 1 else self.get_batch_form_columns(preprocessed_objs)
         fieldset_list = []
         if isinstance(form_columns, types.DictType):
             for fieldset, cols in form_columns.items():
@@ -635,7 +635,7 @@ class ModelView(object):
         """
         select the model columns from __form_columns__
         """
-        form_columns = self.get_form_columns()
+        form_columns = self.get_form_columns(obj)
         if not form_columns:
             # if no form columns given, use the model's attribute
             mapper = self.model._sa_class_manager.mapper
@@ -704,7 +704,7 @@ class ModelView(object):
         if not form:
             form = self.get_edit_form(obj=obj, read_only=read_only)
 
-        form_columns = self.get_form_columns()
+        form_columns = self.get_form_columns(obj)
         if not form_columns:
             return form
 
@@ -1082,10 +1082,10 @@ class ModelView(object):
     def get_create_columns(self):
         return self.__create_columns__
 
-    def get_form_columns(self):
+    def get_form_columns(self, processed_obj=None):
         return self.__form_columns__
 
-    def get_batch_form_columns(self):
+    def get_batch_form_columns(self, preprocessed_objs):
         return self.__batch_form_columns__
 
     def get_rows_action_desc(self, models):
