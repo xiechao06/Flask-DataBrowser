@@ -20,7 +20,9 @@ class ValueConverter(object):
         css_class = None
         if not col_spec:
             col_spec = column_spec.ColumnSpec("")
+        convert_to_link = False
         obj = self.obj
+        # convert relationshipt to link
         if self.model_view and hasattr(v, "__mapper__"):
             ref_col_spec = self.model_view.data_browser.create_object_link_column_spec(
                 v.__mapper__.class_, self.model_view.__column_labels__.get(col_spec.col_name, col_spec.col_name) if (col_spec.label is None) else col_spec.label)
@@ -34,6 +36,7 @@ class ValueConverter(object):
                             return _anchor
                         ref_col_spec.anchor = _Anchor(col_spec, self.obj)
                 col_spec = ref_col_spec
+                convert_to_link = True
 
         if col_spec.formatter:
             v = col_spec.formatter(v, obj)
@@ -42,7 +45,10 @@ class ValueConverter(object):
         if col_spec.genre == column_spec.IMAGE:
             w = extra_widgets.Image(v, alt=col_spec.alt)
         elif col_spec.genre == column_spec.LINK:
-            w = extra_widgets.Link((col_spec.anchor if isinstance(col_spec.anchor, basestring) else col_spec.anchor(old_v)) or v, href=v)
+            anchor = col_spec.anchor if isinstance(col_spec.anchor, basestring) else col_spec.anchor(old_v)
+            if anchor is None:
+                anchor = v 
+            w = extra_widgets.Link(anchor, href=v)
         elif col_spec.genre == column_spec.TABLE: 
             # TODO if v is a registered model, then a link should generated 
             w = extra_widgets.TableWidget(v, col_specs=col_spec.col_specs, model_view=self.model_view, sum_fields=col_spec.sum_fields, preprocess=col_spec.preprocess)

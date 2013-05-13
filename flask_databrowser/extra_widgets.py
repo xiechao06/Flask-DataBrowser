@@ -79,7 +79,7 @@ class TableWidget(object):
             for i in xrange(len(col_specs)):
                 if isinstance(col_specs[i], basestring):
                     if col_specs[i] == pk:
-                        col_specs[i] = self.model_view.data_browser.create_object_link_column_spec(self.rows[0].__class__, "") or ColumnSpec(col_specs[i])
+                        col_specs[i] = self.model_view.data_browser.create_object_link_column_spec(self.rows[0].__class__, pk) or ColumnSpec(col_specs[i], label=pk)
                     else:
                         col_specs[i] = ColumnSpec(col_specs[i])
             #col_specs = [ColumnSpec(col) if isinstance(col, basestring) else col for col in col_specs]
