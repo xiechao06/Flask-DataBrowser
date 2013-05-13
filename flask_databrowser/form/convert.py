@@ -331,7 +331,7 @@ class AdminModelConverter(ModelConverterBase):
             def __call__(self, **kwargs):
                 if column.type.length:
                     kwargs["maxlength"] = column.type.length
-                if column.default is not None:
+                if self._value() is None and column.default is not None:
                     kwargs['value'] = column.default.arg
                 return super(MyTextField, self).__call__(**kwargs)
         return MyTextField(**field_args)
