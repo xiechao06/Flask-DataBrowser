@@ -550,7 +550,8 @@ class ModelView(object):
             else:
                 actions = all_customized_actions
         grouper_info = {}
-        for col in self._model_columns(model, read_only):
+        model_columns = self._model_columns(model, read_only)
+        for col in model_columns:
             grouper_2_cols = {}
             if isinstance(col, InputColumnSpec) and col.group_by:
                 rows = [row for row in col.filter_(self.session.query(getattr(self.model,
@@ -561,6 +562,21 @@ class ModelView(object):
                         getattr(row, col.group_by.property.key).id, []).append(
                         dict(id=row.id, text=unicode(row)))
                 grouper_info[col.grouper_input_name] = grouper_2_cols
+        create_url_map = {}
+        for col in model_columns:
+            if isinstance(col, InputColumnSpec) and not col.read_only:
+                continue
+            col_name = col.col_name if isinstance(col, InputColumnSpec) else col
+            try:
+                attr = getattr(self.model, col_name)
+                if hasattr(attr.property, "direction"):
+                    remote_side = attr.property.mapper.class_
+                    create_url = self.data_browser.get_create_url(remote_side, col_name)
+                    if create_url:
+                        create_url_map[col_name] = create_url
+            except AttributeError:
+                pass
+
         kwargs = {}
         form_kwargs = self.extra_params.get("form_view", {})
         for k, v in form_kwargs.items():
@@ -571,18 +587,6 @@ class ModelView(object):
         for f in form:
             if isinstance(f.widget, PlaceHolder):
                 f.widget.set_args(**kwargs)
-        create_url_map = {}
-        for col in [f.name for f in form if f.name != "csrf_token"]:
-            try:
-                col_name = col if isinstance(col, basestring) else col.col_name
-                attr = getattr(self.model, col_name)
-                if hasattr(attr.property, "direction"):
-                    remote_side = attr.property.mapper.class_
-                    create_url = self.data_browser.get_create_url(remote_side, col_name)
-                    if create_url:
-                        create_url_map[col] = create_url
-            except AttributeError:
-                pass
 
         form = compound_form or form
         form_columns = self.get_form_columns() if len(id_list) == 1 else self.get_batch_form_columns()
@@ -726,6 +730,7 @@ class ModelView(object):
                 return self.model_form.hidden_tag()
         ret = []
         r = self.preprocess(obj)
+        
         if isinstance(form_columns, types.DictType):
             form_columns = list(itertools.chain(*form_columns.values()))
 
@@ -742,8 +747,13 @@ class ModelView(object):
                                              col_spec)
                     ret.append(widget)
             else:
-                ret.append(
-                    value_converter(operator.attrgetter(col.col_name)(r), col))
+                field = value_converter(operator.attrgetter(col.col_name)(r), col)
+                # we force the field's name is the column's name (when the column is a 
+                # the relationship, field name may be the pk, see convert.py), 
+                # else, the form can't be grouped by fieldset, since we can't
+                # figure out which field it is exactly. see function edit_view
+                field.name = col.col_name
+                ret.append(field)
         return FakeForm(form, ret)
 
     def get_batch_edit_form(self, fake_obj, objs, read_only):
