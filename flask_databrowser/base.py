@@ -10,7 +10,7 @@ import werkzeug
 from flask import render_template, flash, request, url_for, redirect, abort, Flask
 from flask.ext.principal import PermissionDenied
 from flask.ext.babel import ngettext, gettext as _
-from .utils import get_primary_key, named_actions, get_doc_from_table_def, request_from_mobile
+from .utils import get_primary_key, named_actions, get_doc_from_table_def, test_request_type
 from .action import DeleteAction, ReadOnlyAction
 from flask.ext.databrowser.convert import ValueConverter
 from flask.ext.databrowser.column_spec import LinkColumnSpec, ColumnSpec, \
@@ -39,10 +39,8 @@ class ModelView(object):
     language = "en"
     column_hide_backrefs = True
     __create_form__ = __edit_form__ = __batch_edit_form__ = None
-    list_template = "__data_browser__/list.haml"
-    create_template = edit_template = "__data_browser__/form.haml"
-    list_template_mob = "__data_browser__/list_mob.html"
-    create_template_mob = edit_template_mob = "__data_browser__/form_mob.html"
+    list_template = "__data_browser__/list.html"
+    create_template = edit_template = "__data_browser__/form.html"
     as_radio_group = False
     form_class = form.BaseForm
 
@@ -54,6 +52,53 @@ class ModelView(object):
         self.__model_name = model_name
         self.__list_column_specs = []
 
+    @property
+    def model_name(self):
+        return self.__model_name or self.model.__name__
+
+    @property
+    def session(self):
+        return self.data_browser.db.session
+
+    @property
+    def list_view_url(self):
+        return self.object_view_url + "-list"
+
+    @property
+    def list_view_endpoint(self):
+        return self.object_view_endpoint + "_list"
+
+    @property
+    def object_view_url(self):
+        return "/" + re.sub(r"([A-Z]+)", lambda m: "-" + m.groups()[0].lower(),
+                            self.model.__name__).lstrip("-")
+    @property
+    def list_column_specs(self):
+        if self.__list_column_specs:
+            return self.__list_column_specs
+
+        list_columns = self.get_list_columns()
+        if not list_columns:
+            list_columns = [col.name for k, col in
+                            enumerate(self.model.__table__.c)]
+        if list_columns:
+            for col in list_columns:
+                if isinstance(col, basestring):
+                    col_spec = self._col_spec_from_str(col)
+                else:
+                    assert isinstance(col, ColumnSpec)
+                    col_spec = col
+                    col_spec.label = self.__column_labels__.get(col.col_name, col.col_name) if (col.label is None) else col.label
+
+                self.__list_column_specs.append(col_spec)
+
+        return self.__list_column_specs
+
+    @property
+    def object_view_endpoint(self):
+        return re.sub(r"([A-Z]+)", lambda m: "_" + m.groups()[0].lower(),
+                      self.model.__name__).lstrip("_")
+    
     def before_request_hook(self):
         pass
 
@@ -88,7 +133,6 @@ class ModelView(object):
         kwargs['h'] = helpers
         return render_template(template, **kwargs)
 
-    # Various helpers
     def prettify_name(self, name):
         """
             Prettify pythonic variable name.
@@ -125,27 +169,6 @@ class ModelView(object):
                                   css_class="control-text")
         return col_spec
 
-    @property
-    def list_column_specs(self):
-        if self.__list_column_specs:
-            return self.__list_column_specs
-
-        list_columns = self.get_list_columns()
-        if not list_columns:
-            list_columns = [col.name for k, col in
-                            enumerate(self.model.__table__.c)]
-        if list_columns:
-            for col in list_columns:
-                if isinstance(col, basestring):
-                    col_spec = self._col_spec_from_str(col)
-                else:
-                    assert isinstance(col, ColumnSpec)
-                    col_spec = col
-                    col_spec.label = self.__column_labels__.get(col.col_name, col.col_name) if (col.label is None) else col.label
-
-                self.__list_column_specs.append(col_spec)
-
-        return self.__list_column_specs
 
     def generate_model_string(self, link):
         return re.sub(r"([A-Z])+", lambda m: link + m.group(0).lower(),
@@ -324,7 +347,7 @@ class ModelView(object):
                     return redirect(self.url_for_object(None, url=return_url))
                 else:
                     if on_fly:
-                        return render_template("__data_browser__/on_fly_result.haml",
+                        return render_template("__data_browser__/on_fly_result.html",
                                                model_cls=self.model_name,
                                                obj=unicode(model),
                                                obj_pk=self.scaffold_pk(model),
@@ -355,12 +378,13 @@ class ModelView(object):
         else:
             fieldset_list.append(("", form))
 
-        return self.render(self.get_create_template(), form=form,
+        return self.render(self.create_template, form=form,
                            fieldset_list=fieldset_list,
                            create_url_map=create_url_map,
                            return_url=return_url, extra="" if on_fly else "create",
                            help_message=self.get_create_help(),
                            hint_message=self.create_hint_message(),
+                           model_view=self,
                            **kwargs)
 
     def do_update_log(self, obj, action):
@@ -412,7 +436,6 @@ class ModelView(object):
 
     def create_hint_message(self):
         return _(u"create %(model_name)s", model_name=self.model_name)
-
 
     def edit_view(self, id_):
         """
@@ -527,7 +550,8 @@ class ModelView(object):
             else:
                 actions = all_customized_actions
         grouper_info = {}
-        for col in self._model_columns(model, read_only):
+        model_columns = self._model_columns(model, read_only)
+        for col in model_columns:
             grouper_2_cols = {}
             if isinstance(col, InputColumnSpec) and col.group_by:
                 rows = [row for row in col.filter_(self.session.query(getattr(self.model,
@@ -538,6 +562,21 @@ class ModelView(object):
                         getattr(row, col.group_by.property.key).id, []).append(
                         dict(id=row.id, text=unicode(row)))
                 grouper_info[col.grouper_input_name] = grouper_2_cols
+        create_url_map = {}
+        for col in model_columns:
+            if isinstance(col, InputColumnSpec) and not col.read_only:
+                continue
+            col_name = col.col_name if isinstance(col, InputColumnSpec) else col
+            try:
+                attr = getattr(self.model, col_name)
+                if hasattr(attr.property, "direction"):
+                    remote_side = attr.property.mapper.class_
+                    create_url = self.data_browser.get_create_url(remote_side, col_name)
+                    if create_url:
+                        create_url_map[col_name] = create_url
+            except AttributeError:
+                pass
+
         kwargs = {}
         form_kwargs = self.extra_params.get("form_view", {})
         for k, v in form_kwargs.items():
@@ -548,18 +587,6 @@ class ModelView(object):
         for f in form:
             if isinstance(f.widget, PlaceHolder):
                 f.widget.set_args(**kwargs)
-        create_url_map = {}
-        for col in [f.name for f in form if f.name != "csrf_token"]:
-            try:
-                col_name = col if isinstance(col, basestring) else col.col_name
-                attr = getattr(self.model, col_name)
-                if hasattr(attr.property, "direction"):
-                    remote_side = attr.property.mapper.class_
-                    create_url = self.data_browser.get_create_url(remote_side, col_name)
-                    if create_url:
-                        create_url_map[col] = create_url
-            except AttributeError:
-                pass
 
         form = compound_form or form
         form_columns = self.get_form_columns() if len(id_list) == 1 else self.get_batch_form_columns()
@@ -580,6 +607,7 @@ class ModelView(object):
                            actions=actions,
                            return_url=return_url, hint_message=hint_message,
                            help_message=help_message,
+                           model_view=self,
                            **kwargs)
 
     def get_create_help(self):
@@ -602,25 +630,6 @@ class ModelView(object):
                               base_class=self.form_class, only=columns,
                               exclude=None, field_args=None)
         return form_class
-
-    # def scaffold_inline_form_models(self, form_class):
-    #     """
-    #         Contribute inline models to the form
-    #
-    #         :param form_class:
-    #             Form class
-    #     """
-    #     converter = self.model_form_converter(self.session, self)
-    #     inline_converter = self.inline_model_form_converter(self.session, self)
-    #
-    #     for m in self.inline_models:
-    #         form_class = inline_converter.contribute(converter,
-    #                                                  self.model,
-    #                                                  form_class,
-    #                                                  m)
-    #
-    #     return form_class
-
 
     def _model_columns(self, obj, read_only):
         """
@@ -721,6 +730,7 @@ class ModelView(object):
                 return self.model_form.hidden_tag()
         ret = []
         r = self.preprocess(obj)
+        
         if isinstance(form_columns, types.DictType):
             form_columns = list(itertools.chain(*form_columns.values()))
 
@@ -737,8 +747,13 @@ class ModelView(object):
                                              col_spec)
                     ret.append(widget)
             else:
-                ret.append(
-                    value_converter(operator.attrgetter(col.col_name)(r), col))
+                field = value_converter(operator.attrgetter(col.col_name)(r), col)
+                # we force the field's name is the column's name (when the column is a 
+                # the relationship, field name may be the pk, see convert.py), 
+                # else, the form can't be grouped by fieldset, since we can't
+                # figure out which field it is exactly. see function edit_view
+                field.name = col.col_name
+                ret.append(field)
         return FakeForm(form, ret)
 
     def get_batch_edit_form(self, fake_obj, objs, read_only):
@@ -762,26 +777,6 @@ class ModelView(object):
             self.__batch_edit_form__ = self.scaffold_form(processed_cols)
         return self.__batch_edit_form__(obj=fake_obj)
 
-    @property
-    def model_name(self):
-        return self.__model_name or self.model.__name__
-
-    @property
-    def session(self):
-        return self.data_browser.db.session
-
-    @property
-    def list_view_url(self):
-        return self.object_view_url + "-list"
-
-    @property
-    def list_view_endpoint(self):
-        return self.object_view_endpoint + "_list"
-
-    @property
-    def object_view_url(self):
-        return "/" + re.sub(r"([A-Z]+)", lambda m: "-" + m.groups()[0].lower(),
-                            self.model.__name__).lstrip("-")
 
     def url_for_list(self, *args, **kwargs):
         blueprint_name = "" if isinstance(self.blueprint,
@@ -810,11 +805,6 @@ class ModelView(object):
             return url_for(
                 ".".join([blueprint_name, self.object_view_endpoint]),
                 **kwargs)
-
-    @property
-    def object_view_endpoint(self):
-        return re.sub(r"([A-Z]+)", lambda m: "_" + m.groups()[0].lower(),
-                      self.model.__name__).lstrip("_")
 
     def list_view(self):
         """
@@ -863,7 +853,7 @@ class ModelView(object):
                 if isinstance(v, types.FunctionType):
                     v = v(self)
                 kwargs[k] = v
-            template_fname = self.get_list_template()
+            template_fname = self.list_template
             return self.render(template_fname, **kwargs)
         else:  # POST
             action_name = request.form.get("action")
@@ -1074,43 +1064,17 @@ class ModelView(object):
                 pass
         return shadow_column_filters
 
-    def get_list_template(self):
-        """
-        get the real list template, there're 2 scenarios:
-
-            * you access site from DESKTOP. if you specify option "ModelView.list_template", else
-                "/__data_browser/list.haml" will be used
-            * you access site from mobile device. if you specify option "ModelView.list_template_mob", else
-                "/__data_browser/list_mob.html" will be used
-        """
-        return self.list_template_mob if request_from_mobile() else self.list_template
-
-    def get_create_template(self):
-        """
-        get the real create template, there're 2 scenarios:
-
-            * you access site from DESKTOP. if you specify option "ModelView.create_template", else
-                "/__data_browser/form.haml" will be used
-            * you access site from mobile device. if you specify option "ModelView.create_template_mob", else
-                "/__data_browser/form_mob.html" will be used
-        """
-        return self.create_template_mob if request_from_mobile() else self.create_template
-
     def get_edit_template(self):
         """
-        get the real edit template, there're 2 scenarios:
-
-            * you access site from DESKTOP. if you specify option "ModelView.edit_template", else
-                "/__data_browser/form.haml" will be used
-            * you access site from mobile device. if you specify option "ModelView.edit_template_mob", else
-                "/__data_browser/form_mob.html" will be used
+        get the real edit template, if you specify option "ModelView.edit_template", 
+        it will be used, else "/__data_browser/form.html" will be used
         """
         if self.edit_template is None:
             import posixpath
 
             self.edit_template = posixpath.join(
-                self.data_browser.blueprint.name, "form.haml")
-        return self.edit_template_mob if request_from_mobile() else self.edit_template
+                self.data_browser.blueprint.name, "form.html")
+        return self.edit_template
 
     def get_list_columns(self):
         return self.__list_columns__
@@ -1150,18 +1114,13 @@ class ModelView(object):
 
 class DataBrowser(object):
     error_template = "/__data_browser__/error.html"
-    error_template_mob = "/__data_browser__/error_mob.html"
 
     def __init__(self, app, db, page_size=16, logger=None):
         self.app = app
         self.db = db
         self.logger = logger or app.logger
-        from hamlish_jinja import HamlishExtension
         from . import utils
 
-        app.jinja_env.add_extension(HamlishExtension)
-        app.jinja_env.hamlish_mode = 'debug'
-        app.jinja_env.hamlish_enable_div_shortcut = True
         app.jinja_env.globals['url_for_other_page'] = utils.url_for_other_page
         import urllib
         from jinja2 import Markup
@@ -1205,6 +1164,7 @@ class DataBrowser(object):
         self.page_size = page_size
 
         self.__registered_view_map = {}
+        app.before_request(test_request_type)
 
     def register_model(self, model, blueprint=None):
         return self.register_model_view(ModelView(model), blueprint)

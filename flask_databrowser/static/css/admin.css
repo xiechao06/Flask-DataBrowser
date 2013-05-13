@@ -1,4 +1,8 @@
 /* Form customizations */
+html, body { 
+    height: 100%;
+}
+
 form.icon {
     display: inline;
 }
@@ -10,6 +14,7 @@ form.icon button {
     padding: 0;
     line-height: normal;
 }
+
 
 a.icon {
     text-decoration: none;
@@ -88,9 +93,6 @@ ul.select2-choices {
     padding-top: 5px;
 }
 
-body{
-    padding-top: 30px
-}
 
 legend {
     margin-bottom: 0px;
@@ -109,7 +111,9 @@ legend {
     border-radius: 8px;
 }
 .navbar-fixed-bottom {
-    opacity: 0.8
+    opacity: 0.8;
+    padding-top: 0;
+    padding-bottom: 0;
 }
 
 .navbar-fixed-bottom div {
@@ -124,4 +128,75 @@ legend i[data-role="fieldset-notation"] {
 table td .accordion-inner {
     padding: 0;
     text-align: center;
+}
+
+#main-form .checkbox {
+    margin-bottom: 0;
+}
+
+body {
+    padding-bottom: 30px;
+}
+
+/*#main-form .nav-stacked li {*/
+  /*border: 1px solid #DDDDDD;*/
+  /*padding: 15px 5px;*/
+/*}*/
+
+#main-form .navbar-fixed-bottom {
+    text-align: center;
+}
+
+
+#list-table-body {
+    min-width: 60%;
+}
+#list-table-body li a {
+    font-size: 1.5em;
+    text-decoration: none;
+    padding: 0px;
+}
+#list-table-body li i {
+    padding: 20px 20px;
+}
+
+#footer-action-bar {
+    position: fixed; 
+    margin-left: 0px;
+    margin-right: 0px;
+}
+#footer-action-bar .navbar {
+    margin-bottom: 0;
+}
+#footer-action-bar .collapse {
+    text-align: right;
+    margin-bottom: 0;
+}
+#footer-action-bar .dropdown-menu {
+    margin: 0;
+    padding: 0;
+}
+#footer-action-bar .dropdown-menu li, #footer-action-bar .dropdown-menu li input {
+    width: 100%;
+}
+#footer-action-bar .dropdown-menu li input {
+    border: 1px solid #ecf0f1;
+}
+#footer-action-bar {
+    margin-right: 0;
+    margin-bottom: 0;
+}
+
+#create-btn {
+    margin-bottom: 5px;
+}
+
+.icon-check-empty {
+    color: #DCE4EC;
+    cursor: pointer;
+}
+
+.icon-check {
+    color: #1abc9c;
+    cursor: pointer;
 }

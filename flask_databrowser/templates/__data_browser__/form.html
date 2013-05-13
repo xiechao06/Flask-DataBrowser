@@ -1,0 +1,124 @@
+{% extends "__data_browser__/layout.html" %}
+{% import '__data_browser__/macro.html' as lib with context %}
+
+{% block body %}
+  {% block __data_browser__hint_block %}
+    {% if hint_message or help_msg %}
+      <div class="alert alert-info">
+        * {{ hint_message }}
+        {% if help_message %}
+          <div class="pull-right">
+            <a href="#" data-toggle="modal" data-target="#help-modal" data-role="help-link">
+              <strong class="text-success">{{ _("help") }}</strong>
+              <i class="icon-question-sign"></i></a></div>
+        {% endif %}
+      </div>
+    {% endif %}
+  {% endblock %}
+  <div class="container">
+    {{ lib.render_form(form, return_url, extra) }}
+
+    <div id="help-modal" class="modal hide fade">
+      <div class="modal-header">
+        <h3>{{ _("Help") }}</h3></div>
+      <div class="modal-body">
+        {{ help_message|safe }}</div>
+      <div class="modal-footer">
+        <button class="btn" data-dismiss="modal" aria-hidden="true">{{ _("close") }}</button>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+
+
+{% block __data_browser__builtin_head_block %}
+  <script type="text/javascript">
+    $(function () {
+      {% if grouper_info %}
+        grouper_info = {{ grouper_info|tojson|safe }};
+        for (var grouper_name in grouper_info) {
+          var grouper_e = $('[name="' + grouper_name + '"]');
+          var input_e = $('[name="' + grouper_name.split(".")[0] + '"]');
+
+          // remove empty group option
+          grouper_e.children().each(function (idx) {
+            if (!($(this).val() in grouper_info[grouper_name])) {
+              $(this).remove();
+            }
+          });
+          grouper_e.change((function (grouper_e, input_e) {
+            return function (ui) {
+              input_e.empty();
+              $.each(grouper_info[grouper_e.attr("name")][grouper_e.val()], function (idx, entry) {
+                input_e.append('<option value="' + entry.id + '">' + entry.text + "</option>");
+              });
+              input_e.select2({width: "resolve"})
+            }
+          })(grouper_e, input_e))
+        }{% endif %}
+      $("input[name='action']").click(function (ui) {
+        {% if h.is_batch_edit() %}
+          return confirm(sprintf("{{ _('Are you sure to %%s these items?') }}", $(this).attr("value")));
+        {% else %}
+          return confirm(sprintf("{{ _('Are you sure to %%s this item?') }}", $(this).attr("value")));
+        {% endif %}
+      });
+      setTimeout(function () {
+        $("#flash").fadeOut("slow")
+      }, 3000);
+      $("input").keypress(function () {
+        $("input#submit-btn").attr("disabled", false).attr("title", "");
+      });
+      $("input[name!='hold_value'], select").change(function () {
+        $("input#submit-btn").attr("disabled", false).attr("title", "");
+      });
+      $("input[type=reset]").click(function () {
+        $(this).parents('form')[0].reset();
+        $("select").trigger("change");
+        $("input#submit-btn").attr("disabled", true);
+        return false;
+      });
+      $("a[data-role=new-related-obj]").click(function () {
+        var win = window.open($(this).attr('href'), $(this).attr('data-target'));
+        win.focus();
+        return false;
+      });
+      $("[data-role=fieldset-body]").on("shown",function () {
+        $("#" + $(this).attr("id") + "_notation").attr("class", "icon-chevron-down");
+      }).on("hidden", function () {
+            $("#" + $(this).attr("id") + "_notation").attr("class", "icon-chevron-up");
+          });
+      $("[data-role=hold_value]").click(function () {
+        if (this.checked) {
+          $(this).parent("div").children("select").select2("disable");
+          $(this).parent("div").children().not($(this)).attr("disabled", true);
+        } else {
+          $(this).parent("div").children("select").select2("enable").attr("disabled", false);
+          $(this).parent("div").children().not($(this)).attr("disabled", false);
+        }
+      });
+      {% if g.request_from_mobile %}
+        $("input[type=checkbox]").each(function(){
+          if(this.checked){
+            $(this).before('<i class="icon-check icon-2x"></i>').hide();
+          }else{
+            $(this).before('<i class="icon-check-empty icon-2x"></i>').hide();
+          }
+        });
+        $("i.icon-check, i.icon-check-empty").click(function () {
+          $("input#submit-btn").attr("disabled", false).attr("title", "");
+          var e = $(this).next("input");
+          e.attr("checked", !e[0].checked);
+          if (e[0].checked) {
+            $(this).removeClass("icon-check-empty").addClass("icon-check");
+          } else {
+            $(this).removeClass("icon-check").addClass("icon-check-empty");
+          }
+          return false;
+        });
+      {% endif %}
+    });
+  </script>
+{% endblock %}
+

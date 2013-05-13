@@ -1,27 +1,81 @@
-{% macro render_pagination(pagination, __count__) %}
-  <div class="pagination">
-    <ul>
+{% macro render_pagination(pagination, __count__, mobile) %}
+  <div class="hidden-desktop">
+    <ul class="pager">
       {% if not pagination.has_prev %}
-        <li class="disabled">
-          <a>{{ _("prev") }}</a>
-        </li>
-      {% else %}
-        <li>
-          <a href="{{ url_for_other_page(page=pagination.page - 1 if pagination.page > 1 else 1) }}">{{ _("prev") }}</a>
+      <li class="disabled previous">
+        <a href="#" title="{{ _("no previous page!") }}">
+          <i class="icon-double-angle-left icon-2x icon-large"></i>
+        </a>
+      </li>
+       {% else %}
+        <li class="previous">
+          <a href="{{ url_for_other_page(page=pagination.page - 1 if pagination.page > 1 else 1) }}">
+            <i class="icon-double-angle-left icon-2x icon-large"></i>
+          </a>
         </li>
       {% endif %}
-      {% for page in pagination.iter_pages() %}
-        {% if page %}
-          <li class="{% if page == pagination.page %}active{% endif %}">
-            <a href="{{ url_for_other_page(page=page) }}">{{ page }}</a>
-          </li>
-        {% else %}
-          <li class="disabled"><a>...</a></li>
-        {% endif %}
-      {% endfor %}
+        <li class="active">
+          <a href="{{ url_for_other_page(page=pagination.page) }}">
+            <span class="icon-2x" style="font-size:31px">{{ pagination.page }}</span>
+          </a>
+        </li>
+    {% if not pagination.has_next %}
+        <li class="disabled next" title="{{ _("no more pages!") }}">
+          <a href="#">
+            <i class="icon-double-angle-right icon-2x icon-large"></i>
+          </a>
+        </li>
+      {% else %}
+        <li class="next">
+          <a href="{{ url_for_other_page(page=pagination.page + 1) }}">
+            <i class="icon-double-angle-right icon-2x icon-large"></i>
+          </a>
+        </li>
+      {% endif %}
+    </ul>
+  </div>
+
+
+  <div class="pagination visible-desktop" style="text-align: center">
+    <ul>
+      {% if not pagination.has_prev %}
+        <li class="disabled previous">
+          <a href="#" title="{{ _("no previous page!") }}">
+              {{ _("prev") }}
+          </a>
+        </li>
+      {% else %}
+        <li class="previous">
+          <a href="{{ url_for_other_page(page=pagination.page - 1 if pagination.page > 1 else 1) }}">
+              {{ _("prev") }}
+          </a>
+        </li>
+      {% endif %}
+        {% for page in pagination.iter_pages() %}
+          {% if page %}
+            <li class="{% if page == pagination.page %}active{% endif %}">
+              <a href="{{ url_for_other_page(page=page) }}">{{ page }}</a>
+            </li>
+          {% else %}
+            <li class="disabled"><a>...</a></li>
+          {% endif %}
+        {% endfor %}
+      {% if not pagination.has_next %}
+        <li class="disabled next" title="{{ _("no more pages!") }}">
+          <a href="#">
+              {{ _("next") }}
+          </a>
+        </li>
+      {% else %}
+        <li class="next">
+          <a href="{{ url_for_other_page(page=pagination.page + 1) }}">
+              {{ _("next") }}
+          </a>
+        </li>
+      {% endif %}
       {% if __count__ %}
         <li class="disabled">
-          <a>{{ _("totally matched records: %(count)d", count=__count__) }}</a>
+            <a>{{ _("totally matched records: %(count)d", count=__count__) }}</a>
         </li>
       {% endif %}
     </ul>
@@ -128,25 +182,57 @@
 {% endmacro %}
 
 {% macro render_form_buttons(cancel_url, extra=None) %}
-    <div class="navbar-fixed-bottom alert alert-info">
+    <div class="navbar-fixed-bottom navbar-inverse navbar"  style="position: fixed; margin-left: 0px" id="footer-action-bar">
       <div>
-        <div data-role="trivial-control-group">
+        {% if g.request_from_mobile %}
+            <div class="navbar-inner" >
+              <ul class="nav btn-group" id="actions">
+                <li>
+                  <input id="submit-btn" name="action" type="submit" class="btn btn-primary btn-large" value="{{ _('commit') }}" disabled="disabled" title="{{ _("no changes made, can't submit!") }}"/>
+                </li>
+                <li>
+                  <input id="reset-btn" type="reset" class="btn btn-primary btn-large" value="{{ _('reset') }}"/>
+                </li>
+                {% if cancel_url %}
+                  <li>
+                    <input class="btn btn-large" type="button" onclick="location='{{ cancel_url }}'" value="{{ _('back') }}"/>
+                  </li>
+                {% endif %}
+              </ul>
+              <div class="dropup btn-group">
+              <button class="btn dropdown-toggle" data-toggle="dropdown">
+                  <i class="icon-reorder icon-2x"></i>
+                </button>
+                <ul class="dropdown-menu pull-right">
+                  {% for action in actions %}
+                    <li>
+                      <input value="{{ action.name }}" type="submit" name="action" class="{{ action.css_class }}" data-warn="{{ action.warn_msg }}"/>
+                    </li>
+                  {% endfor %}
+                </ul>
+              </div>
+              <a href="#top" class="btn btn-navbar"><i class="icon-arrow-up"></i></a>
+          </div>
+        {% else %}
+
+          <div data-role="trivial-control-group">
             <input id="submit-btn" name="action" type="submit" class="btn btn-primary" value="{{ _('commit') }}" disabled="disabled" title="{{ _("no changes made, can't submit!") }}"/>
-            <input id="reset-btn" type="reset" class="btn btn-primary" value="{{ _('reset') }}" />
+            <input id="reset-btn" type="reset" class="btn btn-primary" value="{{ _('reset') }}"/>
             {% if cancel_url %}
-                <a href="{{ cancel_url }}" class="btn">{{ _('back') }}</a>
+              <a href="{{ cancel_url }}" class="btn">{{ _('back') }}</a>
             {% endif %}
-        </div>
-        {% if extra=="create" or actions %}
-        <div data-role="customized-control-group">
-            {% if extra == "create" %}
+          </div>
+          {% if extra=="create" or actions %}
+            <div data-role="customized-control-group">
+              {% if extra == "create" %}
                 {{ create() }}
-            {% else %}
-              {% for action in actions %}
-              <input name="action" value="{{action.name}}" type="submit" name="action" class="{{action.css_class}}"/>
-              {% endfor %}
-            {% endif %}
-        </div>
+              {% else %}
+                {% for action in actions %}
+                  <input name="action" value="{{ action.name }}" type="submit" name="action" class="{{ action.css_class }}"/>
+                {% endfor %}
+              {% endif %}
+            </div>
+          {% endif %}
         {% endif %}
       </div>
     </div>

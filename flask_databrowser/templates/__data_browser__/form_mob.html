@@ -43,7 +43,11 @@
         {{ form.hidden_tag() if form.hidden_tag is defined }}
         {% for f in form if f.type != 'HiddenField' and f.type != 'CSRFTokenField' %}
           <li data-role="fieldcontain">
-            <label for="{{ f.name }}">{{ f.label.text }} {% if f.description %}
+            <label for="{{ f.name }}">{{ f.label.text }} 
+              {% if f.name in create_url_map %}
+                <a href="{{ create_url_map[f.name] }}" data-inline="true" data-theme="f" data-role="button" data-icon="plus" data-mini="true">{{ _("create") }}</a>
+              {% endif %}
+            {% if f.description %}
               (
               <small>{{ f.description }}</small>) {% endif %}
               {% if f.type != 'ReadOnlyField' and h.is_required_form_field(f) %}
@@ -57,9 +61,6 @@
               {% set focus_set = True %}
             {% else %}
               {{ f(**{'data-mini': "true"})|safe }}
-            {% endif %}
-            {% if f.name in create_url_map %}
-              <a href="{{ create_url_map[f.name] }}" data-role="button">新建</a>
             {% endif %}
           </li>
           {% if f.errors %}
