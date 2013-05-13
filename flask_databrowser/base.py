@@ -1082,7 +1082,7 @@ class ModelView(object):
     def get_create_columns(self):
         return self.__create_columns__
 
-    def get_form_columns(self, processed_obj=None):
+    def get_form_columns(self, obj=None):
         return self.__form_columns__
 
     def get_batch_form_columns(self, preprocessed_objs):
