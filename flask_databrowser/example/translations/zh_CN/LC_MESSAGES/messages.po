@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2013-05-08 18:13+0800\n"
+"POT-Creation-Date: 2013-05-13 18:59+0800\n"
 "PO-Revision-Date: 2013-04-04 12:40+0800\n"
 "Last-Translator: xiechao<xiechao06@gmail.com>\n"
 "Language-Team: zh_CN <LL@li.org>\n"
@@ -38,71 +38,70 @@ msgstr "%(model_name)s[%%s]没有被成功%(action)s"
 msgid "remove"
 msgstr "删除"
 
-#: base.py:272
+#: base.py:268
 #, python-format
 msgid "can't apply %(action)s due to %(reason)s"
 msgstr "操作%(action)s失败，原因是%(reason)s"
 
-#: base.py:290
+#: base.py:286
 #, python-format
 msgid "Failed to update %(model_name)s %(objs)s due to %(error)s"
 msgstr "更新%(model_name)s失败，原因是%(error)s"
 
-#: base.py:302
+#: base.py:298
 msgid "update"
 msgstr "更新"
 
-#: base.py:304
+#: base.py:300
 #, python-format
 msgid "%(model_name)s %(obj)s was updated and saved"
 msgstr "%(model_name)s(%(obj)s)已经被更新并保存"
 
-#: base.py:312
+#: base.py:308
 #, python-format
 msgid "Failed to update %(model_name)s %(obj)s due to %(error)s"
 msgstr "更新%(model_name)s失败，原因是%(error)s"
 
-#: base.py:349 base.py:414
+#: base.py:345 base.py:410
 #, python-format
 msgid "%(model_name)s %(model)s was created successfully"
 msgstr "成功创建%(model_name)s-(%(model)s)!"
 
-#: base.py:399
+#: base.py:395
 #, python-format
 msgid "%(user)s performed %(action)s"
 msgstr "用户%(user)s执行了%(action)s操作"
 
-#: base.py:416 templates/__data_browser__/form_mob.html:48
-#: templates/__data_browser__/list.haml:170
-#: templates/__data_browser__/list.html:256
+#: base.py:412 templates/__data_browser__/form_mob.html:48
+#: templates/__data_browser__/list.html:257
 #: templates/__data_browser__/list_mob.html:97
-#: templates/__data_browser__/macro.html:143
+#: templates/__data_browser__/macro.html:156
 msgid "create"
 msgstr "新建"
 
-#: base.py:424 base.py:435
+#: base.py:420 base.py:431
 #, python-format
 msgid ""
 "you are viewing %(model_name)s-%(obj)s, since you have only read "
 "permission"
 msgstr "您正在查看%(model_name)s-%(obj)s, 因为您只有只读权限"
 
-#: base.py:428
+#: base.py:424
 #, python-format
 msgid "edit %(model_name)s-%(objs)s"
 msgstr "正在编辑%(model_name)s-%(objs)s"
 
-#: base.py:439
+#: base.py:435
 #, python-format
 msgid "edit %(model_name)s-%(obj)s"
 msgstr "正在编辑%(model_name)s-%(obj)s"
 
-#: base.py:442
+#: base.py:438
 #, python-format
 msgid "create %(model_name)s"
 msgstr "正在创建%(model_name)s"
 
-#: base.py:862
+#: base.py:868
 #, python-format
 msgid "invalid action %(action)s"
 msgstr "操作%(action)s非法"
@@ -188,59 +187,52 @@ msgstr "错误"
 
 #: templates/__data_browser__/error_mob.html:16
 #: templates/__data_browser__/form_mob.html:37
-#: templates/__data_browser__/macro.html:178
+#: templates/__data_browser__/macro.html:198
+#: templates/__data_browser__/macro.html:222
 msgid "back"
 msgstr "返回"
 
-#: templates/__data_browser__/form.haml:13
 #: templates/__data_browser__/form.html:12
-#: templates/__data_browser__/list.haml:159
-#: templates/__data_browser__/list.haml:174
-#: templates/__data_browser__/list.html:240
-#: templates/__data_browser__/list.html:262
+#: templates/__data_browser__/list.html:241
+#: templates/__data_browser__/list.html:263
 msgid "help"
 msgstr "帮助"
 
-#: templates/__data_browser__/form.haml:21
 #: templates/__data_browser__/form.html:23
-#: templates/__data_browser__/list.haml:179
-#: templates/__data_browser__/list.html:270
+#: templates/__data_browser__/list.html:271
 msgid "Help"
 msgstr "帮助"
 
-#: templates/__data_browser__/form.haml:25
 #: templates/__data_browser__/form.html:27
-#: templates/__data_browser__/list.haml:183
-#: templates/__data_browser__/list.html:276
+#: templates/__data_browser__/list.html:277
 msgid "close"
-msgstr ""
+msgstr "关闭"
 
-#: templates/__data_browser__/form.haml:56
 #: templates/__data_browser__/form.html:62
 #, python-format
 msgid "Are you sure to %%s these items?"
 msgstr "您确认要%%s这些记录?"
 
-#: templates/__data_browser__/form.haml:58
 #: templates/__data_browser__/form.html:64
 #, python-format
 msgid "Are you sure to %%s this item?"
 msgstr "您确认要%%s这条记录?"
 
 #: templates/__data_browser__/form_mob.html:79
-#: templates/__data_browser__/macro.html:175
+#: templates/__data_browser__/macro.html:191
+#: templates/__data_browser__/macro.html:219
 msgid "commit"
 msgstr "提交"
 
 #: templates/__data_browser__/form_mob.html:80
-#: templates/__data_browser__/list.haml:312
-#: templates/__data_browser__/list.html:468
-#: templates/__data_browser__/macro.html:176
+#: templates/__data_browser__/list.html:475
+#: templates/__data_browser__/macro.html:194
+#: templates/__data_browser__/macro.html:220
 msgid "reset"
 msgstr "重置"
 
 #: templates/__data_browser__/form_mob.html:82
-#: templates/__data_browser__/macro.html:168
+#: templates/__data_browser__/macro.html:181
 msgid "add another"
 msgstr "再增加一个"
 
@@ -252,72 +244,58 @@ msgstr "已经是第一条记录"
 msgid "no next item"
 msgstr "已经是最后一条记录"
 
-#: templates/__data_browser__/list.haml:83
+#: templates/__data_browser__/list.html:18
+#: templates/__data_browser__/macro.html:6
+#: templates/__data_browser__/macro.html:43
+msgid "no previous page!"
+msgstr "已经是第一页"
+
+#: templates/__data_browser__/list.html:42
+msgid "no more page!"
+msgstr "已经是最后一页"
+
 #: templates/__data_browser__/list.html:127
 msgid "please choose one item!"
 msgstr "请至少选择一条记录！"
 
-#: templates/__data_browser__/list.haml:86
-#: templates/__data_browser__/list.haml:250
-#: templates/__data_browser__/list.haml:258
 #: templates/__data_browser__/list.html:130
-#: templates/__data_browser__/list.html:380
-#: templates/__data_browser__/list.html:400
+#: templates/__data_browser__/list.html:375
+#: templates/__data_browser__/list.html:407
 msgid "batch edit"
 msgstr "批量修改"
 
-#: templates/__data_browser__/list.haml:91
 #: templates/__data_browser__/list.html:135
 #, python-format
 msgid "Are you sure to %%s selected item(s)?"
 msgstr "您确认要%%s选中的记录?"
 
-#: templates/__data_browser__/list.haml:94
 #: templates/__data_browser__/list.html:138
 msgid "Attention!"
 msgstr "注意"
 
-#: templates/__data_browser__/list.haml:164
-#: templates/__data_browser__/list.html:249
-msgid "totally: %(count)d"
-msgstr "共%(count)d条"
-
-#: templates/__data_browser__/list.haml:264
 #: templates/__data_browser__/list.html:215
 msgid "no results matched!"
 msgstr "没有符合条件的结果"
 
-#: templates/__data_browser__/list.haml:273
-#: templates/__data_browser__/list.html:418
+#: templates/__data_browser__/list.html:250
+#, python-format
+msgid "totally: %(count)d"
+msgstr "共%(count)d条"
+
+#: templates/__data_browser__/list.html:425
 msgid "refine search"
 msgstr "完善搜索条件"
 
-#: templates/__data_browser__/list.haml:301
-#: templates/__data_browser__/list.haml:303
-#: templates/__data_browser__/list.haml:305
-#: templates/__data_browser__/list.html:448
-#: templates/__data_browser__/list.html:450
-#: templates/__data_browser__/list.html:452
+#: templates/__data_browser__/list.html:455
+#: templates/__data_browser__/list.html:457
+#: templates/__data_browser__/list.html:459
 #, python-format
 msgid "input %(label)s here"
 msgstr "在这里输入%(label)s"
 
-#: templates/__data_browser__/list.haml:311
-#: templates/__data_browser__/list.html:467
+#: templates/__data_browser__/list.html:474
 msgid "refresh"
 msgstr "刷新"
-
-#: templates/__data_browser__/list.html:18
-msgid "no previous page!"
-msgstr "已经是第一条页"
-
-#: templates/__data_browser__/macro.html:6
-msgid "no previous page!"
-msgstr "已经是第一条记录"
-
-#: templates/__data_browser__/list.html:42
-msgid "no more page!"
-msgstr "已经是最后一页"
 
 #: templates/__data_browser__/list_mob.html:37
 #, python-format
@@ -361,49 +339,48 @@ msgstr "加载错误"
 msgid "total number of items: %(count)d"
 msgstr "数据总计%(count)d条"
 
-#: templates/__data_browser__/macro.html:10
-#: templates/__data_browser__/macro.html:20
-msgid "prev"
-msgstr "上一页"
-
-#: templates/__data_browser__/macro.html:41
+#: templates/__data_browser__/macro.html:23
+#: templates/__data_browser__/macro.html:64
 msgid "no more pages!"
 msgstr "已经是最后一页"
 
-#: templates/__data_browser__/macro.html:46
-#: templates/__data_browser__/macro.html:56
+#: templates/__data_browser__/macro.html:44
+#: templates/__data_browser__/macro.html:50
+msgid "prev"
+msgstr "上一页"
+
+#: templates/__data_browser__/macro.html:66
+#: templates/__data_browser__/macro.html:72
 msgid "next"
 msgstr "下一页"
 
-#: templates/__data_browser__/macro.html:64
+#: templates/__data_browser__/macro.html:78
 #, python-format
 msgid "totally matched records: %(count)d"
 msgstr "符合筛选条件的记录总共%(count)d条"
 
-#: templates/__data_browser__/macro.html:126
+#: templates/__data_browser__/macro.html:139
 msgid "unique field, can't be modified"
 msgstr "唯一值，不能批量修改"
 
-#: templates/__data_browser__/macro.html:134
+#: templates/__data_browser__/macro.html:147
 msgid "keep unchanged"
 msgstr "保持原值"
 
-#: templates/__data_browser__/macro.html:175
+#: templates/__data_browser__/macro.html:191
+#: templates/__data_browser__/macro.html:219
 msgid "no changes made, can't submit!"
 msgstr "对象没有任何变更"
 
-#: templates/__data_browser__/on_fly_result.haml:23
 #: templates/__data_browser__/on_fly_result.html:20
 msgid "congratulations"
 msgstr "祝贺您"
 
-#: templates/__data_browser__/on_fly_result.haml:24
 #: templates/__data_browser__/on_fly_result.html:21
 #, python-format
 msgid "you have created %(model_cls)s %(obj)s successfully!"
 msgstr "您成功的创建了%(model_cls)s\"%(obj)s\""
 
-#: templates/__data_browser__/on_fly_result.haml:25
 #: templates/__data_browser__/on_fly_result.html:22
 msgid "I see"
 msgstr "我知道了"
