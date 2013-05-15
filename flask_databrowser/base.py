@@ -1085,7 +1085,7 @@ class ModelView(object):
     def get_form_columns(self, obj=None):
         return self.__form_columns__
 
-    def get_batch_form_columns(self, preprocessed_objs):
+    def get_batch_form_columns(self, preprocessed_objs=None):
         return self.__batch_form_columns__
 
     def get_rows_action_desc(self, models):
