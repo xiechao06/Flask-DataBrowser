@@ -7,7 +7,8 @@ import copy
 import operator
 import json
 import werkzeug
-from flask import render_template, flash, request, url_for, redirect, abort, Flask
+from flask import (render_template, flash, request, url_for, redirect, abort, Flask, 
+                   make_response)
 from flask.ext.principal import PermissionDenied
 from flask.ext.babel import ngettext, gettext as _
 from .utils import get_primary_key, named_actions, get_doc_from_table_def, test_request_type
@@ -378,7 +379,7 @@ class ModelView(object):
         else:
             fieldset_list.append(("", form))
 
-        return self.render(self.create_template, form=form,
+        resp = self.render(self.create_template, form=form,
                            fieldset_list=fieldset_list,
                            create_url_map=create_url_map,
                            return_url=return_url, extra="" if on_fly else "create",
@@ -386,6 +387,11 @@ class ModelView(object):
                            hint_message=self.create_hint_message(),
                            model_view=self,
                            **kwargs)
+        if form.is_submitted():
+            # alas! something wrong
+            resp = make_response(resp, 403)
+            resp.headers["Warning"] = u"\n".join([k + u"-" + u"; ".join(v) for k, v in form.errors.items()]).encode("utf-8")
+        return resp
 
     def do_update_log(self, obj, action):
         from flask.ext.login import current_user
@@ -596,7 +602,8 @@ class ModelView(object):
                 fieldset_list.append((fieldset, [form[col.col_name if isinstance(col, ColumnSpec) else col] for col in cols]))
         else:
             fieldset_list.append(("", form))
-        return self.render(self.get_edit_template(),
+
+        resp = self.render(self.get_edit_template(),
                            obj=self.preprocess(model) if len(id_list) else None,
                            form=form,
                            fieldset_list=fieldset_list,
@@ -609,6 +616,11 @@ class ModelView(object):
                            help_message=help_message,
                            model_view=self,
                            **kwargs)
+        if form.is_submitted():
+            # alas! something wrong
+            resp = make_response(resp, 403)
+            resp.headers["Warning"] = u"\n".join([k + u"-" + u"; ".join(v) for k, v in form.errors.items()]).encode("utf-8")
+        return resp
 
     def get_create_help(self):
         return ""
@@ -728,6 +740,14 @@ class ModelView(object):
 
             def hidden_tag(self):
                 return self.model_form.hidden_tag()
+
+            def is_submitted(self):
+                return self.model_form.is_submitted()
+            
+            @property
+            def errors(self):
+                return self.model_form.errors
+
         ret = []
         r = self.preprocess(obj)
         
