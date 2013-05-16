@@ -11,8 +11,8 @@ from flask import (render_template, flash, request, url_for, redirect, abort, Fl
                    make_response)
 from flask.ext.principal import PermissionDenied
 from flask.ext.babel import ngettext, gettext as _
-from .utils import get_primary_key, named_actions, get_doc_from_table_def, test_request_type
-from .action import DeleteAction, ReadOnlyAction
+from flask.ext.databrowser.utils import get_primary_key, named_actions, get_doc_from_table_def, test_request_type, make_disabled_field
+from flask.ext.databrowser.action import DeleteAction, ReadOnlyAction
 from flask.ext.databrowser.convert import ValueConverter
 from flask.ext.databrowser.column_spec import LinkColumnSpec, ColumnSpec, \
     InputColumnSpec
@@ -288,6 +288,9 @@ class ModelView(object):
                           'error')
                     self.session.rollback()
                     raise
+        else:
+            raise ValidationError(
+                _('invalid action %(action)s', action=action_name))
         try:
             self.try_edit(processed_objs)
             # compute the field should be holded
@@ -494,7 +497,6 @@ class ModelView(object):
                 read_only = False
             except PermissionDenied:
                 read_only = True
-
             form = self.get_edit_form(obj=model, read_only=read_only)
             if form.validate_on_submit(): # ON POST
                 ret = self.update_objs(form, [model])
@@ -556,7 +558,7 @@ class ModelView(object):
             else:
                 actions = all_customized_actions
         grouper_info = {}
-        model_columns = self._model_columns(model, read_only)
+        model_columns = self._model_columns(model)
         for col in model_columns:
             grouper_2_cols = {}
             if isinstance(col, InputColumnSpec) and col.group_by:
@@ -643,7 +645,7 @@ class ModelView(object):
                               exclude=None, field_args=None)
         return form_class
 
-    def _model_columns(self, obj, read_only):
+    def _model_columns(self, obj):
         """
         select the model columns from __form_columns__
         """
@@ -652,8 +654,6 @@ class ModelView(object):
             # if no form columns given, use the model's attribute
             mapper = self.model._sa_class_manager.mapper
             form_columns = [p.key for p in mapper.iterate_properties]
-            if read_only:
-                return [InputColumnSpec(col_name, read_only=True) for col_name in form_columns]
 
         if isinstance(form_columns, types.DictType):
             form_columns = list(itertools.chain(*form_columns.values()))
@@ -664,12 +664,8 @@ class ModelView(object):
             if isinstance(col, InputColumnSpec):
                 col_name = col.col_name
                 # try_edit will override the field's read_only attribute
-                if read_only:
-                    col.read_only = True
             elif isinstance(col, basestring) and (not '.' in col):
                 col_name = col
-                if read_only:
-                    col = InputColumnSpec(col_name, read_only=True)
             else:
                 continue
             if col_name in model_clumns:
@@ -701,7 +697,7 @@ class ModelView(object):
 
     def get_edit_form(self, obj=None, read_only=False):
         if self.__edit_form__ is None:
-            self.__edit_form__ = self.scaffold_form(self._model_columns(obj, read_only))
+            self.__edit_form__ = self.scaffold_form(self._model_columns(obj))
         # if request specify some fields, then we override fields with this value
         for k, v in request.args.items():
             if hasattr(self.model, k):
@@ -710,7 +706,22 @@ class ModelView(object):
                     setattr(obj, k, col.property.mapper.class_.query.get(v))
                 else:
                     setattr(obj, k, v)
-        return self.__edit_form__(obj=obj)
+        ret = self.__edit_form__(obj=obj)
+        class _WidgetProxy(object):
+
+            def __init__(self, widget):
+                self.widget = widget
+
+            def __call__(self, field, **kwargs):
+                kwargs['disabled'] = True
+                return self.widget(field, **kwargs)
+
+        # force read only
+        if read_only:
+            for f in ret:
+                if f.name != "csrf_token":
+                    f.widget = _WidgetProxy(f.widget)
+        return ret
 
     def get_compound_edit_form(self, obj=None, form=None, read_only=False):
         if not form:
