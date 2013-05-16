@@ -489,7 +489,6 @@ def get_form(model, converter,
         properties = (x for x in properties if x[0] not in exclude)
 
     field_dict = {}
-    read_only_fields = []
     for name, prop, col_spec in properties:
         # Ignore protected properties
         if ignore_hidden and name.startswith('_'):
