@@ -288,7 +288,8 @@ class ModelView(object):
                           'error')
                     self.session.rollback()
                     raise
-        else:
+
+        if action_name: # if an invalid action provided
             raise ValidationError(
                 _('invalid action %(action)s', action=action_name))
         try:
