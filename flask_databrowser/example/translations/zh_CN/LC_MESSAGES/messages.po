@@ -32,7 +32,7 @@ msgstr "(%model_name)s[%(models)s]没有被成功%(action)s"
 #: action.py:58
 #, python-format
 msgid "%(action)s can't apply upon %(model_name)s [%%s]"
-msgstr "%(model_name)s[%%s]没有被成功%(action)s"
+msgstr "%(model_name)s[%%s]不能被%(action)s"
 
 #: action.py:74
 msgid "remove"
