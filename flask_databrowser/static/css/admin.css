@@ -191,7 +191,7 @@ body {
     margin-bottom: 5px;
 }
 
-.icon-check-empty {
+.controls .icon-check-empty {
     color: #DCE4EC;
     cursor: pointer;
 }
