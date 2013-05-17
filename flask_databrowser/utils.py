@@ -1,6 +1,6 @@
 # -*- coding: UTF-8 -*-
 import types
-from flask import request,url_for, render_template, flash, redirect
+from flask import request,url_for, render_template, flash, redirect, g
 from flask.ext.principal import PermissionDenied
 from flask.ext.babel import ngettext, gettext as _
 from flask.ext.databrowser.exceptions import ValidationError
@@ -194,7 +194,7 @@ class ErrorHandler(object):
             self.data_browser.app.logger.error(traceback.plaintext)
             err_msg = _(u'Internal error "%(err)s", please contact us!', err=str(error))
 
-        return render_template(template_fname, hint_message=err_msg, error=error, back_url=request.args.get("url", "/"), model_view={"request_from_mobile": self.data_browser.request_from_mobile}) 
+        return render_template(template_fname, hint_message=err_msg, error=error, back_url=request.args.get("url", "/"), model_view={"request_from_mobile": g.request_from_mobile}) 
 
 
 def test_request_type():

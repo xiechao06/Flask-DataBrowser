@@ -59,8 +59,8 @@ def main():
             if row.roll_called == 1:
                 return "box warning"
 
-        def try_edit(self, objs):
-            raise PermissionDenied()
+        #def try_edit(self, objs):
+            #raise PermissionDenied()
 
         from flask.ext.databrowser.column_spec import ImageColumnSpec, TableColumnSpec, PlaceHolderColumnSpec, InputColumnSpec
         def get_create_help(self):
@@ -171,7 +171,7 @@ def main():
             def op_upon_list(self, model, model_view):
                 return redirect("http://www.u148.com")
 
-        __customized_actions__ = [MyDeleteAction(u"删除", admin_permission), RollCall(u"点名", warn_msg=u"点名后就是弱智！"), RollCall(u"点名", warn_msg=u"点名后就是弱智！"),RollCall(u"点名", warn_msg=u"点名后就是弱智！"),RollCall(u"点名", warn_msg=u"点名后就是弱智！"),RollCall(u"点名", warn_msg=u"点名后就是弱智！"),RollCall(u"点名", warn_msg=u"点名后就是弱智！"),RollCall(u"点名", warn_msg=u"点名后就是弱智！"),_ReadOnlyAction(u"打酱油的")]
+        __customized_actions__ = [MyDeleteAction(u"删除", None), RollCall(u"点名", warn_msg=u"点名后就是弱智！"), RollCall(u"点名", warn_msg=u"点名后就是弱智！"),RollCall(u"点名", warn_msg=u"点名后就是弱智！"),RollCall(u"点名", warn_msg=u"点名后就是弱智！"),RollCall(u"点名", warn_msg=u"点名后就是弱智！"),RollCall(u"点名", warn_msg=u"点名后就是弱智！"),RollCall(u"点名", warn_msg=u"点名后就是弱智！"),_ReadOnlyAction(u"打酱油的")]
 
     user_model_view = UserModelView(User, u"用户")
     browser.register_model_view(user_model_view, accounts_bp, extra_params={"form_view": {"company": "xc"}})
