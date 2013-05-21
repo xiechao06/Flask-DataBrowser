@@ -9,6 +9,8 @@ import json
 import werkzeug
 from flask import (render_template, flash, request, url_for, redirect, abort, Flask, 
                    make_response)
+import yaml
+from flask.ext.sqlalchemy import Pagination
 from flask.ext.principal import PermissionDenied
 from flask.ext.babel import ngettext, gettext as _
 from flask.ext.databrowser.utils import get_primary_key, named_actions, get_doc_from_table_def, test_request_type, make_disabled_field
@@ -20,6 +22,8 @@ from flask.ext.databrowser.extra_widgets import PlaceHolder
 from flask.ext.databrowser.form import form
 from flask.ext.databrowser.exceptions import ValidationError
 
+WEB_PAGE = 1
+WEB_SERVICE = 2
 
 class ModelView(object):
     __column_formatters__ = {}
@@ -36,6 +40,8 @@ class ModelView(object):
     __max_col_len__ = 255
 
     __model_list__ = []
+
+    serv_type = WEB_PAGE | WEB_SERVICE
 
     language = "en"
     column_hide_backrefs = True
@@ -66,8 +72,16 @@ class ModelView(object):
         return self.object_view_url + "-list"
 
     @property
+    def list_api_url(self):
+        return "/apis/" + self.list_view_url
+
+    @property
     def list_view_endpoint(self):
         return self.object_view_endpoint + "_list"
+
+    @property
+    def list_api_endpoint(self):
+        return self.object_view_endpoint + "_list_api"
 
     @property
     def object_view_url(self):
@@ -94,6 +108,11 @@ class ModelView(object):
                 self.__list_column_specs.append(col_spec)
 
         return self.__list_column_specs
+
+    @property
+    def object_view_endpoint(self):
+        return re.sub(r"([A-Z]+)", lambda m: "_" + m.groups()[0].lower(),
+                      self.model.__name__).lstrip("_")
 
     @property
     def object_view_endpoint(self):
@@ -842,9 +861,6 @@ class ModelView(object):
         """
         the view function of list of models
         """
-        from flask import request, url_for, redirect
-        import yaml
-        from flask.ext.sqlalchemy import Pagination
 
         if request.method == "GET":
             self.try_view()
@@ -913,6 +929,25 @@ class ModelView(object):
                 self.session.rollback()
                 raise
             return redirect(request.url)
+
+    def list_api():
+        return json.dumps({
+            "data": [
+                {
+                    "id": 1,
+                    "repr": "first item"
+                },
+                {
+                    "id": 2,
+                    "repr": "second item"
+                },
+            ],
+            "total_cnt": [
+                100,
+            ],
+            "page": 1,
+            "has_next": True
+        })
 
     def list_view_json(self):
         """
@@ -1206,22 +1241,30 @@ class DataBrowser(object):
         model_view.data_browser = self
         model_view.extra_params = extra_params or {}
 
-        blueprint.add_url_rule(model_view.list_view_url,
-                               model_view.list_view_endpoint,
-                               model_view.list_view,
-                               methods=["GET", "POST"])
-        blueprint.add_url_rule(model_view.list_view_url + ".json",
-                               model_view.list_view_endpoint + "_json",
-                               model_view.list_view_json,
-                               methods=["GET"])
-        blueprint.add_url_rule(model_view.object_view_url,
-                               model_view.object_view_endpoint,
-                               model_view.object_view,
-                               methods=["GET", "POST"])
-        blueprint.add_url_rule(model_view.object_view_url + "/<id_>",
-                               model_view.object_view_endpoint,
-                               model_view.object_view,
-                               methods=["GET", "POST"])
+        if model_view.serv_type & WEB_PAGE:
+            blueprint.add_url_rule(model_view.list_view_url,
+                                   model_view.list_view_endpoint,
+                                   model_view.list_view,
+                                   methods=["GET", "POST"])
+            blueprint.add_url_rule(model_view.list_view_url + ".json",
+                                   model_view.list_view_endpoint + "_json",
+                                   model_view.list_view_json,
+                                   methods=["GET"])
+            blueprint.add_url_rule(model_view.object_view_url,
+                                   model_view.object_view_endpoint,
+                                   model_view.object_view,
+                                   methods=["GET", "POST"])
+            blueprint.add_url_rule(model_view.object_view_url + "/<id_>",
+                                   model_view.object_view_endpoint,
+                                   model_view.object_view,
+                                   methods=["GET", "POST"])
+
+        if model_view.serv_type & WEB_SERVICE:
+            blueprint.add_url_rule(model_view.list_api_url,
+                                   model_view.list_api_endpoint,
+                                   model_view.list_api,
+                                   methods=["GET", "POST"])
+
         blueprint.before_request(model_view.before_request_hook)
         blueprint.after_request(model_view.after_request_hook)
         self.__registered_view_map[model_view.model.__tablename__] = model_view
