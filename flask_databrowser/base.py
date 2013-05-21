@@ -273,42 +273,41 @@ class ModelView(object):
                 a list of Model instance
         """
         
-        action_name = request.form["action"]
+        action_name = request.form.get("__action__")
         processed_objs = [self.preprocess(obj) for obj in objs]
 
-        for action in self._get_customized_actions(processed_objs):
-            if action.name == action_name:
-                action.try_()
-                for obj in processed_objs:
-                    ret_code = action.test_enabled(obj)
-                    if ret_code != 0:
-                        flash(_(u"can't apply %(action)s due to %(reason)s",
-                                action=action.name,
-                                reason=action.get_forbidden_msg_formats()[
-                                           ret_code] % unicode(obj)),
-                              'error')
-                        return False
-                try:
-                    if not isinstance(action, ReadOnlyAction): # we omit read only actions
-                        self.try_edit(processed_objs)
-                    ret = action.op_upon_list(processed_objs, self)
-                    if isinstance(ret, werkzeug.wrappers.BaseResponse) and ret.status_code == 302:
+        if action_name:
+            for action in self._get_customized_actions(processed_objs):
+                if action.name == action_name:
+                    action.try_()
+                    for obj in processed_objs:
+                        ret_code = action.test_enabled(obj)
+                        if ret_code != 0:
+                            flash(_(u"can't apply %(action)s due to %(reason)s",
+                                    action=action.name,
+                                    reason=action.get_forbidden_msg_formats()[
+                                               ret_code] % unicode(obj)),
+                                  'error')
+                            return False
+                    try:
+                        if not isinstance(action, ReadOnlyAction): # we omit read only actions
+                            self.try_edit(processed_objs)
+                        ret = action.op_upon_list(processed_objs, self)
+                        if isinstance(ret, werkzeug.wrappers.BaseResponse) and ret.status_code == 302:
+                            flash(action.success_message(processed_objs), 'success')
+                            return ret
+                        self.session.commit()
                         flash(action.success_message(processed_objs), 'success')
-                        return ret
-                    self.session.commit()
-                    flash(action.success_message(processed_objs), 'success')
-                    return True
-                except Exception, ex:
-                    flash(_(
-                        'Failed to update %(model_name)s %(objs)s due to %('
-                        'error)s',
-                        model_name=self.model_name, objs=",".join(unicode(obj) for obj in processed_objs),
-                        error=str(ex)),
-                          'error')
-                    self.session.rollback()
-                    raise
-
-        if action_name: # if an invalid action provided
+                        return True
+                    except Exception, ex:
+                        flash(_(
+                            'Failed to update %(model_name)s %(objs)s due to %('
+                            'error)s',
+                            model_name=self.model_name, objs=",".join(unicode(obj) for obj in processed_objs),
+                            error=str(ex)),
+                              'error')
+                        self.session.rollback()
+                        raise
             raise ValidationError(
                 _('invalid action %(action)s', action=action_name))
         try:
@@ -367,7 +366,7 @@ class ModelView(object):
                 self.do_create_log(model)
                 flash(_(u'%(model_name)s %(model)s was created successfully',
                         model_name=self.model_name, model=unicode(model)))
-                if '_add_another' in request.form:
+                if request.form.get("__builtin_action__") == _("add another"):
                     return redirect(self.url_for_object(None, url=return_url))
                 else:
                     if on_fly:
@@ -904,7 +903,7 @@ class ModelView(object):
             template_fname = self.list_template
             return self.render(template_fname, **kwargs)
         else:  # POST
-            action_name = request.form.get("action")
+            action_name = request.form.get("__action__")
             models = self.model.query.filter(
                 getattr(self.model, get_primary_key(self.model)).in_(
                     request.form.getlist('selected-ids'))).all()

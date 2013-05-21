@@ -82,6 +82,10 @@
       return false;
     });
     {% endif %}
+    var e = $("#footer-action-bar");
+    if (e.find(".action-list").children().length == 0) {
+      e.hide();
+    }
     $(".collapse[data-builtin=true]").collapse();
     $("select").select2();
     $(".collapse[data-builtin=true]").on("show", function () {
@@ -118,7 +122,7 @@
     $("input[name=rowtoggle]").click(function () {
       $("#list-table-body input[type=checkbox]").attr("checked", this.checked);
     });
-    $("#main-form #actions input[name=action]").click(function(){
+    $("#main-form .action-list input[name=__action__]").click(function(){
       var list_val = "";
       $("#list-table-body input:checked").each(function(){
         list_val += $(this).val() +",";
@@ -164,7 +168,7 @@
           action_2_rows[action_name][forbidden_code].push(model_repr);
         }
       });
-      $("input[name=action]").each(function () {
+      $("input[name=__action__]").each(function () {
         var tooltip = "";
         if ($(this).val() in action_2_rows) {
           $(this).attr("disabled", true);
@@ -369,7 +373,7 @@
   {% endif %}
   <div class="navbar navbar-inverse">
     <div class="navbar-inner">
-      <ul class="nav btn-group" id="actions">
+      <ul class="nav btn-group action-list">
         {% if model_view.can_batchly_edit and not model_view.as_radio_group %}
         <li>
         <input id="batch-edit" type="submit" class="btn btn-info btn-large" value="{{ _('batch edit') }}" />
@@ -377,7 +381,7 @@
         {% endif %}
         {% for action in __actions__[:displayed_action] %}
         <li>
-        <input value="{{action.name}}" type="submit" name="action" class="{{action.css_class}} btn-large" data-warn="{{action.warn_msg}}"/>
+        <input value="{{action.name}}" type="submit" name="__action__" class="{{action.css_class}} btn-large" data-warn="{{action.warn_msg}}"/>
         </li>
         {% endfor %}
       </ul>
@@ -389,7 +393,7 @@
         <ul class="dropdown-menu pull-right">
           {% for action in __actions__[displayed_action:] %}
           <li>
-            <input value="{{action.name}}" type="submit" name="action" class="{{action.css_class}}" data-warn="{{action.warn_msg}}" />
+            <input value="{{action.name}}" type="submit" name="__action__" class="{{action.css_class}}" data-warn="{{action.warn_msg}}" />
           </li>
           {% endfor %}
          <!-- dropdown menu links -->
@@ -401,17 +405,16 @@
   </div>
 </div>         
 {% else %}
-<div class="alert alert-block">
-  <span id="actions">
+<div id="footer-action-bar" class="alert alert-block">
+  {% block action_list %}
+  <span class="action-list">
     {% if model_view.can_batchly_edit and not model_view.as_radio_group %}
       <input id="batch-edit" type="submit" class="btn btn-info btn-large" value="{{ _('batch edit') }}" />
     {% endif %}
     {% for action in __actions__ %}
-    <input value="{{action.name}}" type="submit" name="action" class="{{action.css_class}}" data-warn="{{action.warn_msg}}" />{% endfor %}
+    <input value="{{action.name}}" type="submit" name="__action__" class="{{action.css_class}}" data-warn="{{action.warn_msg}}" />{% endfor %}
   </span>
-  <span id="action-fillings">
-    {% block action_fillings %}{% endblock %}
-  </span>
+  {% endblock %}
 </div>
 {% endif %}
 {% endmacro %}
