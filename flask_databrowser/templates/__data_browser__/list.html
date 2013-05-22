@@ -110,15 +110,24 @@
         val = filter_values[idx]
       }
       {% if filter.input_type[0] == 'checkbox' %}
-      {% if filter.value %}
-      $(this).attr("checked", "true")
-      {% endif %}
+        {% if filter.value %}
+        $(this).prev().attr("checked", "true")
+        $(this).val(val).trigger("change");
+        {% endif %}
       {% else %}
-      $(this).val(val).trigger("change");
+        $(this).val(val).trigger("change");
       {% endif %}
     });
     {% endif %}
     {% endfor %}
+    $("#filter input[type='checkbox']").change(function (e) {
+      var e = $($(this).attr("data-for"));
+      if ($(this).attr("checked") == "checked") {
+        e.val(1) 
+      }else {
+        e.val(0)
+      }
+    });
     $("input[name=rowtoggle]").click(function () {
       $("#list-table-body input[type=checkbox]").attr("checked", this.checked);
     });
@@ -143,8 +152,11 @@
       }
       return confirm(hint);
     });
-    $("#reset-button").click(function(){
+    $("#reset-button").click(function(evt){
+      evt.preventDefault();
       $("select").select2("val","");
+      $(this).closest('form').get(0).reset();
+      $("#filter input[type='checkbox']").trigger("change");
     });
     {% if __rows_action_desc__ %}
     var rows_action_desc = {{ __rows_action_desc__|tojson|safe }}; // row -> (name: row.name, actions: action_name-> forbidden_code)
@@ -438,7 +450,8 @@
       <div class="control-group">
         {% if filter.input_type[0] == "checkbox" %}
         <label class="checkbox">
-          <input type="checkbox" name="{{filter.op.id}}" class="{{ __css_classes__[filter.input_class] }}" />
+          <input type="checkbox" data-for="#{{ filter.op.id }}" class="{{ __css_classes__[filter.input_class] }}"/>
+          <input type="hidden" name="{{ filter.op.id }}" id="{{ filter.op.id }}"/>
           {{ filter.label }}
         </label>
         {% else %}
