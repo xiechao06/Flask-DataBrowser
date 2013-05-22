@@ -198,6 +198,7 @@ class Only(BaseFilter):
         self.__notation__ = notation
         super(Only, self).__init__(col_name=col_name, default_value=default_value, display_col_name=display_col_name)
         self.test = test
+        self._value = None
 
     def set_sa_criterion(self, q):
         """
@@ -216,3 +217,12 @@ class Only(BaseFilter):
     @property
     def input_type(self):
         return "checkbox",
+
+
+    @property
+    def value(self):
+        return 1 if self._value else 0
+
+    @value.setter
+    def value(self, v):
+        self._value = False if v == '0' else v
