@@ -14,8 +14,8 @@ from flask.ext.babel import ngettext, gettext as _
 from flask.ext.databrowser.utils import get_primary_key, named_actions, get_doc_from_table_def, test_request_type, make_disabled_field
 from flask.ext.databrowser.action import DeleteAction, ReadOnlyAction
 from flask.ext.databrowser.convert import ValueConverter
-from flask.ext.databrowser.column_spec import LinkColumnSpec, ColumnSpec, \
-    InputColumnSpec
+from flask.ext.databrowser.column_spec import (LinkColumnSpec, ColumnSpec,
+    InputColumnSpec, PlaceHolderColumnSpec)
 from flask.ext.databrowser.extra_widgets import PlaceHolder
 from flask.ext.databrowser.form import form
 from flask.ext.databrowser.exceptions import ValidationError
@@ -374,6 +374,20 @@ class ModelView(object):
                 v = v(self)
             kwargs[k] = v
 
+        compound_form = self.get_create_compound_form(form)
+        form = compound_form or form
+
+        kwargs = {}
+        form_kwargs = self.extra_params.get("create_view", {})
+        for k, v in form_kwargs.items():
+            if isinstance(v, types.FunctionType):
+                v = v(self)
+            kwargs[k] = v
+
+        for f in form:
+            if isinstance(f.widget, PlaceHolder):
+                f.widget.set_args(**kwargs)
+
         fieldset_list = []
         create_columns = self.get_create_columns()
         if isinstance(create_columns, types.DictType):
@@ -585,6 +599,7 @@ class ModelView(object):
             except AttributeError:
                 pass
 
+        form = compound_form or form
         kwargs = {}
         form_kwargs = self.extra_params.get("form_view", {})
         for k, v in form_kwargs.items():
@@ -596,7 +611,6 @@ class ModelView(object):
             if isinstance(f.widget, PlaceHolder):
                 f.widget.set_args(**kwargs)
 
-        form = compound_form or form
         form_columns = self.get_form_columns(preprocessed_obj) if len(id_list) == 1 else self.get_batch_form_columns(preprocessed_objs)
         fieldset_list = []
         if isinstance(form_columns, types.DictType):
@@ -690,10 +704,56 @@ class ModelView(object):
                     default_args[k] = v
         if default_args:
             obj = self.model(**default_args)
-            #for k, v in default_args.items():
-                #setattr(obj, k, v)
             return self.__create_form__(obj=obj)
         return self.__create_form__()
+
+    def get_create_compound_form(self, form):
+        create_columns = self.get_create_columns()
+        if not create_columns:
+            return form
+
+        # I fake a form since I won't compose my fields and get the
+        # hidden_tag (used to generate csrf) from model's form
+        class FakeForm(object):
+            def __init__(self, model_form, fields):
+                self.model_form = model_form
+                self.fields = fields
+                self.field_map = {}
+                for field in self.fields:
+                    self.field_map[field.name] = field
+
+            def __iter__(self):
+                return iter(self.fields)
+
+            def __getitem__(self, name):
+                return self.field_map[name]
+
+            def hidden_tag(self):
+                return self.model_form.hidden_tag()
+
+            def is_submitted(self):
+                return self.model_form.is_submitted()
+            
+            @property
+            def errors(self):
+                return self.model_form.errors
+
+        if isinstance(create_columns, types.DictType):
+            create_columns = list(itertools.chain(*create_columns.values()))
+
+        ret = []
+        obj = form._obj or self.model()
+        r = self.preprocess(obj)
+        value_converter = ValueConverter(obj, self)
+        for col in create_columns:
+            if isinstance(col, InputColumnSpec):
+                ret.append(form[col.col_name])
+            elif isinstance(col, basestring):
+                ret.append(form[col])
+            elif isinstance(col, PlaceHolderColumnSpec) and col.as_input:
+                field = value_converter(operator.attrgetter(col.col_name)(r), col)
+                ret.append(field)
+        return FakeForm(form, ret)
 
     def get_edit_form(self, obj=None, read_only=False):
         if self.__edit_form__ is None:

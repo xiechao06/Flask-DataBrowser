@@ -8,7 +8,7 @@ from sqlalchemy import Boolean, Column
 from .import form
 from .validators import Unique
 from .fields import QuerySelectField, QuerySelectMultipleField
-from flask.ext.databrowser.column_spec import InputColumnSpec
+from flask.ext.databrowser.column_spec import InputColumnSpec, PlaceHolderColumnSpec
 from flask.ext.databrowser.utils import make_disabled_field, get_description, get_primary_key
 from flask.ext.babel import gettext as _
 
@@ -124,7 +124,7 @@ class AdminModelConverter(ModelConverterBase):
             :param field_args:
                 Dictionary with additional field arguments
         """
-        if col_spec and col_spec.label:
+        if col_spec and col_spec.label is not None:
             return col_spec.label
         if 'label' in field_args:
             return field_args['label']
@@ -481,7 +481,7 @@ def get_form(model, converter,
         # Filter properties while maintaining property order in 'only' list
         properties = []
         for x in only:
-            if isinstance(x, InputColumnSpec):
+            if isinstance(x, InputColumnSpec) or (isinstance(x, PlaceHolderColumnSpec) and x.as_input):
                 properties.append((x.col_name, find(x.col_name), x))
             else:
                 properties.append((x, find(x), None))
@@ -491,11 +491,11 @@ def get_form(model, converter,
     field_dict = {}
     for name, prop, col_spec in properties:
         # Ignore protected properties
-        if ignore_hidden and name.startswith('_'):
+        if ignore_hidden and name.startswith('_'): 
             continue
         field = converter.convert(model, mapper, prop, field_args.get(name), hidden_pk, col_spec)
         if field is not None:
-            if col_spec and col_spec.read_only:
+            if col_spec and not isinstance(col_spec, PlaceHolderColumnSpec) and col_spec.read_only:
                 field = make_disabled_field(field)
             field_dict[name] = field
     
