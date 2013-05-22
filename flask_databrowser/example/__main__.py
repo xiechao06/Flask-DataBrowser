@@ -76,12 +76,12 @@ def main():
         __list_columns__ = ["id", "name", "group", "password", "roll_called", "group.name", "create_time", ImageColumnSpec("avatar", alt=u"头像", 
             formatter=lambda v, model: "http://farm9.staticflickr.com/8522/8478415115_152c6f5e55_m.jpg", doc=u"头像，^_^！"), "good"]
         __create_columns__ = OrderedDict()
-        __create_columns__["secondary"] = ["age", "roll_called"]
+        __create_columns__["secondary"] = [PlaceHolderColumnSpec("age", template_fname="/accounts/age-snippet.html", as_input=True), "roll_called"]
         __create_columns__["primary"] = ["name", "group", "password"]
 
         __form_columns__ = OrderedDict()
         __form_columns__[u"主要的"] = ["id", "name", "group", "password"]
-        __form_columns__[u"次要的"] = ["roll_called", "good", "age", "create_time", ImageColumnSpec("avatar", alt=u"头像", 
+        __form_columns__[u"次要的"] = ["roll_called", "good", PlaceHolderColumnSpec("age", template_fname="/accounts/age-snippet.html", as_input=True), "create_time", ImageColumnSpec("avatar", alt=u"头像", 
                                             formatter=lambda v, model: "http://farm9.staticflickr.com/8522/8478415115_152c6f5e55_m.jpg", doc=u"头像， ^_^!")]
         __form_columns__[u"额外的"] = [TableColumnSpec("dogs", css_class="table table-striped table-hover table-condensed table-bordered"),
                             TableColumnSpec("car_list", css_class="table table-striped table-hover table-condensed table-bordered", col_specs=["id", "model"])
@@ -104,6 +104,7 @@ def main():
         __sortable_columns__ = ["id", "name", "group"]
 
         __column_labels__ = {
+            "age": u"年龄",
             "name": u"姓名",
             "create_time": u"创建于", 
             "group": u"用户组",
@@ -174,7 +175,7 @@ def main():
         __customized_actions__ = [MyDeleteAction(u"删除", None), RollCall(u"点名", warn_msg=u"点名后就是弱智！"), RollCall(u"点名", warn_msg=u"点名后就是弱智！"),RollCall(u"点名", warn_msg=u"点名后就是弱智！"),RollCall(u"点名", warn_msg=u"点名后就是弱智！"),RollCall(u"点名", warn_msg=u"点名后就是弱智！"),RollCall(u"点名", warn_msg=u"点名后就是弱智！"),RollCall(u"点名", warn_msg=u"点名后就是弱智！"),_ReadOnlyAction(u"打酱油的")]
 
     user_model_view = UserModelView(User, u"用户")
-    browser.register_model_view(user_model_view, accounts_bp, extra_params={"form_view": {"company": "xc"}})
+    browser.register_model_view(user_model_view, accounts_bp, extra_params={"form_view": {"age_hint": "modify your age here"}, "create_view": {"age_hint": "input your age here"}})
 
     class CarModelView(databrowser.ModelView):
 

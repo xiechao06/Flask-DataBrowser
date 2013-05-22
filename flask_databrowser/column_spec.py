@@ -56,7 +56,7 @@ class InputColumnSpec(ColumnSpec):
                  read_only=False, 
                  doc="", 
                  formatter=None, 
-                 label="", 
+                 label=None, 
                  css_class="", 
                  filter_=None, # a function to add filters to query 
                  opt_filter=None, # a function to filter options
@@ -82,6 +82,8 @@ class ListColumnSpec(ColumnSpec):
 
 class PlaceHolderColumnSpec(ColumnSpec):
 
-    def __init__(self, col_name, label, template_fname, doc=""):
+    def __init__(self, col_name, template_fname, label=None, doc="", as_input=False, validators=None):
         super(PlaceHolderColumnSpec, self).__init__(col_name, genre=PLACE_HOLDER, label=label, doc=doc)
         self.template_fname = template_fname
+        self.as_input = as_input
+        self.validators = validators or []
