@@ -80,7 +80,7 @@ def main():
         __create_columns__["primary"] = ["name", "group", "password"]
 
         __form_columns__ = OrderedDict()
-        __form_columns__[u"主要的"] = ["id", "name", "group", "password"]
+        __form_columns__[u"主要的"] = ["id", "name", PlaceHolderColumnSpec("group", template_fname="/accounts/group-snippet.html", as_input=True), "password"]
         __form_columns__[u"次要的"] = ["roll_called", "good", PlaceHolderColumnSpec("age", template_fname="/accounts/age-snippet.html", as_input=True), "create_time", ImageColumnSpec("avatar", alt=u"头像", 
                                             formatter=lambda v, model: "http://farm9.staticflickr.com/8522/8478415115_152c6f5e55_m.jpg", doc=u"头像， ^_^!")]
         __form_columns__[u"额外的"] = [TableColumnSpec("dogs", css_class="table table-striped table-hover table-condensed table-bordered"),

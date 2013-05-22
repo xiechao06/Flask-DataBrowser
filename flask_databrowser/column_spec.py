@@ -86,4 +86,9 @@ class PlaceHolderColumnSpec(ColumnSpec):
         super(PlaceHolderColumnSpec, self).__init__(col_name, genre=PLACE_HOLDER, label=label, doc=doc)
         self.template_fname = template_fname
         self.as_input = as_input
-        self.validators = validators or []
+        if self.as_input: # fake InputColumnSpec
+            self.group_by = None
+            self.read_only = False
+            self.filter_ = None
+            self.validators = validators or []
+            self.opt_filter = None
