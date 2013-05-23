@@ -5,7 +5,7 @@ app = Flask(__name__)
 
 app.config['BABEL_DEFAULT_LOCALE'] = 'zh_CN'
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///temp.db"
-app.config["DEBUG"] = False
+app.config["DEBUG"] = True
 from flask.ext.sqlalchemy import SQLAlchemy
 db = SQLAlchemy(app)
 

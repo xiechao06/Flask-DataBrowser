@@ -73,7 +73,7 @@ class ModelView(object):
 
     @property
     def list_api_url(self):
-        return "/apis/" + self.list_view_url
+        return "/apis" + self.list_view_url
 
     @property
     def list_view_endpoint(self):
@@ -929,24 +929,27 @@ class ModelView(object):
                 raise
             return redirect(request.url)
 
-    def list_api():
-        return json.dumps({
-            "data": [
-                {
-                    "id": 1,
-                    "repr": "first item"
-                },
-                {
-                    "id": 2,
-                    "repr": "second item"
-                },
-            ],
-            "total_cnt": [
-                100,
-            ],
-            "page": 1,
-            "has_next": True
-        })
+    def list_api(self):
+
+        if request.method == "GET":
+            self.try_view()
+            page, order_by, desc = self._parse_args()
+            column_filters = self.parse_filters()
+            kwargs = {}
+            kwargs["__filters__"] = column_filters
+            kwargs["__actions__"] = self.scaffold_actions()
+            count, data = self.query_data(page, order_by, desc, column_filters)
+            data = self.scaffold_list(data)
+            kwargs["__order_by__"] = lambda col_name: col_name == order_by
+            pagination = Pagination(None, page,
+                                     self.data_browser.page_size,
+                                     count, data)
+            return json.dumps({
+                "page": page,
+                "has_next": pagination.has_next,
+                "total_cnt": 100,
+                "data": [{"id": obj["pk"], "repr": obj["repr_"]} for obj in data] ,
+            })
 
     def list_view_json(self):
         """
@@ -1068,6 +1071,9 @@ class ModelView(object):
         return count, q.all()
 
     def scaffold_list(self, models):
+        """
+        convert the objects to a dict suitable for template renderation
+        """
 
         def g():
             for idx, r in enumerate(models):
