@@ -695,8 +695,6 @@ class ModelView(object):
         # if request specify some fields, then use these fields
         default_args = {}
 
-        import pudb; pudb.set_trace()
-        
         for k, v in request.args.items():
             if hasattr(self.model, k):
                 col = getattr(self.model, k)
@@ -748,16 +746,14 @@ class ModelView(object):
             create_columns = list(itertools.chain(*create_columns.values()))
 
         ret = []
-        obj = form._obj or self.model()
-        r = self.preprocess(obj)
-        value_converter = ValueConverter(obj, self)
+        value_converter = ValueConverter(None, self)
         for col in create_columns:
             if isinstance(col, InputColumnSpec):
                 ret.append(form[col.col_name])
             elif isinstance(col, basestring):
                 ret.append(form[col])
             elif isinstance(col, PlaceHolderColumnSpec) and col.as_input:
-                field = value_converter(operator.attrgetter(col.col_name)(r), col)
+                field = value_converter(operator.attrgetter(col.col_name)(form._obj or self.model()), col)
                 ret.append(field)
         return FakeForm(form, ret)
 

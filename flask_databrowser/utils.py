@@ -124,7 +124,7 @@ def get_description(view, col_name, obj, col_spec=None):
         if ret:
             return ret
     # if this model is actually a model
-    if hasattr(obj.__class__, "_sa_class_manager"):
+    if obj and hasattr(obj.__class__, "_sa_class_manager"):
         return get_doc_from_table_def(obj.__class__, col_name)
     return ""
 
