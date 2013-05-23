@@ -695,15 +695,15 @@ class ModelView(object):
         # if request specify some fields, then use these fields
         default_args = {}
 
-        for k, v in request.args.items():
+        for k, v in request.args.iterlists():
             if hasattr(self.model, k):
                 col = getattr(self.model, k)
                 if hasattr(col.property, 'direction'): # relationship
                     q = col.property.mapper.class_.query
                     if col.property.direction.name == "MANYTOONE":
-                        default_args[k] = q.get(v)
+                        default_args[k] = q.get(v[0])
                     else:
-                        default_args[k] = [q.get(i) for i in v.split(",")]
+                        default_args[k] = [q.get(i) for i in v]
                 else:
                     default_args[k] = v
         if default_args:
