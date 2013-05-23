@@ -695,11 +695,17 @@ class ModelView(object):
         # if request specify some fields, then use these fields
         default_args = {}
 
+        import pudb; pudb.set_trace()
+        
         for k, v in request.args.items():
             if hasattr(self.model, k):
                 col = getattr(self.model, k)
                 if hasattr(col.property, 'direction'): # relationship
-                    default_args[k] = col.property.mapper.class_.query.get(v)
+                    q = col.property.mapper.class_.query
+                    if col.property.direction.name == "MANYTOONE":
+                        default_args[k] = q.get(v)
+                    else:
+                        default_args[k] = [q.get(i) for i in v.split(",")]
                 else:
                     default_args[k] = v
         if default_args:
