@@ -167,11 +167,10 @@ class AdminModelConverter(ModelConverterBase):
                 model=model)
 
             local_column = prop.local_remote_pairs[0][0]
-            if local_column.foreign_keys: # backref shouldn't be validated
-                if local_column.nullable:
-                    kwargs['validators'].append(validators.Optional())
-                elif prop.direction.name != 'MANYTOMANY':
-                    kwargs['validators'].append(validators.Required(message=_(u"this field can't be empty")))
+            if not local_column.foreign_keys or local_column.nullable: # backref shouldn't be validated
+                kwargs['validators'].append(validators.Optional())
+            elif prop.direction.name != 'MANYTOMANY':
+                kwargs['validators'].append(validators.Required(message=_(u"this field can't be empty")))
 
             # Override field type if necessary
             override = self._get_field_override(prop.key)
