@@ -158,11 +158,13 @@ body {
 }
 #list-table-body li i {
     padding: 20px 20px;
+    display: inline-block;
 }
 
 #footer-action-bar {
     margin-left: 0px;
     margin-right: 0px;
+    position: fixed;
 }
 #footer-action-bar .navbar {
     margin-bottom: 0;
