@@ -70,7 +70,7 @@ class TableWidget(object):
         html = ['<table %s>\n' % html_params(**kwargs)]
         if self.rows:
             # get the primary key of rows if possible
-            pk = str(uuid.uuid1()) # we set pk to a random value at first
+            pk = None 
             if self.model_view:
                 model = self.rows[0].__class__ 
                 if hasattr(model, "_sa_class_manager"):
