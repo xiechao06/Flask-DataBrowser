@@ -705,7 +705,7 @@ class ModelView(object):
                     else:
                         default_args[k] = [q.get(i) for i in v]
                 else:
-                    default_args[k] = v
+                    default_args[k] = v[0]
         if default_args:
             obj = self.model(**default_args)
             return self.__create_form__(obj=obj)
