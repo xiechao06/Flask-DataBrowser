@@ -536,9 +536,8 @@ class ModelView(object):
             model = None
             if request.method == "GET":
                 model = type("_temp", (object,), {})()
-                for attr in dir(self.model):
-                    if attr.startswith("_"):
-                        continue
+                for prop in self.model.__mapper__.iterate_properties:
+                    attr = prop.key
                     default_value = getattr(model_list[0], attr)
                     if all(getattr(model_,
                                    attr) == default_value for model_ in
@@ -707,6 +706,9 @@ class ModelView(object):
                 else:
                     default_args[k] = v[0]
         if default_args:
+            for prop in self.model.__mapper__.iterate_properties:
+                if prop.key not in default_args:
+                    default_args[prop.key] = None
             obj = type("_temp", (object, ), default_args)()
             return self.__create_form__(obj=obj)
         return self.__create_form__()
