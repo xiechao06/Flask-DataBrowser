@@ -42,7 +42,7 @@ class ModelView(object):
     __create_form__ = __edit_form__ = __batch_edit_form__ = None
     list_template = "__data_browser__/list.html"
     create_template = edit_template = "__data_browser__/form.html"
-    as_radio_group = False
+    can_batchly_edit = True
     form_class = form.BaseForm
 
     def __init__(self, model, model_name=""):
