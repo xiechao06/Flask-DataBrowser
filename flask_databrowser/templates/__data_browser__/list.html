@@ -56,27 +56,27 @@
         window.location = $(".pagination .next a").attr("href"); 
       }
     });
-    {% if model_view.as_radio_group %}
-    $("input[type=radio]").hide();
-    {% else %}
-    $("input[type=checkbox]").hide();
-    {% endif %}
+      $({% if model_view.can_batchly_edit %}
+        "input[type=checkbox]").hide();
+      {% elif __actions %}
+        $("input[type=radio]").hide();
+      {% endif %}
     // use bigger checkbox or radio
     $("#list-table-body li a i").click(function (e) {
-      var e = $(this).next()
-      var checked = e[0].checked
-      e.attr("checked", !checked)
+      var e = $(this).next();
+      var checked = e[0].checked;
+      e.attr("checked", !checked);
       if (e.attr("checked") == "checked") {
-        {% if model_view.as_radio_group %}
-        $(this).attr("class", "icon-circle icon-large")
-        {% else %}
-        $(this).attr("class", "icon-check icon-large")
+        {% if model_view.can_batchly_edit %}
+          $(this).attr("class", "icon-check icon-large");
+        {% elif __actions__ %}
+          $(this).attr("class", "icon-circle icon-large");
         {% endif %}
         } else {
-        {% if model_view.as_radio_group %}
-        $(this).attr("class", "icon-circle-blank icon-large")
-        {% else %}
-        $(this).attr("class", "icon-check-empty icon-large")
+        {% if model_view.can_batchly_edit %}
+          $(this).attr("class", "icon-check-empty icon-large");
+        {% elif __actions__ %}
+          $(this).attr("class", "icon-circle-blank icon-large");
         {% endif %}
       }
       return false;
@@ -86,9 +86,8 @@
     if (e.find(".action-list").children().length == 0) {
       e.hide();
     }
-    $(".collapse[data-builtin=true]").collapse();
     $("select").select2();
-    $(".collapse[data-builtin=true]").on("show", function () {
+    $(".collapse[data-builtin=true]").collapse().on("show", function () {
       $(this).prev().attr("class", "icon-chevron-up")
       }).on("hide", function () {
       $(this).prev().attr("class", "icon-chevron-down")
@@ -111,7 +110,7 @@
       }
       {% if filter.input_type[0] == 'checkbox' %}
         {% if filter.value %}
-        $(this).prev().attr("checked", "true")
+        $(this).prev().attr("checked", "true");
         $(this).val(val).trigger("change");
         {% endif %}
       {% else %}
@@ -141,8 +140,7 @@
         return false;
       }
       if ($(this).val() == "{{ _('batch edit') }}"){
-        $("#main-form").attr("method", "GET");
-        $("#main-form").attr("action", "{{ __object_url__ }}/"+ list_val);
+        $("#main-form").attr("method", "GET").attr("action", "{{ __object_url__ }}/"+ list_val);
         return true;
       }
       var hint = sprintf("{{ _("Are you sure to %%s selected item(s)?") }}", $(this).val());
@@ -172,10 +170,10 @@
             continue;
           }
           if (!(action_name in action_2_rows)) {
-            action_2_rows[action_name] = new Array();
+            action_2_rows[action_name] = [];
           }
           if (!(forbidden_code in action_2_rows[action_name])) {
-            action_2_rows[action_name][forbidden_code] = new Array();
+            action_2_rows[action_name][forbidden_code] = [];
           }
           action_2_rows[action_name][forbidden_code].push(model_repr);
         }
@@ -299,21 +297,19 @@
 <ul id="list-table-body" class="nav nav-tabs nav-stacked">
   {% for row in __data__ %}
   <li>
-  {% if __actions__ or model_view.can_batchly_edit %}
-  {% if model_view.as_radio_group %}
-  <a href="{{ model_view.url_for_object(row.obj, url=request.url, cdx=loop.index) }}">
-    <i class="icon-circle-blank icon-large"></i>
-    <input type="radio" value="{{ row.pk }}" name="selected-ids" id="checkbox-{{ row.pk }}" />
-    {{ row.repr_|safe }}
-  </a>                    
-  {% else %} {# as checkbox #}
-  <a href="{{ model_view.url_for_object(row.obj, url=request.url, cdx=loop.index) }}">
-    <i class="icon-check-empty icon-large"></i>
-    <input type="checkbox" value="{{ row.pk }}" name="selected-ids" id="checkbox-{{ row.pk }}" />
-    {{ row.repr_|safe }}
-  </a>
-  {% endif %}
-  {% endif %}
+    {% if model_view.can_batchly_edit %}
+      <a href="{{ model_view.url_for_object(row.obj, url=request.url, cdx=loop.index) }}">
+        <i class="icon-check-empty icon-large"></i>
+        <input type="checkbox" value="{{ row.pk }}" name="selected-ids" id="checkbox-{{ row.pk }}"/>
+        {{ row.repr_|safe }}
+      </a>
+    {% elif __actions__ %} {# as checkbox #}
+      <a href="{{ model_view.url_for_object(row.obj, url=request.url, cdx=loop.index) }}">
+        <i class="icon-circle-blank icon-large"></i>
+        <input type="radio" value="{{ row.pk }}" name="selected-ids" id="checkbox-{{ row.pk }}"/>
+        {{ row.repr_|safe }}
+      </a>
+    {% endif %}
   </li>
   {% endfor %}
 </ul>
@@ -323,13 +319,11 @@
 <table id="list-table" class="{{ __css_classes__.list_table_class }}">
   <thead>
     <tr>
-      {% if __actions__ or model_view.can_batchly_edit %}
-      {% if not model_view.as_radio_group and model_view.can_batchly_edit %}
-      <th class="span1"><input type="checkbox" name="rowtoggle" /></th>
+      {% if model_view.can_batchly_edit %}
+        <th class="span1"><input type="checkbox" name="rowtoggle"/></th>
       {% else %}
-      <th></th>
+        <th></th>
       {% endif %}
-      {% endif %} 
       {% for c in __list_columns__ %}
       <th title={% if c.doc %} {{c.doc}} {% endif %}>
         {% if c.sort_url %}
@@ -356,12 +350,10 @@
   <tbody id="list-table-body">
     {% for row in __data__ %}
     <tr {% if row.css %}class="{{row.css}}"{% endif %} {%if row.attrs %} {%for k,v in row.attrs.items() %}{{ k }}="{{ v }}"{% endfor %}{% endif %}>
-      {% if __actions__ or model_view.can_batchly_edit %}
-      {% if model_view.as_radio_group %}
-      <td class="span1"><input type="radio" value="{{ row.pk }}" name="selected-ids" /></td>
-      {% else %}
-      <td class="span1"><input type="checkbox" value="{{ row.pk }}" name="selected-ids" /></td>
-      {% endif %}
+      {% if model_view.can_batchly_edit  %}
+        <td class="span1"><input type="checkbox" value="{{ row.pk }}" name="selected-ids"/></td>
+      {% elif __actions__ %}
+        <td class="span1"><input type="radio" value="{{ row.pk }}" name="selected-ids"/></td>
       {% endif %}
       {% for v in row.fields %}
       {% if v.link %}
@@ -380,13 +372,13 @@
 {% if g.request_from_mobile %}
 <div id="footer-action-bar" class="navbar-fixed-bottom">
   {% set displayed_action = 3 %}
-  {% if model_view.can_batchly_edit and not model_view.as_radio_group %}
+  {% if model_view.can_batchly_edit or __actions__ %}
   {% set displayed_action = displayed_action - 1 %}
   {% endif %}
   <div class="navbar navbar-inverse">
     <div class="navbar-inner">
       <ul class="nav btn-group action-list">
-        {% if model_view.can_batchly_edit and not model_view.as_radio_group %}
+        {% if model_view.can_batchly_edit %}
         <li>
         <input id="batch-edit" type="submit" class="btn btn-info btn-large" value="{{ _('batch edit') }}" />
         </li>
@@ -420,8 +412,8 @@
 <div id="footer-action-bar" class="alert alert-block">
   {% block action_list %}
   <span class="action-list">
-    {% if model_view.can_batchly_edit and not model_view.as_radio_group %}
-      <input id="batch-edit" type="submit" class="btn btn-info btn-large" value="{{ _('batch edit') }}" />
+    {% if model_view.can_batchly_edit %}
+      <input id="batch-edit" type="submit" class="btn btn-info" value="{{ _('batch edit') }}" />
     {% endif %}
     {% for action in __actions__ %}
     <input value="{{action.name}}" type="submit" name="__action__" class="{{action.css_class}}" data-warn="{{action.warn_msg}}" />{% endfor %}
