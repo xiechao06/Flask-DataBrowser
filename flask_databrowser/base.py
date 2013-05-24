@@ -707,7 +707,7 @@ class ModelView(object):
                 else:
                     default_args[k] = v[0]
         if default_args:
-            obj = self.model(**default_args)
+            obj = type("_temp", (object, ), default_args)()
             return self.__create_form__(obj=obj)
         return self.__create_form__()
 
