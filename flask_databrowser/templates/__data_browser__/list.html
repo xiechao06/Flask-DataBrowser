@@ -310,7 +310,6 @@
         {{ row.repr_|safe }}
       </a>
     {% endif %}
-  {% endif %}
   </li>
   {% endfor %}
 </ul>
@@ -381,7 +380,7 @@
       <ul class="nav btn-group action-list">
         {% if model_view.can_batchly_edit %}
         <li>
-        <input id="batch-edit" type="submit" class="btn btn-info" value="{{ _('batch edit') }}" />
+        <input id="batch-edit" type="submit" class="btn btn-info btn-large" value="{{ _('batch edit') }}" />
         </li>
         {% endif %}
         {% for action in __actions__[:displayed_action] %}
