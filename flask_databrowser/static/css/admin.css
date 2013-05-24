@@ -164,8 +164,14 @@ body {
 #footer-action-bar {
     margin-left: 0px;
     margin-right: 0px;
-    position: fixed;
 }
+
+@media only screen and (max-width:400px) { 
+    #footer-action-bar {
+        position: fixed;
+    }
+}
+
 #footer-action-bar .navbar {
     margin-bottom: 0;
 }
@@ -182,10 +188,6 @@ body {
 }
 #footer-action-bar .dropdown-menu li input {
     border: 1px solid #ecf0f1;
-}
-#footer-action-bar {
-    margin-right: 0;
-    margin-bottom: 0;
 }
 
 #create-btn {

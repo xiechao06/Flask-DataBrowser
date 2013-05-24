@@ -134,13 +134,15 @@ def get_doc_from_table_def(model, col_name):
     attr_name_list = col_name.split('.')
     last_model = model
     for attr_name in attr_name_list[:-1]:
-        attr = getattr(last_model, attr_name)
-        if hasattr(attr, "property"):
-            last_model = attr.property.mapper.class_
+        if hasattr(last_model, attr_name):
+            attr = getattr(last_model, attr_name)
+            if hasattr(attr, "property"):
+                last_model = attr.property.mapper.class_
+            else:
+                break
         else:
-            last_model = None
             break
-    if last_model:
+    else:
         if hasattr(last_model, attr_name_list[-1]):
             from operator import attrgetter
             try:
@@ -148,6 +150,7 @@ def get_doc_from_table_def(model, col_name):
             except AttributeError:
                 pass
     return doc
+
 
 import re
 reg_b = re.compile(r"(android|bb\\d+|meego).+mobile|avantgo|bada\\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|iris|kindle|lge |maemo|midp|mmp|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\\.(browser|link)|vodafone|wap|windows (ce|phone)|xda|xiino", re.I|re.M)
