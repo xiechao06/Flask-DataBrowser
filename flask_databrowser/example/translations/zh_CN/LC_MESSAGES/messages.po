@@ -211,12 +211,12 @@ msgstr "关闭"
 #: templates/__data_browser__/form.html:62
 #, python-format
 msgid "Are you sure to %%s these items?"
-msgstr "您确认要%%s这些记录?"
+msgstr '您确认要这些记录执行操作(%%s)?'
 
 #: templates/__data_browser__/form.html:64
 #, python-format
 msgid "Are you sure to %%s this item?"
-msgstr "您确认要%%s这条记录?"
+msgstr '您确认要对这条记录执行操作(%%s)?'
 
 #: templates/__data_browser__/form_mob.html:79
 #: templates/__data_browser__/macro.html:191
@@ -267,7 +267,7 @@ msgstr "批量修改"
 #: templates/__data_browser__/list.html:135
 #, python-format
 msgid "Are you sure to %%s selected item(s)?"
-msgstr "您确认要%%s选中的记录?"
+msgstr '您确认要对选中的记录执行操作(%%s)?'
 
 #: templates/__data_browser__/list.html:138
 msgid "Attention!"
