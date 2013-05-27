@@ -62,13 +62,6 @@ class BaseAction(object):
         return 0
 
 
-class ReadOnlyAction(BaseAction):
-    """
-    this is just a "notation" class, it
-    will not be removed from a "read only" form by default
-    """
-    pass
-
 class DeleteAction(BaseAction):
     
     def __init__(self, name=_("remove"), permission=None, css_class="btn btn-danger", data_icon="delete", warn_msg=""):
