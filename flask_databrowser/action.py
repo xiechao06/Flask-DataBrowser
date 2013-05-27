@@ -47,7 +47,7 @@ class BaseAction(object):
         return _(u"operation %(action)s failed to apply upon %(model_name)s - [%(models)s]", 
                  action=self.name, model_name=self.model_name, models=",".join(unicode(model) for model in models))
 
-    def try_(self):
+    def try_(self, processed_objs):
         pass
 
     def _get_forbidden_msg_formats(self):

@@ -12,7 +12,7 @@ from flask import (render_template, flash, request, url_for, redirect, abort, Fl
 from flask.ext.principal import PermissionDenied
 from flask.ext.babel import ngettext, gettext as _
 from flask.ext.databrowser.utils import get_primary_key, named_actions, get_doc_from_table_def, test_request_type, make_disabled_field
-from flask.ext.databrowser.action import DeleteAction, ReadOnlyAction
+from flask.ext.databrowser.action import DeleteAction
 from flask.ext.databrowser.convert import ValueConverter
 from flask.ext.databrowser.column_spec import (LinkColumnSpec, ColumnSpec,
     InputColumnSpec, PlaceHolderColumnSpec)
@@ -260,7 +260,7 @@ class ModelView(object):
         if action_name:
             for action in self._get_customized_actions(processed_objs):
                 if action.name == action_name:
-                    action.try_()
+                    action.try_(processed_objs)
                     for obj in processed_objs:
                         ret_code = action.test_enabled(obj)
                         if ret_code != 0:
@@ -271,8 +271,6 @@ class ModelView(object):
                                   'error')
                             return False
                     try:
-                        if not isinstance(action, ReadOnlyAction): # we omit read only actions
-                            self.try_edit(processed_objs)
                         ret = action.op_upon_list(processed_objs, self)
                         if isinstance(ret, werkzeug.wrappers.BaseResponse) and ret.status_code == 302:
                             flash(action.success_message(processed_objs), 'success')
@@ -291,6 +289,7 @@ class ModelView(object):
                         raise
             raise ValidationError(
                 _('invalid action %(action)s', action=action_name))
+        # normal modify
         try:
             self.try_edit(processed_objs)
             # compute the field should be holded
@@ -524,11 +523,7 @@ class ModelView(object):
             hint_message = self.edit_hint_message(preprocessed_obj, read_only)
             all_customized_actions = self._get_customized_actions([preprocessed_obj])
             help_message = self.get_edit_help(preprocessed_obj)
-            if read_only:
-                # we only get read only actions
-                actions = [action for action in all_customized_actions if isinstance(action, ReadOnlyAction)]
-            else:
-                actions = all_customized_actions
+            actions = all_customized_actions
         else:
             model_list = [self.get_one(id_) for id_ in id_list]
             preprocessed_objs = [self.preprocess(obj) for obj in model_list]
@@ -566,10 +561,7 @@ class ModelView(object):
             hint_message = self.batch_edit_hint_message(preprocessed_objs, read_only)
             all_customized_actions = self._get_customized_actions(preprocessed_objs)
             help_message = self.get_edit_help(preprocessed_objs)
-            if read_only:
-                actions = [action for action in all_customized_actions if isinstance(action, ReadOnlyAction)]
-            else:
-                actions = all_customized_actions
+            actions = all_customized_actions
         grouper_info = {}
         model_columns = self._model_columns(model)
         for col in model_columns:
@@ -961,10 +953,8 @@ class ModelView(object):
             else:
                 raise ValidationError(
                     _('invalid action %(action)s', action=action_name))
-            action.try_()
             processed_objs = [self.preprocess(obj) for obj in models]
-            if not isinstance(action, ReadOnlyAction):
-                self.try_edit(processed_objs)
+            action.try_(processed_objs)
             try:
                 ret = action.op_upon_list(processed_objs, self)
                 if isinstance(ret, werkzeug.wrappers.BaseResponse) and ret.status_code == 302:
