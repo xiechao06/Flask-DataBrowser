@@ -8,7 +8,7 @@ from flask import redirect, Blueprint, request, abort
 from flask.ext.login import LoginManager
 from flask.ext.principal import Permission, RoleNeed, PermissionDenied
 from flask.ext.databrowser import filters
-from brownie.datastructures import OrderedDict
+from collections import OrderedDict
 
 admin_permission = Permission(RoleNeed("Admin"))
 
@@ -35,7 +35,7 @@ def main():
 
 
     from flask.ext import databrowser
-    from flask.ext.databrowser.action import DeleteAction, ReadOnlyAction
+    from flask.ext.databrowser.action import DeleteAction, DirectAction
 
     from models import User, Car
     accounts_bp = Blueprint("accounts", __name__, static_folder="static", 
@@ -168,7 +168,7 @@ def main():
             if row.name == "Tyde":
                 return {"title": u"测试"}
 
-        class _ReadOnlyAction(ReadOnlyAction):
+        class _ReadOnlyAction(DirectAction):
 
             def op_upon_list(self, model, model_view):
                 return redirect("http://www.u148.com")

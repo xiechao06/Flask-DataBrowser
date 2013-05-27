@@ -58,6 +58,9 @@
           })(grouper_e, input_e))
         }{% endif %}
       $("input[name='__action__']").click(function (ui) {
+        if($(this).attr("data-direct") == "True"){
+          return true;
+        }
         {% if h.is_batch_edit() %}
           return confirm(sprintf("{{ _('Are you sure to %%s these items?') }}", $(this).attr("value")));
         {% else %}
