@@ -958,10 +958,12 @@ class ModelView(object):
             try:
                 ret = action.op_upon_list(processed_objs, self)
                 if isinstance(ret, werkzeug.wrappers.BaseResponse) and ret.status_code == 302:
-                    flash(action.success_message(processed_objs), 'success')
+                    if not action.direct:
+                        flash(action.success_message(processed_objs), 'success')
                     return ret
                 self.session.commit()
-                flash(action.success_message(processed_objs), 'success')
+                if not action.direct:
+                    flash(action.success_message(processed_objs), 'success')
             except Exception, ex:
                 self.session.rollback()
                 raise
@@ -1035,11 +1037,9 @@ class ModelView(object):
         return [dict(label="a", op=dict(name="lt", id="a__lt"))]
 
     def scaffold_actions(self):
-        return [dict(name=action.name, value=action.name,
-                      css_class=action.css_class, data_icon=action.data_icon,
-                      forbidden_msg_formats=action.get_forbidden_msg_formats(),
-                     warn_msg=action.warn_msg)
-                 for action in self._get_customized_actions()]
+        return [dict(name=action.name, value=action.name, css_class=action.css_class, data_icon=action.data_icon,
+                     forbidden_msg_formats=action.get_forbidden_msg_formats(), warn_msg=action.warn_msg,
+                     direct=action.direct) for action in self._get_customized_actions()]
 
     def query_data(self, page, order_by, desc, filters, offset=0):
 

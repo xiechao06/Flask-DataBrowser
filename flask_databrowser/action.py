@@ -15,7 +15,8 @@ class BaseAction(object):
         self.css_class = css_class
         self.data_icon = data_icon
         self.warn_msg = warn_msg
-    
+        self.direct = False
+
     def op_upon_list(self, objs, model_view):
         for obj in objs:
             self._op(obj, model_view)
@@ -60,6 +61,12 @@ class BaseAction(object):
 
     def test_enabled(self, model):
         return 0
+
+
+class DirectAction(BaseAction):
+    def __init__(self, name, css_class="btn btn-info", data_icon="", warn_msg=""):
+        super(DirectAction, self).__init__(name, css_class, data_icon, warn_msg)
+        self.direct = True
 
 
 class DeleteAction(BaseAction):

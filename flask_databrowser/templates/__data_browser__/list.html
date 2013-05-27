@@ -143,6 +143,9 @@
         $("#main-form").attr("method", "GET").attr("action", "{{ __object_url__ }}/"+ list_val);
         return true;
       }
+      if ($(this).attr("data-direct") == "True"){
+        return true;
+      }
       var hint = sprintf("{{ _("Are you sure to %%s selected item(s)?") }}", $(this).val());
       var warn = $(this).attr("data-warn");
       if (warn.length > 0) {
@@ -385,7 +388,7 @@
         {% endif %}
         {% for action in __actions__[:displayed_action] %}
         <li>
-        <input value="{{action.name}}" type="submit" name="__action__" class="{{action.css_class}} btn-large" data-warn="{{action.warn_msg}}"/>
+        <input value="{{action.name}}" type="submit" name="__action__" class="{{action.css_class}} btn-large" data-warn="{{action.warn_msg}}" data-direct="{{action.direct}}"/>
         </li>
         {% endfor %}
       </ul>
@@ -397,7 +400,7 @@
         <ul class="dropdown-menu pull-right">
           {% for action in __actions__[displayed_action:] %}
           <li>
-            <input value="{{action.name}}" type="submit" name="__action__" class="{{action.css_class}}" data-warn="{{action.warn_msg}}" />
+            <input value="{{action.name}}" type="submit" name="__action__" class="{{action.css_class}}" data-warn="{{action.warn_msg}}" data-direct="{{action.direct}}" />
           </li>
           {% endfor %}
          <!-- dropdown menu links -->
@@ -416,7 +419,7 @@
       <input id="batch-edit" type="submit" class="btn btn-info" value="{{ _('batch edit') }}" />
     {% endif %}
     {% for action in __actions__ %}
-    <input value="{{action.name}}" type="submit" name="__action__" class="{{action.css_class}}" data-warn="{{action.warn_msg}}" />{% endfor %}
+    <input value="{{action.name}}" type="submit" name="__action__" class="{{action.css_class}}" data-warn="{{action.warn_msg}}" data-direct="{{action.direct}}"/>{% endfor %}
   </span>
   {% endblock %}
 </div>

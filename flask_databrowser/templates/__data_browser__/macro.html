@@ -206,7 +206,7 @@
                 <ul class="dropdown-menu pull-right">
                   {% for action in actions %}
                     <li>
-                      <input value="{{ action.name }}" type="submit" name="__action__" class="{{ action.css_class }}" data-warn="{{ action.warn_msg }}"/>
+                      <input value="{{ action.name }}" type="submit" name="__action__" class="{{ action.css_class }}" data-warn="{{ action.warn_msg }}" data-direct="{{ action.direct }}"/>
                     </li>
                   {% endfor %}
                 </ul>
@@ -228,7 +228,7 @@
                 {{ create() }}
               {% else %}
                 {% for action in actions %}
-                  <input name="__action__" value="{{ action.name }}" type="submit" name="action" class="{{ action.css_class }}"/>
+                  <input name="__action__" value="{{ action.name }}" type="submit" name="action" class="{{ action.css_class }}" data-direct="{{ action.direct }}"/>
                 {% endfor %}
               {% endif %}
             </div>
