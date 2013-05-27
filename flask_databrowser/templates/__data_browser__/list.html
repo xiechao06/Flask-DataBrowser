@@ -99,7 +99,7 @@
       return false;
     })
     {% for filter in __filters__ %}
-    var filter_values = {% if filter.value is none %}null;{% else %}"{{ filter.value }}";{%endif%}
+    var filter_values = {% if filter.value is none %}null;{% else %}{{ filter.value|safe }};{%endif%}
     {% if filter.multiple %}
     $("[name='{{ filter.op.id }}']").val(filter_values).trigger("change");
     {% else %}
