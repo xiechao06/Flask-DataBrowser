@@ -99,7 +99,7 @@
       return false;
     })
     {% for filter in __filters__ %}
-    var filter_values = {% if filter.value is none %}null;{% else %}{{ filter.value|safe }};{%endif%}
+    var filter_values = {% if filter.value is none %}null;{% else %}"{{ filter.value|safe }}";{%endif%}
     {% if filter.multiple %}
     $("[name='{{ filter.op.id }}']").val(filter_values).trigger("change");
     {% else %}
@@ -435,13 +435,6 @@
   <h4>{{ _("refine search") }}</h4>
   <hr />
   <form class="form-inline">
-    {% for k, v in request.args.lists() %}
-      {% if k != "page" %}
-        {% for i in v %}
-          <input type=hidden name="{{k}}" value="{{i}}" />
-        {% endfor %}
-      {% endif %}
-    {% endfor %}
     <fieldset class="pagination-centered">
       {% for filter in __filters__ %}
       {% if not filter.hidden %}
@@ -479,6 +472,8 @@
         </div>
         {% endif %}
       </div>
+      {% else %}
+      <input type="hidden" name="{{ filter.op.id }}"/>
       {% endif %}
       {% endfor %}
     </fieldset>
