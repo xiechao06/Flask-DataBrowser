@@ -273,10 +273,12 @@ class ModelView(object):
                     try:
                         ret = action.op_upon_list(processed_objs, self)
                         if isinstance(ret, werkzeug.wrappers.BaseResponse) and ret.status_code == 302:
-                            flash(action.success_message(processed_objs), 'success')
+                            if not action.direct:
+                                flash(action.success_message(processed_objs), 'success')
                             return ret
                         self.session.commit()
-                        flash(action.success_message(processed_objs), 'success')
+                        if not action.direct:
+                            flash(action.success_message(processed_objs), 'success')
                         return True
                     except Exception, ex:
                         flash(_(
@@ -1108,7 +1110,7 @@ class ModelView(object):
                                               self._get_customized_actions() if
                                               action.test_enabled(r) != 0])
 
-        return [] if not models else g()
+        return [] if not models else list(g())
 
     def patch_row_css(self, idx, row):
         return ""

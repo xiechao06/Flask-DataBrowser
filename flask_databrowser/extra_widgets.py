@@ -133,15 +133,17 @@ class ListWidget(object):
         self.html_tag = html_tag
         self.model_view = model_view
         self.compressed = compressed
+        self.item_css_class = item_css_class
 
     def __call__(self, field, **kwargs):
         from flask.ext.databrowser.convert import ValueConverter
 
         if not self.compressed:
             html = ["<%s %s>\n" % (self.html_tag, html_params(**kwargs))]
-            for row in self.rows:
-                converter = ValueConverter(row, self.model_view)
-                html.append(" <li class=\"%s\" >%s</li>\n" % (self.item_css_class, converter(row, self.item_col_spec)()))
+            if self.rows:
+                for row in self.rows:
+                    converter = ValueConverter(row, self.model_view)
+                    html.append(" <li class=\"%s\" >%s</li>\n" % (self.item_css_class, converter(row, self.item_col_spec)()))
             html.append("</%s>" % self.html_tag)
         else:
             uuid_ = uuid.uuid1()
