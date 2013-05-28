@@ -56,10 +56,10 @@
         window.location = $(".pagination .next a").attr("href"); 
       }
     });
-      $({% if model_view.can_batchly_edit %}
-        "input[type=checkbox]").hide();
+      {% if model_view.can_batchly_edit %}
+        $("#list-table-body input[type=checkbox]").hide();
       {% elif __actions %}
-        $("input[type=radio]").hide();
+        $("#list-table-body input[type=radio]").hide();
       {% endif %}
     // use bigger checkbox or radio
     $("#list-table-body li a i").click(function (e) {
