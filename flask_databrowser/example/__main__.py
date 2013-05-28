@@ -85,7 +85,7 @@ def main():
                                             formatter=lambda v, model: "http://farm9.staticflickr.com/8522/8478415115_152c6f5e55_m.jpg", doc=u"头像， ^_^!")]
         __form_columns__[u"额外的"] = [
             TableColumnSpec("dogs", css_class="table table-striped table-hover table-condensed table-bordered"),
-            ListColumnSpec("car_list", css_class="alert alert-info", item_col_spec=ColumnSpec("", css_class="alert-error")),
+            ListColumnSpec("car_list", css_class="alert alert-info", item_css_class="alert-error"),
         ]
 
         __batch_form_columns__ = OrderedDict()
