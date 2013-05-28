@@ -66,6 +66,9 @@ class Car(db.Model):
     owner_id = db.Column(db.Integer, db.ForeignKey("TB_USER.id"))
     owner = db.relationship(User, backref="car_list")
 
+    def __unicode__(self):
+        return self.model
+
 class Log(db.Model):
 
     __tablename__ = "TB_LOG"

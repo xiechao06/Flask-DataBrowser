@@ -75,7 +75,15 @@ class TableWidget(object):
                 model = self.rows[0].__class__ 
                 if hasattr(model, "_sa_class_manager"):
                     pk = get_primary_key(model)
-            col_specs = self.col_specs or [ColumnSpec(col) for col in dir(self.rows[0]) if not col.startswith("_")]
+            if not self.col_specs:
+                model = self.rows[0].__class__
+                if hasattr(model, '_sa_class_manager'):
+                    col_specs = [ColumnSpec(col, label=col) for col in model.__mapper__.iterate_properties]
+                else:
+                    col_specs = self.col_specs or [ColumnSpec(col, label=col) for col in model.__dict__ if not col.startswith("_")]
+            else:
+                col_specs = self.col_specs
+
             for i in xrange(len(col_specs)):
                 if isinstance(col_specs[i], basestring):
                     if col_specs[i] == pk:
@@ -130,7 +138,7 @@ class ListWidget(object):
         from flask.ext.databrowser.convert import ValueConverter
 
         if not self.compressed:
-            html = ["<%s>\n" % self.html_tag]
+            html = ["<%s %s>\n" % (self.html_tag, html_params(**kwargs))]
             for row in self.rows:
                 converter = ValueConverter(row, self.model_view)
                 html.append(" <li>%s</li>\n" % converter(row, self.item_col_spec)())
