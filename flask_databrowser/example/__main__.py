@@ -72,7 +72,7 @@ def main():
         def get_list_help(self):
             return "<h3>this is list view</h3>"
 
-        from flask.ext.databrowser.column_spec import ImageColumnSpec, TableColumnSpec, PlaceHolderColumnSpec, ListColumnSpec
+        from flask.ext.databrowser.column_spec import ImageColumnSpec, TableColumnSpec, PlaceHolderColumnSpec, ListColumnSpec, ColumnSpec
         __list_columns__ = ["id", "name", "group", "password", "roll_called", "group.name", "create_time", ImageColumnSpec("avatar", alt=u"头像", 
             formatter=lambda v, model: "http://farm9.staticflickr.com/8522/8478415115_152c6f5e55_m.jpg", doc=u"头像，^_^！"), "good"]
         __create_columns__ = OrderedDict()
@@ -85,8 +85,7 @@ def main():
                                             formatter=lambda v, model: "http://farm9.staticflickr.com/8522/8478415115_152c6f5e55_m.jpg", doc=u"头像， ^_^!")]
         __form_columns__[u"额外的"] = [
             TableColumnSpec("dogs", css_class="table table-striped table-hover table-condensed table-bordered"),
-            #TableColumnSpec("car_list", css_class="table table-striped table-hover table-condensed table-bordered", col_specs=["id", "model"]),
-            ListColumnSpec("car_list", css_class="alert alert-info"),
+            ListColumnSpec("car_list", css_class="alert alert-info", item_col_spec=ColumnSpec("", css_class="alert-error")),
         ]
 
         __batch_form_columns__ = OrderedDict()
