@@ -53,7 +53,17 @@ def main():
         list_template = "accounts/list.html"
         edit_template = create_template = "accounts/form.html"
         can_batchly_edit = True
-        #as_radio_group = True
+
+        def preprocess(self, obj):
+            class _Proxy(object):
+
+                def __init__(self, obj):
+                    self.obj = obj
+                    self.foo = 1
+
+                def __getattr__(self, attr):
+                    return getattr(self.obj, attr)
+            return _Proxy(obj)
 
         def patch_row_css(self, idx, row):
             if row.roll_called == 1:
@@ -80,7 +90,8 @@ def main():
         __create_columns__["primary"] = ["name", "group", "password"]
 
         __form_columns__ = OrderedDict()
-        __form_columns__[u"主要的"] = ["id", "name", PlaceHolderColumnSpec("group", template_fname="/accounts/group-snippet.html", as_input=True), "password"]
+        __form_columns__[u"主要的"] = ["id", "name", PlaceHolderColumnSpec("group", template_fname="/accounts/group-snippet.html", as_input=True), "password", 
+                                         PlaceHolderColumnSpec("foo", template_fname="/accounts/foo-snippet.html")]
         __form_columns__[u"次要的"] = ["roll_called", "good", PlaceHolderColumnSpec("age", template_fname="/accounts/age-snippet.html", as_input=True), "create_time", ImageColumnSpec("avatar", alt=u"头像", 
                                             formatter=lambda v, model: "http://farm9.staticflickr.com/8522/8478415115_152c6f5e55_m.jpg", doc=u"头像， ^_^!")]
         __form_columns__[u"额外的"] = [
