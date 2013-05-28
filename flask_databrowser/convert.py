@@ -53,7 +53,7 @@ class ValueConverter(object):
             # TODO if v is a registered model, then a link should generated 
             w = extra_widgets.TableWidget(v, col_specs=col_spec.col_specs, model_view=self.model_view, sum_fields=col_spec.sum_fields, preprocess=col_spec.preprocess)
         elif col_spec.genre == column_spec.UNORDERED_LIST:
-            w = extra_widgets.ListWidget(v, item_col_spec=col_spec.item_col_spec, model_view=self.model_view, compressed=col_spec.compressed)
+            w = extra_widgets.ListWidget(v, item_col_spec=col_spec.item_col_spec, model_view=self.model_view, compressed=col_spec.compressed, item_css_class=col_spec.item_css_class)
         elif col_spec.genre == column_spec.PLACE_HOLDER:
             w = extra_widgets.PlaceHolder(col_spec.template_fname, v, self.obj, self.model_view)
         else: # plaintext
