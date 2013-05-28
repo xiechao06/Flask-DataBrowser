@@ -485,26 +485,29 @@ class ModelView(object):
         if len(id_list) == 1:
             model = self.get_one(id_list[0])
             self.try_view([model]) # first, we test if we could view
-            cdx = request.args.get("cdx", 0, int)
+            cdx = request.args.get("cdx", None, int)
             if cdx:
                 page, order_by, desc = self._parse_args()
                 if cdx == 1:
-                    count, models = self.query_data(0, order_by, desc, [],
-                                                    offset=cdx)
+                    # only retrieve the next one
+                    count, models = self.query_data(order_by, desc, [],
+                                                    offset=cdx, limit=1)
                     try:
-                        next_model = models[1]
+                        next_model = models[0]
                         next_url = self.url_for_object(next_model, url=return_url,
                                                        cdx=cdx + 1)
                     except IndexError:
                         pass
                 else:
-                    count, models = self.query_data(0, order_by, desc, [],
-                                                    offset=cdx - 2)
+                    # only retrieve the previous and next url
+                    count, models = self.query_data(order_by, desc, [],
+                                                    offset=cdx-2, limit=3)
+                    pre_model = models[0]
+                    pre_url = self.url_for_object(pre_model, cdx=cdx - 1,
+                                                  url=return_url)
                     try:
-                        pre_model = models[0]
+                        # note, next object may be None
                         next_model = models[2]
-                        pre_url = self.url_for_object(pre_model, cdx=cdx - 1,
-                                                      url=return_url)
                         next_url = self.url_for_object(next_model, cdx=cdx + 1,
                                                        url=return_url)
                     except IndexError:
@@ -876,7 +879,8 @@ class ModelView(object):
             kwargs["__action_2_forbidden_message_formats__"] = dict(
                 (action["name"], action["forbidden_msg_formats"]) for action in
                 kwargs["__actions__"])
-            count, data = self.query_data(page, order_by, desc, column_filters)
+            count, data = self.query_data(order_by, desc, column_filters, (page-1) * self.flask_databrowser.page_size, 
+                                          self.flask_databrowser.page_size)
             kwargs["__rows_action_desc__"] = self.get_rows_action_desc(data)
             kwargs["__count__"] = count
             kwargs["__data__"] = self.scaffold_list(data)
@@ -933,21 +937,18 @@ class ModelView(object):
 
         if request.method == "GET":
             self.try_view()
-            page, order_by, desc = self._parse_args()
+            offset, limit, order_by, desc = self._parse_args2()
             column_filters = self.parse_filters()
             kwargs = {}
             kwargs["__filters__"] = column_filters
             kwargs["__actions__"] = self.scaffold_actions()
-            count, data = self.query_data(page, order_by, desc, column_filters)
+            count, data = self.query_data(order_by, desc, column_filters, offset, limit)
             data = self.scaffold_list(data)
             kwargs["__order_by__"] = lambda col_name: col_name == order_by
-            pagination = Pagination(None, page,
-                                     self.data_browser.page_size,
-                                     count, data)
+
             return json.dumps({
-                "page": page,
-                "has_next": pagination.has_next,
-                "total_cnt": 100,
+                "has_more": count > (offset or 0) + (limit or sys.maxint),
+                "total_cnt": count,
                 "data": [{"id": obj["pk"], "repr": obj["repr_"]} for obj in data] ,
             })
 
@@ -958,7 +959,9 @@ class ModelView(object):
         self.try_view()
         page, order_by, desc = self._parse_args()
         column_filters = self.parse_filters()
-        count, data = self.query_data(page, order_by, desc, column_filters)
+        count, data = self.query_data(order_by, desc, column_filters, 
+                                      (page-1)*self.data_browser.page_size, 
+                                      self.data_browser.page_size)
         ret = {"total_count": count, "data": [],
                "has_next": page * self.data_browser.page_size < count}
         for idx, row in enumerate(self.scaffold_list(data)):
@@ -985,6 +988,23 @@ class ModelView(object):
             except ValueError:
                 order_by = self.__default_order__[0]
         return page, order_by, desc
+
+    def _parse_args2(self):
+        limit = request.args.get("__limit__", None, type=int)
+        offset = request.args.get("__offset__", None, type=int)
+        order_by = request.args.get("order_by")
+        desc = request.args.get("desc", 0, type=int)
+        if order_by is None and isinstance(self.__default_order__,
+                                           (list, tuple)):
+            try:
+                order_by, desc = self.__default_order__
+                if desc == "desc":
+                    desc = 1
+                else:
+                    desc = 0
+            except ValueError:
+                order_by = self.__default_order__[0]
+        return offset, limit, order_by, desc
 
     def scaffold_list_columns(self, order_by, desc):
         """
@@ -1025,7 +1045,7 @@ class ModelView(object):
                      warn_msg=action.warn_msg)
                  for action in self._get_customized_actions()]
 
-    def query_data(self, page, order_by, desc, filters, offset=0):
+    def query_data(self, order_by, desc, filters, offset, limit):
 
         q = self.model.query
         joined_tables = []
@@ -1062,11 +1082,10 @@ class ModelView(object):
         for t in joined_tables:
             q = q.join(t)
         count = q.count()
-        if offset:
+        if offset is not None:
             q = q.offset(offset)
-        if page:
-            q = q.offset((page - 1) * self.data_browser.page_size)
-        q = q.limit(self.data_browser.page_size)
+        if limit is not None:
+            q = q.limit(limit)
 
         return count, q.all()
 
