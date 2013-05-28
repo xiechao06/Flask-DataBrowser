@@ -133,6 +133,7 @@ class ListWidget(object):
         self.html_tag = html_tag
         self.model_view = model_view
         self.compressed = compressed
+        self.item_css_class = item_css_class
 
     def __call__(self, field, **kwargs):
         from flask.ext.databrowser.convert import ValueConverter
