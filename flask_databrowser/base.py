@@ -787,7 +787,8 @@ class ModelView(object):
         if not form_columns:
             return form
 
-        value_converter = ValueConverter(obj, self)
+        r = self.preprocess(obj)
+        value_converter = ValueConverter(r, self)
 
         # I fake a form since I won't compose my fields and get the
         # hidden_tag (used to generate csrf) from model's form
@@ -816,7 +817,6 @@ class ModelView(object):
                 return self.model_form.errors
 
         ret = []
-        r = self.preprocess(obj)
         
         if isinstance(form_columns, types.DictType):
             form_columns = list(itertools.chain(*form_columns.values()))
