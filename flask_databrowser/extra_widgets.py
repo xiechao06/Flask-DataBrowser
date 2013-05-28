@@ -141,7 +141,7 @@ class ListWidget(object):
             html = ["<%s %s>\n" % (self.html_tag, html_params(**kwargs))]
             for row in self.rows:
                 converter = ValueConverter(row, self.model_view)
-                html.append(" <li>%s</li>\n" % converter(row, self.item_col_spec)())
+                html.append(" <li class=\"%s\" >%s</li>\n" % (self.item_col_spec.css_class, converter(row, self.item_col_spec)()))
             html.append("</%s>" % self.html_tag)
         else:
             uuid_ = uuid.uuid1()
