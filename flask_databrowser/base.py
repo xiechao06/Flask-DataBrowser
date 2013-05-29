@@ -1301,10 +1301,10 @@ class DataBrowser(object):
         except KeyError:
             return None
 
-    def get_form_url(self, obj):
+    def get_form_url(self, obj, **kwargs):
         try:
             model_view = self.__registered_view_map[obj.__tablename__]
-            return model_view.url_for_object(obj, url=request.url)
+            return model_view.url_for_object(obj, **kwargs)
         except KeyError:
             return None
 
