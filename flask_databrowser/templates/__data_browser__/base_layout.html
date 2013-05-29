@@ -38,6 +38,10 @@
           $(".flash").fadeOut("slow");
         }, 3000);
         $("[data-toggle=tooltip]").tooltip();
+      $(".accordion").on("shown", function(event) {
+          event.stopPropagation();
+      }).on("hidden", function(event) {
+      event.stopPropagation()});
       })</script>
     {% block __data_browser__builtin_head_block %}
     {% endblock %}

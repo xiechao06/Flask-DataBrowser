@@ -148,13 +148,15 @@ class ListWidget(object):
         else:
             uuid_ = uuid.uuid1()
             if self.rows:
-                html = ['<a href="#" data-target="#%s" data-toggle="collapse">%d</a>' % (uuid_, len(self.rows))]
+                html = ['<div class="accordion">']
+                #html += ['<a href="#" data-target="#%s" data-toggle="collapse">%d</a>' % (uuid_, len(self.rows))]
+                html.append('<a href="#" data-target="#%s" data-toggle="collapse">%d</a>' % (uuid_, len(self.rows)))
                 html.append('<i class="icon-chevron-down"></i>')
                 html.append('<div id="%s" class="collapse in" data-builtin="true">\n<div class="accordion-inner">' % uuid_)
                 for row in self.rows:
                     converter = ValueConverter(row, self.model_view)
                     html.append(" <div>%s</div>\n" % converter(row, self.item_col_spec)())
-                html.append('</div>\n</div>')
+                html.append('</div>\n</div>\n</div>')
             else:
                 html = ["0"]
         return HTMLString(''.join(html))
