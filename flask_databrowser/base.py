@@ -8,7 +8,9 @@ import operator
 import json
 import werkzeug
 from flask import (render_template, flash, request, url_for, redirect, abort, Flask, 
-                   make_response)
+                   make_response, jsonify)
+import yaml
+from flask.ext.sqlalchemy import Pagination
 from flask.ext.principal import PermissionDenied
 from flask.ext.babel import ngettext, gettext as _
 from flask.ext.databrowser.utils import get_primary_key, named_actions, get_doc_from_table_def, test_request_type, make_disabled_field
@@ -20,6 +22,8 @@ from flask.ext.databrowser.extra_widgets import PlaceHolder
 from flask.ext.databrowser.form import form
 from flask.ext.databrowser.exceptions import ValidationError
 
+WEB_PAGE = 1
+WEB_SERVICE = 2
 
 class ModelView(object):
     __column_formatters__ = {}
@@ -36,6 +40,8 @@ class ModelView(object):
     __max_col_len__ = 255
 
     __model_list__ = []
+
+    serv_type = WEB_PAGE | WEB_SERVICE
 
     language = "en"
     column_hide_backrefs = True
@@ -66,8 +72,24 @@ class ModelView(object):
         return self.object_view_url + "-list"
 
     @property
+    def list_api_url(self):
+        return "/apis" + self.list_view_url
+
+    @property
+    def filters_api_url(self):
+        return "/apis" + self.object_view_url + "-filters"
+
+    @property
     def list_view_endpoint(self):
         return self.object_view_endpoint + "_list"
+
+    @property
+    def list_api_endpoint(self):
+        return self.object_view_endpoint + "_list_api"
+
+    @property
+    def filters_api_endpoint(self):
+        return self.object_view_endpoint + "_filters_api"
 
     @property
     def object_view_url(self):
@@ -94,6 +116,11 @@ class ModelView(object):
                 self.__list_column_specs.append(col_spec)
 
         return self.__list_column_specs
+
+    @property
+    def object_view_endpoint(self):
+        return re.sub(r"([A-Z]+)", lambda m: "_" + m.groups()[0].lower(),
+                      self.model.__name__).lstrip("_")
 
     @property
     def object_view_endpoint(self):
@@ -481,26 +508,29 @@ class ModelView(object):
         if len(id_list) == 1:
             model = self.get_one(id_list[0])
             self.try_view([model]) # first, we test if we could view
-            cdx = request.args.get("cdx", 0, int)
+            cdx = request.args.get("cdx", None, int)
             if cdx:
                 page, order_by, desc = self._parse_args()
                 if cdx == 1:
-                    count, models = self.query_data(0, order_by, desc, [],
-                                                    offset=cdx)
+                    # only retrieve the next one
+                    count, models = self.query_data(order_by, desc, [],
+                                                    offset=cdx, limit=1)
                     try:
-                        next_model = models[1]
+                        next_model = models[0]
                         next_url = self.url_for_object(next_model, url=return_url,
                                                        cdx=cdx + 1)
                     except IndexError:
                         pass
                 else:
-                    count, models = self.query_data(0, order_by, desc, [],
-                                                    offset=cdx - 2)
+                    # only retrieve the previous and next url
+                    count, models = self.query_data(order_by, desc, [],
+                                                    offset=cdx-2, limit=3)
+                    pre_model = models[0]
+                    pre_url = self.url_for_object(pre_model, cdx=cdx - 1,
+                                                  url=return_url)
                     try:
-                        pre_model = models[0]
+                        # note, next object may be None
                         next_model = models[2]
-                        pre_url = self.url_for_object(pre_model, cdx=cdx - 1,
-                                                      url=return_url)
                         next_url = self.url_for_object(next_model, cdx=cdx + 1,
                                                        url=return_url)
                     except IndexError:
@@ -899,9 +929,6 @@ class ModelView(object):
         """
         the view function of list of models
         """
-        from flask import request, url_for, redirect
-        import yaml
-        from flask.ext.sqlalchemy import Pagination
 
         if request.method == "GET":
             self.try_view()
@@ -918,7 +945,8 @@ class ModelView(object):
             kwargs["__action_2_forbidden_message_formats__"] = dict(
                 (action["name"], action["forbidden_msg_formats"]) for action in
                 kwargs["__actions__"])
-            count, data = self.query_data(page, order_by, desc, column_filters)
+            count, data = self.query_data(order_by, desc, column_filters, (page-1) * self.data_browser.page_size, 
+                                          self.data_browser.page_size)
             kwargs["__rows_action_desc__"] = self.get_rows_action_desc(data)
             kwargs["__count__"] = count
             kwargs["__data__"] = self.scaffold_list(data)
@@ -971,6 +999,65 @@ class ModelView(object):
                 raise
             return redirect(request.url)
 
+    def list_api(self):
+
+        if request.method == "GET":
+            self.try_view()
+            offset, limit, order_by, desc = self._parse_args2()
+            column_filters = self.parse_filters()
+            kwargs = {}
+            kwargs["__filters__"] = column_filters
+            kwargs["__actions__"] = self.scaffold_actions()
+            count, data = self.query_data(order_by, desc, column_filters, offset, limit)
+            data = self.scaffold_list(data)
+            kwargs["__order_by__"] = lambda col_name: col_name == order_by
+
+            return json.dumps({
+                "has_more": count > (offset or 0) + (limit or sys.maxint),
+                "total_cnt": count,
+                "data": [{"id": obj["pk"], "repr": obj["repr_"]} for obj in data] ,
+            })
+
+    def filters_api(self):
+        ret = []
+        self.try_view()
+        column_filters = self.parse_filters()
+        for filter_ in column_filters:
+            if filter_.input_type[0] == 'checkbox':
+                ret.append({
+                    "type": "checkbox",
+                    "hidden": filter_.hidden,
+                    "name": filter_.op.id,
+                    "label_extra": filter_.op.name,
+                    "label": filter_.label,
+                    "default_value": filter_.default_value,
+                    "notation": filter_.__notation__,
+                }) 
+            elif filter_.options:
+                ret.append({
+                    "type": "select",
+                    "hidden": filter_.hidden,
+                    "name": filter_.op.id,
+                    "label_extra": filter_.op.name,
+                    "label": filter_.label,
+                    "default_value": filter_.default_value,
+                    "options": [(unicode(a), unicode(b)) for a, b in filter_.options],
+                    "multiple": filter_.multiple,
+                    "notation": filter_.__notation__,
+                }) 
+            else: 
+                for input_type, default_value in zip(filter_.input_type, filter_.default_value or (None, None)):
+                    ret.append({
+                        "name": filter_.op.id,
+                        "type": input_type,
+                        "label_extra": filter_.op.name,
+                        "label": filter_.label,
+                        "default_value": default_value,
+                        "notation": filter_.__notation__,
+                    })
+        return jsonify({"filter_conditions": ret})
+
+
     def list_view_json(self):
         """
         this view return a page of items in json format
@@ -978,7 +1065,9 @@ class ModelView(object):
         self.try_view()
         page, order_by, desc = self._parse_args()
         column_filters = self.parse_filters()
-        count, data = self.query_data(page, order_by, desc, column_filters)
+        count, data = self.query_data(order_by, desc, column_filters, 
+                                      (page-1)*self.data_browser.page_size, 
+                                      self.data_browser.page_size)
         ret = {"total_count": count, "data": [],
                "has_next": page * self.data_browser.page_size < count}
         for idx, row in enumerate(self.scaffold_list(data)):
@@ -1005,6 +1094,23 @@ class ModelView(object):
             except ValueError:
                 order_by = self.__default_order__[0]
         return page, order_by, desc
+
+    def _parse_args2(self):
+        limit = request.args.get("__limit__", None, type=int)
+        offset = request.args.get("__offset__", None, type=int)
+        order_by = request.args.get("order_by")
+        desc = request.args.get("desc", 0, type=int)
+        if order_by is None and isinstance(self.__default_order__,
+                                           (list, tuple)):
+            try:
+                order_by, desc = self.__default_order__
+                if desc == "desc":
+                    desc = 1
+                else:
+                    desc = 0
+            except ValueError:
+                order_by = self.__default_order__[0]
+        return offset, limit, order_by, desc
 
     def scaffold_list_columns(self, order_by, desc):
         """
@@ -1043,7 +1149,7 @@ class ModelView(object):
                      forbidden_msg_formats=action.get_forbidden_msg_formats(), warn_msg=action.warn_msg,
                      direct=action.direct) for action in self._get_customized_actions()]
 
-    def query_data(self, page, order_by, desc, filters, offset=0):
+    def query_data(self, order_by, desc, filters, offset, limit):
 
         q = self.model.query
         joined_tables = []
@@ -1080,15 +1186,17 @@ class ModelView(object):
         for t in joined_tables:
             q = q.join(t)
         count = q.count()
-        if offset:
+        if offset is not None:
             q = q.offset(offset)
-        if page:
-            q = q.offset((page - 1) * self.data_browser.page_size)
-        q = q.limit(self.data_browser.page_size)
+        if limit is not None:
+            q = q.limit(limit)
 
         return count, q.all()
 
     def scaffold_list(self, models):
+        """
+        convert the objects to a dict suitable for template renderation
+        """
 
         def g():
             for idx, r in enumerate(models):
@@ -1261,22 +1369,34 @@ class DataBrowser(object):
         model_view.data_browser = self
         model_view.extra_params = extra_params or {}
 
-        blueprint.add_url_rule(model_view.list_view_url,
-                               model_view.list_view_endpoint,
-                               model_view.list_view,
-                               methods=["GET", "POST"])
-        blueprint.add_url_rule(model_view.list_view_url + ".json",
-                               model_view.list_view_endpoint + "_json",
-                               model_view.list_view_json,
-                               methods=["GET"])
-        blueprint.add_url_rule(model_view.object_view_url,
-                               model_view.object_view_endpoint,
-                               model_view.object_view,
-                               methods=["GET", "POST"])
-        blueprint.add_url_rule(model_view.object_view_url + "/<id_>",
-                               model_view.object_view_endpoint,
-                               model_view.object_view,
-                               methods=["GET", "POST"])
+        if model_view.serv_type & WEB_PAGE:
+            blueprint.add_url_rule(model_view.list_view_url,
+                                   model_view.list_view_endpoint,
+                                   model_view.list_view,
+                                   methods=["GET", "POST"])
+            blueprint.add_url_rule(model_view.list_view_url + ".json",
+                                   model_view.list_view_endpoint + "_json",
+                                   model_view.list_view_json,
+                                   methods=["GET"])
+            blueprint.add_url_rule(model_view.object_view_url,
+                                   model_view.object_view_endpoint,
+                                   model_view.object_view,
+                                   methods=["GET", "POST"])
+            blueprint.add_url_rule(model_view.object_view_url + "/<id_>",
+                                   model_view.object_view_endpoint,
+                                   model_view.object_view,
+                                   methods=["GET", "POST"])
+
+        if model_view.serv_type & WEB_SERVICE:
+            blueprint.add_url_rule(model_view.list_api_url,
+                                   model_view.list_api_endpoint,
+                                   model_view.list_api,
+                                   methods=["GET", "POST"])
+            blueprint.add_url_rule(model_view.filters_api_url,
+                                   model_view.filters_api_endpoint,
+                                   model_view.filters_api,
+                                   methods=["GET"])
+
         blueprint.before_request(model_view.before_request_hook)
         blueprint.after_request(model_view.after_request_hook)
         self.__registered_view_map[model_view.model.__tablename__] = model_view
