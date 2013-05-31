@@ -8,7 +8,7 @@ import operator
 import json
 import werkzeug
 from flask import (render_template, flash, request, url_for, redirect, abort, Flask, 
-                   make_response)
+                   make_response, jsonify)
 import yaml
 from flask.ext.sqlalchemy import Pagination
 from flask.ext.principal import PermissionDenied
@@ -76,12 +76,20 @@ class ModelView(object):
         return "/apis" + self.list_view_url
 
     @property
+    def filters_api_url(self):
+        return "/apis" + self.object_view_url + "-filters"
+
+    @property
     def list_view_endpoint(self):
         return self.object_view_endpoint + "_list"
 
     @property
     def list_api_endpoint(self):
         return self.object_view_endpoint + "_list_api"
+
+    @property
+    def filters_api_endpoint(self):
+        return self.object_view_endpoint + "_filters_api"
 
     @property
     def object_view_url(self):
@@ -879,8 +887,8 @@ class ModelView(object):
             kwargs["__action_2_forbidden_message_formats__"] = dict(
                 (action["name"], action["forbidden_msg_formats"]) for action in
                 kwargs["__actions__"])
-            count, data = self.query_data(order_by, desc, column_filters, (page-1) * self.flask_databrowser.page_size, 
-                                          self.flask_databrowser.page_size)
+            count, data = self.query_data(order_by, desc, column_filters, (page-1) * self.data_browser.page_size, 
+                                          self.data_browser.page_size)
             kwargs["__rows_action_desc__"] = self.get_rows_action_desc(data)
             kwargs["__count__"] = count
             kwargs["__data__"] = self.scaffold_list(data)
@@ -951,6 +959,46 @@ class ModelView(object):
                 "total_cnt": count,
                 "data": [{"id": obj["pk"], "repr": obj["repr_"]} for obj in data] ,
             })
+
+    def filters_api(self):
+        ret = []
+        self.try_view()
+        column_filters = self.parse_filters()
+        for filter_ in column_filters:
+            if filter_.input_type[0] == 'checkbox':
+                ret.append({
+                    "type": "checkbox",
+                    "hidden": filter_.hidden,
+                    "name": filter_.op.id,
+                    "label_extra": filter_.op.name,
+                    "label": filter_.label,
+                    "default_value": filter_.default_value,
+                    "notation": filter_.__notation__,
+                }) 
+            elif filter_.options:
+                ret.append({
+                    "type": "select",
+                    "hidden": filter_.hidden,
+                    "name": filter_.op.id,
+                    "label_extra": filter_.op.name,
+                    "label": filter_.label,
+                    "default_value": filter_.default_value,
+                    "options": [(unicode(a), unicode(b)) for a, b in filter_.options],
+                    "multiple": filter_.multiple,
+                    "notation": filter_.__notation__,
+                }) 
+            else: 
+                for input_type, default_value in zip(filter_.input_type, filter_.default_value or (None, None)):
+                    ret.append({
+                        "name": filter_.op.id,
+                        "type": input_type,
+                        "label_extra": filter_.op.name,
+                        "label": filter_.label,
+                        "default_value": default_value,
+                        "notation": filter_.__notation__,
+                    })
+        return jsonify({"filter_conditions": ret})
+
 
     def list_view_json(self):
         """
@@ -1288,6 +1336,10 @@ class DataBrowser(object):
                                    model_view.list_api_endpoint,
                                    model_view.list_api,
                                    methods=["GET", "POST"])
+            blueprint.add_url_rule(model_view.filters_api_url,
+                                   model_view.filters_api_endpoint,
+                                   model_view.filters_api,
+                                   methods=["GET"])
 
         blueprint.before_request(model_view.before_request_hook)
         blueprint.after_request(model_view.after_request_hook)
