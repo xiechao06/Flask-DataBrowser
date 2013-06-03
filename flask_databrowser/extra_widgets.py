@@ -37,7 +37,7 @@ class PlainText(object):
     def __init__(self, s, trunc):
         self.s = s
         self.trunc = trunc
-    
+
     def __call__(self, field, **kwargs):
         need_trunc = False
         s = self.s
@@ -48,7 +48,7 @@ class PlainText(object):
         content = []
         for i in xrange(len(self.s)):
             content.append(self.s[i:i+24])
-            i += 24 
+            i += 24
         if not need_trunc:
             return HTMLString('<span %s>%s</span>' % (html_params(**kwargs), s))
         else:
@@ -70,9 +70,9 @@ class TableWidget(object):
         html = ['<table %s>\n' % html_params(**kwargs)]
         if self.rows:
             # get the primary key of rows if possible
-            pk = None 
+            pk = None
             if self.model_view:
-                model = self.rows[0].__class__ 
+                model = self.rows[0].__class__
                 if hasattr(model, "_sa_class_manager"):
                     pk = get_primary_key(model)
             if not self.col_specs:
@@ -89,7 +89,7 @@ class TableWidget(object):
                     if col_specs[i] == pk:
                         col_specs[i] = self.model_view.data_browser.create_object_link_column_spec(self.rows[0].__class__, pk) or ColumnSpec(col_specs[i], label=pk)
                     else:
-                        col_specs[i] = ColumnSpec(col_specs[i])
+                        col_specs[i] = ColumnSpec(col_specs[i], label=col_specs[i])
             #col_specs = [ColumnSpec(col) if isinstance(col, basestring) else col for col in col_specs]
             html.append('  <thead>\n')
             if self.sum_fields:
@@ -171,12 +171,12 @@ class PlaceHolder(object):
 
     def set_args(self, **kwargs):
         self.kwargs = kwargs
-    
+
     def __call__(self, field, **kwargs):
         from flask import render_template
-        return render_template(self.template_fname, 
-                               field_value=self.field_value, 
-                               obj=self.obj, 
+        return render_template(self.template_fname,
+                               field_value=self.field_value,
+                               obj=self.obj,
                                model_view=self.model_view,
                                **self.kwargs)
 
