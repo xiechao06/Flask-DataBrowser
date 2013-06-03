@@ -97,7 +97,7 @@ def make_disabled_field(field):
 
         # dirty trick
         @property
-        def read_only(self):
+        def __read_only__(self):
             return True
 
     field.field_class = FakeField

@@ -117,14 +117,14 @@
       {% if f.label.text %}
         <div class="control-label">
           <strong>{{ f.label.text }}</strong>
-          {% if f.type != 'ReadOnlyField' and h.is_required_form_field(f) %}
+          {% if not f.__read_only__ and h.is_required_form_field(f) %}
             <strong style="color: red">&#42;</strong>
           {% else %}
             &nbsp;
           {% endif %}
         </div>
       {% else %}
-        {% if f.type != 'ReadOnlyField' and h.is_required_form_field(f) %}
+        {% if not f.__read_only__ and h.is_required_form_field(f) %}
           <strong style="color: red">&#42;</strong>
         {% else %}
           &nbsp;
@@ -143,8 +143,10 @@
           {% else %}
             {{ f(disabled=True)|safe }}
           {% endif %}
-          <input type="checkbox" data-role="hold_value" name="hold-value-{{f.name}}"
+          {% if not f.__read_only__ %}
+            <input type="checkbox" data-role="hold_value" name="hold-value-{{f.name}}"
                  checked="checked">{{ _("keep unchanged") }}
+          {% endif %}
         {% else %}
           {% if not focus_set %}
             {{ f(autofocus='autofocus')|safe }}
