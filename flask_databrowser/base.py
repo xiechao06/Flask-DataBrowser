@@ -613,7 +613,7 @@ class ModelView(object):
             fieldset_list.append(("", form))
 
         resp = self.render(self.get_edit_template(),
-                           obj=self.preprocess(model) if len(id_list) else None,
+                           obj=self.preprocess(model) if len(id_list)==1 else None,
                            form=form,
                            fieldset_list=fieldset_list,
                            pre_url=pre_url,
