@@ -113,6 +113,14 @@
           return false;
         });
       {% endif %}
+      var checkSubmitFlag = false;
+      $("#submit-btn").click(function(){
+          if (checkSubmitFlag){
+            return false;
+          }else{
+            checkSubmitFlag = true;
+          }
+      });
     });
   </script>
 {% endblock %}
