@@ -135,13 +135,24 @@
       {% endif %}
       <div>
         {% if h.is_batch_edit() %}
-          {% if h.is_disabled_form_field(f) %}
-            {{ f(disabled=True, value=_("unique field, can't be modified"))|safe }}
-          {% elif not focus_set %}
-            {{ f(autofocus='autofocus', disabled=True)|safe }}
-            {% set focus_set = True %}
+          {% if h.is_required_form_field(f) %}
+            {% if h.is_disabled_form_field(f) %}
+              {{ f(disabled=True, required=True, value=_("unique field, can't be modified"))|safe }}
+            {% elif not focus_set %}
+              {{ f(autofocus='autofocus', disabled=True, required=True)|safe }}
+              {% set focus_set = True %}
+            {% else %}
+              {{ f(disabled=True, required=True)|safe }}
+            {% endif %}
           {% else %}
-            {{ f(disabled=True)|safe }}
+            {% if h.is_disabled_form_field(f) %}
+              {{ f(disabled=True, value=_("unique field, can't be modified"))|safe }}
+            {% elif not focus_set %}
+              {{ f(autofocus='autofocus', disabled=True)|safe }}
+              {% set focus_set = True %}
+            {% else %}
+              {{ f(disabled=True)|safe }}
+            {% endif %}
           {% endif %}
           {% if not f.__read_only__ %}
             <input type="checkbox" data-role="hold_value" name="hold-value-{{f.name}}"
@@ -149,10 +160,18 @@
           {% endif %}
         {% else %}
           {% if not focus_set %}
-            {{ f(autofocus='autofocus')|safe }}
+            {% if h.is_required_form_field(f)%}
+              {{ f(autofocus='autofocus', required=True)|safe }}
+              {% else %}
+              {{ f(autofocus='autofocus')|safe }}
+            {% endif %}
             {% set focus_set = True %}
           {% else %}
-            {{ f()|safe }}
+            {% if h.is_required_form_field(f)%}
+              {{ f(required=True)|safe }}
+            {% else %}
+              {{ f()|safe }}
+            {% endif %}
           {% endif %}
           {% if f.name in create_url_map %}
             <a href="{{ create_url_map[f.name] }}" data-role="new-related-obj" data-target="{{ f.name }}" class="btn btn-primary">{{ _("create") }}</a>
@@ -190,7 +209,7 @@
             <div class="navbar-inner" >
               <ul class="nav btn-group" id="actions">
                 <li>
-                  <input id="submit-btn" name="__builtin_action__" type="submit" class="btn btn-primary btn-large" value="{{ _('commit') }}" disabled="disabled" title="{{ _("no changes made, can't submit!") }}"/>
+                  <input id="submit-btn" name="__builtin_action__" type="submit" class="btn btn-primary btn-large" value="{{ _('commit') }}"/>
                 </li>
                 <li>
                   <input id="reset-btn" type="reset" class="btn btn-primary btn-large" value="{{ _('reset') }}"/>
@@ -218,7 +237,7 @@
         {% else %}
 
           <div data-role="trivial-control-group">
-            <input id="submit-btn" name="__builtin_action__" type="submit" class="btn btn-primary" value="{{ _('commit') }}" disabled="disabled" title="{{ _("no changes made, can't submit!") }}"/>
+            <input id="submit-btn" name="__builtin_action__" type="submit" class="btn btn-primary" value="{{ _('commit') }}"/>
             <input id="reset-btn" type="reset" class="btn btn-primary" value="{{ _('reset') }}"/>
             {% if cancel_url %}
               <a href="{{ cancel_url }}" class="btn">{{ _('back') }}</a>

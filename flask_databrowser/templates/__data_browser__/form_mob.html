@@ -76,7 +76,7 @@
     </div>
     <div data-role="footer">
       <div data-role="controlgroup" data-type="horizontal" style="text-align: center">
-        <input id="submit-btn" name="action" type="submit" value="{{ _('commit') }}" disabled="disabled"/>
+        <input id="submit-btn" name="action" type="submit" value="{{ _('commit') }}" />
         <input id="reset-btn" type="reset" value="{{ _('reset') }}"/>
         {% if extra == "create" %}
           <input name="_add_another" type="submit" value="{{ _('add another') }}"/>
@@ -132,13 +132,6 @@
       setTimeout(function () {
         $("#flash").fadeOut("slow")
       }, 3000);
-      $("input[name!='hold_value'], select").change(function () {
-        $("input#submit-btn").button("enable");
-      })
-      $("input[type=reset]").click(function () {
-        $("input#submit-btn").button("disable");
-        return true;
-      });
     });
   </script>
 {% endblock %}
