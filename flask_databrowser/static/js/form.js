@@ -13,10 +13,10 @@ $(function () {
                 $(el).select2({tags: [], tokenSeparators: [','], width: 'resolve'});
                 break;
             case 'datepicker':
-                $(el).datetimepicker({pickTime: false});
+                $(el).datetimepicker({format: 'yyyy-mm-dd', minView:"month", autoclose:true, language:"zh-CN"});
                 break;
             case 'datetimepicker':
-                $(el).datetimepicker();
+                $(el).datetimepicker({format: 'yyyy-mm-dd hh:ii', autoclose:true, language:"zh-CN"});
                 break;
         }
       };
@@ -65,8 +65,8 @@ $(function () {
         $('[data-role=select2]', parent).select2({width: 'resolve'});
         $('[data-role=select2blank]', parent).select2({allowClear: true, width: 'resolve'});
         $('[data-role=select2tags]', parent).select2({tags: [], tokenSeparators: [','], width: 'resolve'});
-        $('[data-role=datepicker]', parent).datepicker();
-        $('[data-role=datetimepicker]', parent).datepicker({displayTime: true});
+        $('[data-role=datepicker]', parent).datetimepicker({format:"yyyy-mm-dd", minView:"month", autoclose:true, language:"zh-CN"});
+        $('[data-role=datetimepicker]', parent).datetimepicker({format:"yyyy-mm-dd hh:ii", autoclose:true, minuteStep:1, language:"zh-CN"});
       };
     };
 

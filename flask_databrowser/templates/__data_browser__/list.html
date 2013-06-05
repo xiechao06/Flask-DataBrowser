@@ -92,8 +92,8 @@
       }).on("hide", function () {
       $(this).prev().attr("class", "icon-chevron-down")
     });
-    $('input[data-role="date"]').datepicker();
-    $('input[data-role="datetime"]').datepicker({displayTime: true});
+    $('input[data-role="date"]').datetimepicker({format:"yyyy-mm-dd", minView:"month", autoclose:true});
+    $('input[data-role="datetime"]').datetimepicker({format:"yyyy-mm-dd hh:ii:ss", autoclose:true});
     $('#batch-edit').click(function () {
       window.location = "{{__object_url__}}" + "/" + $.map($("#list-table-body input:checked"), function (e) { return $(e).val() }).join() + "?url=" + encodeURIComponent(window.location);
       return false;
