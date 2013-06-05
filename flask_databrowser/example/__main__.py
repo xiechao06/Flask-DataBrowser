@@ -65,6 +65,9 @@ def main():
                     return getattr(self.obj, attr)
             return _Proxy(obj)
 
+        def repr_obj(self, obj):
+            return obj.name
+
         def patch_row_css(self, idx, row):
             if row.roll_called == 1:
                 return "box warning"
@@ -134,15 +137,32 @@ def main():
         _30days_ago = (today - timedelta(days=30)).date()
 
 
-        __column_filters__ = [filters.In_("group", name=u"是", opt_formatter=lambda opt: opt.name),
-                              filters.BiggerThan("create_time", name=u"在", 
-                                                 options=[(yesterday, u'一天内'),
-                                                          (week_ago, u'一周内'), 
-                                                          (_30days_ago, u'30天内')], default_value=str(_30days_ago)), 
-                              filters.EqualTo("name", name=u"是"),
-                              filters.Contains("name", name=u"包含"),
-                              filters.Only("roll_called", display_col_name=u"仅展示点名", test=lambda col: col==True, notation="__roll_called", default_value=False),
-                             ]
+        class CreateTimeFilter(filters.EqualTo):
+
+            @property
+            def input_type(self):
+                return "date",
+
+        class CreateTimeBetweenFilter(filters.Between):
+
+            @property
+            def input_type(self):
+                return "date", "date"
+
+        __column_filters__ = [
+            filters.In_("group", name=u"是", opt_formatter=lambda opt: opt.name, default_value=(1, 2)),
+            filters.BiggerThan("create_time", name=u"", 
+                               options=[(yesterday, u'一天内'),
+                                        (week_ago, u'一周内'), 
+                                        (_30days_ago, u'30天内')], default_value=str(_30days_ago)), 
+            filters.EqualTo("name", name=u"是"),
+            #filters.EqualTo("age", name=u"是", default_value=32),
+            filters.Between("age", display_col_name=u"年龄区间", default_value=[10, 30], sep=u"到"),
+            #filters.Contains("name", name=u"包含"),
+            filters.Only("roll_called", display_col_name=u"仅展示点名", test=lambda col: col==True, notation="__roll_called", default_value=False),
+            CreateTimeFilter("create_time", default_value=str(yesterday)),
+            CreateTimeBetweenFilter("create_time", display_col_name=u"创建时间", default_value=[str(_30days_ago), str(today.date())], sep=u"到"),
+        ]
 
         #def __list_filters__(self):
             #return [filters.NotEqualTo("name", value=u"Type")]

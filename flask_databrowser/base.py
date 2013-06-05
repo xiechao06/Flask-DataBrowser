@@ -16,6 +16,7 @@ from flask.ext.babel import ngettext, gettext as _
 from flask.ext.databrowser.utils import get_primary_key, named_actions, get_doc_from_table_def, test_request_type, make_disabled_field
 from flask.ext.databrowser.action import DeleteAction
 from flask.ext.databrowser.convert import ValueConverter
+from flask.ext.databrowser import filters
 from flask.ext.databrowser.column_spec import (LinkColumnSpec, ColumnSpec,
     InputColumnSpec, PlaceHolderColumnSpec)
 from flask.ext.databrowser.extra_widgets import PlaceHolder
@@ -78,6 +79,10 @@ class ModelView(object):
     @property
     def filters_api_url(self):
         return "/apis" + self.object_view_url + "-filters"
+    
+    @property
+    def sort_columns_api_url(self):
+        return "/apis" + self.object_view_url + "-sort-columns"
 
     @property
     def list_view_endpoint(self):
@@ -86,6 +91,10 @@ class ModelView(object):
     @property
     def list_api_endpoint(self):
         return self.object_view_endpoint + "_list_api"
+
+    @property
+    def sort_columns_api_endpoint(self):
+        return self.object_view_endpoint + "_sort_columns_api"
 
     @property
     def filters_api_endpoint(self):
@@ -1023,40 +1032,41 @@ class ModelView(object):
         self.try_view()
         column_filters = self.parse_filters()
         for filter_ in column_filters:
-            if filter_.input_type[0] == 'checkbox':
+            default_value = filter_.default_value
+            if default_value is not None and not isinstance(default_value, types.ListType) and not isinstance(default_value, types.TupleType):
+                default_value = [default_value]
+            if filter_.options:
                 ret.append({
-                    "type": "checkbox",
+                    "type": ["select"],
                     "hidden": filter_.hidden,
                     "name": filter_.op.id,
                     "label_extra": filter_.op.name,
                     "label": filter_.label,
-                    "default_value": filter_.default_value,
-                    "notation": filter_.__notation__,
-                }) 
-            elif filter_.options:
-                ret.append({
-                    "type": "select",
-                    "hidden": filter_.hidden,
-                    "name": filter_.op.id,
-                    "label_extra": filter_.op.name,
-                    "label": filter_.label,
-                    "default_value": filter_.default_value,
+                    "default_value": default_value,
                     "options": [(unicode(a), unicode(b)) for a, b in filter_.options],
                     "multiple": filter_.multiple,
                     "notation": filter_.__notation__,
                 }) 
             else: 
-                for input_type, default_value in zip(filter_.input_type, filter_.default_value or (None, None)):
-                    ret.append({
-                        "name": filter_.op.id,
-                        "type": input_type,
-                        "label_extra": filter_.op.name,
-                        "label": filter_.label,
-                        "default_value": default_value,
-                        "notation": filter_.__notation__,
-                    })
+                ret.append({
+                    "name": filter_.op.id,
+                    "type": filter_.input_type,
+                    "hidden": filter_.hidden,
+                    "label_extra": filter_.op.name,
+                    "label": filter_.label,
+                    "default_value": [int(v) for v in default_value] if isinstance(filter_, filters.Only) else default_value,
+                    "notation": filter_.__notation__,
+                })
         return jsonify({"filter_conditions": ret})
 
+    def sort_columns_api(self):
+        ret = []
+        self.try_view()
+        def calc_order(c):
+            if self.__default_order__:
+                return self.__default_order__[1] if c == self.__default_order__[0] else None
+            return None
+        return jsonify({"sort_columns": [(c, calc_order(c)) for c in self.__sortable_columns__]})
 
     def list_view_json(self):
         """
@@ -1396,6 +1406,10 @@ class DataBrowser(object):
                                    model_view.filters_api_endpoint,
                                    model_view.filters_api,
                                    methods=["GET"])
+            blueprint.add_url_rule(model_view.sort_columns_api_url,
+                                  model_view.sort_columns_api_endpoint,
+                                  model_view.sort_columns_api,
+                                  methods=["GET"])
 
         blueprint.before_request(model_view.before_request_hook)
         blueprint.after_request(model_view.after_request_hook)
