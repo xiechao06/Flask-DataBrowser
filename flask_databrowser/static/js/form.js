@@ -16,7 +16,7 @@ $(function () {
                 $(el).datetimepicker({format: 'yyyy-mm-dd', minView:"month", autoclose:true, language:"zh-CN"});
                 break;
             case 'datetimepicker':
-                $(el).datetimepicker({format: 'yyyy-mm-dd hh:ii', autoclose:true, language:"zh-CN"});
+                $(el).datetimepicker({format: 'yyyy-mm-dd hh:ii', autoclose:true, language:"zh-CN", minuteStep:1});
                 break;
         }
       };
