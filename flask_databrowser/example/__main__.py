@@ -142,6 +142,7 @@ def main():
                               filters.EqualTo("name", name=u"是"),
                               filters.Contains("name", name=u"包含"),
                               filters.Only("roll_called", display_col_name=u"仅展示点名", test=lambda col: col==True, notation="__roll_called", default_value=False),
+                              filters.Between("create_time")
                              ]
 
         #def __list_filters__(self):
