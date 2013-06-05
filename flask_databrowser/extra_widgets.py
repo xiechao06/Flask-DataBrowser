@@ -5,10 +5,10 @@ extra widgets beside wtform's widgets
 import operator
 import uuid
 from wtforms.widgets import HTMLString, html_params
-from wtforms.compat import text_type, string_types, iteritems
+from wtforms.compat import text_type
 from flask.ext.databrowser.column_spec import ColumnSpec
-from flask.ext.sqlalchemy import Model
 from flask.ext.databrowser.utils import get_primary_key
+
 
 class Image(object):
     def __init__(self, src, alt):
@@ -18,13 +18,11 @@ class Image(object):
     # field is used here to compatiple with wtform's widgets
     def __call__(self, field, **kwargs):
         return HTMLString(
-            '<a href="%s" class="fancybox control-text" rel="group" title="%s"><img '
-            '%s /></a>' % (
-            self.src, self.alt,
-            html_params(src=self.src, alt=self.alt, **kwargs)))
+            '<a href="%s" class="fancybox control-text" rel="group" title="%s"><img %s /></a>' % (
+                self.src, self.alt, html_params(src=self.src, alt=self.alt, **kwargs)))
+
 
 class Link(object):
-
     def __init__(self, anchor, href):
         self.anchor = anchor
         self.href = href
@@ -32,8 +30,8 @@ class Link(object):
     def __call__(self, field, **kwargs):
         return HTMLString('<a %s>%s</a>' % (html_params(href=self.href, **kwargs), self.anchor))
 
-class PlainText(object):
 
+class PlainText(object):
     def __init__(self, s, trunc):
         self.s = s
         self.trunc = trunc
@@ -43,20 +41,22 @@ class PlainText(object):
         s = self.s
         if self.trunc:
             if len(self.s) > self.trunc:
-                s = self.s[:self.trunc-3]
+                s = self.s[:self.trunc - 3]
                 need_trunc = True
         content = []
-        for i in xrange(len(self.s)):
-            content.append(self.s[i:i+24])
-            i += 24
+        for i in xrange(0, len(self.s), 24):
+            content.append(self.s[i:i + 24])
         if not need_trunc:
             return HTMLString('<span %s>%s</span>' % (html_params(**kwargs), s))
         else:
-            return HTMLString('<span data-toggle="tooltip" data-html="true" data-placement="bottom" title="%s" %s>%s<a href="#" >...</a></span>' % ("\n".join(content), html_params(**kwargs), s))
+            return HTMLString(
+                '<span data-toggle="tooltip" data-html="true" data-placement="bottom" title="%s" %s>%s'
+                '<a href="#" >...</a></span>' % (
+                    "\n".join(content), html_params(**kwargs), s))
+
 
 class TableWidget(object):
-
-    def __init__(self, rows, model_view, col_specs=None, sum_fields=[], preprocess=None):
+    def __init__(self, rows, model_view, col_specs=None, sum_fields=None, preprocess=None):
         self.rows = rows
         self.model_view = model_view
         self.col_specs = col_specs
@@ -67,8 +67,9 @@ class TableWidget(object):
 
     def __call__(self, field, **kwargs):
         from flask.ext.databrowser.convert import ValueConverter
-        html = ['<table %s>\n' % html_params(**kwargs)]
+
         if self.rows:
+            html = ['<table %s>\n' % html_params(**kwargs)]
             # get the primary key of rows if possible
             pk = None
             if self.model_view:
@@ -80,17 +81,19 @@ class TableWidget(object):
                 if hasattr(model, '_sa_class_manager'):
                     col_specs = [ColumnSpec(col, label=col) for col in model.__mapper__.iterate_properties]
                 else:
-                    col_specs = self.col_specs or [ColumnSpec(col, label=col) for col in model.__dict__ if not col.startswith("_")]
+                    col_specs = self.col_specs or [ColumnSpec(col, label=col) for col in model.__dict__ if
+                                                   not col.startswith("_")]
             else:
                 col_specs = self.col_specs
 
             for i in xrange(len(col_specs)):
                 if isinstance(col_specs[i], basestring):
                     if col_specs[i] == pk:
-                        col_specs[i] = self.model_view.data_browser.create_object_link_column_spec(self.rows[0].__class__, pk) or ColumnSpec(col_specs[i], label=pk)
+                        col_specs[i] = self.model_view.data_browser.create_object_link_column_spec(
+                            self.rows[0].__class__, pk) or ColumnSpec(col_specs[i], label=pk)
                     else:
                         col_specs[i] = ColumnSpec(col_specs[i], label=col_specs[i])
-            #col_specs = [ColumnSpec(col) if isinstance(col, basestring) else col for col in col_specs]
+                        #col_specs = [ColumnSpec(col) if isinstance(col, basestring) else col for col in col_specs]
             html.append('  <thead>\n')
             if self.sum_fields:
                 html.append("    <th></th>")
@@ -102,19 +105,23 @@ class TableWidget(object):
                 s = "  <tr>\n"
                 if self.sum_fields:
                     s += "    <td></td>\n"
+                converter = ValueConverter(row, self.model_view)
                 for sub_col_spec in col_specs:
-                    converter = ValueConverter(row, self.model_view)
-                    s += "    <td>%s</td>\n" % converter(operator.attrgetter(sub_col_spec.col_name)(preprocessed_row), sub_col_spec)()
+                    s += "    <td>%s</td>\n" % converter(operator.attrgetter(sub_col_spec.col_name)(preprocessed_row),
+                                                         sub_col_spec)()
                     if sub_col_spec.col_name in self.sum_fields:
                         try:
-                            self.sum_row[sub_col_spec.col_name] += operator.attrgetter(sub_col_spec.col_name)(preprocessed_row)
+                            self.sum_row[sub_col_spec.col_name] += operator.attrgetter(sub_col_spec.col_name)(
+                                preprocessed_row)
                         except KeyError:
-                            self.sum_row[sub_col_spec.col_name] = operator.attrgetter(sub_col_spec.col_name)(preprocessed_row)
+                            self.sum_row[sub_col_spec.col_name] = operator.attrgetter(sub_col_spec.col_name)(
+                                preprocessed_row)
                 s += "  </tr>\n"
                 html.append(s)
             if self.sum_fields:
                 s = "  <tr>\n"
                 s += u"    <td>总计</td>\n"
+                converter = ValueConverter(self.sum_row, self.model_view)
                 for sub_col_spec in col_specs:
                     if sub_col_spec.col_name in self.sum_fields:
                         s += "    <td>%s</td>" % converter(self.sum_row.get(sub_col_spec.col_name), sub_col_spec)()
@@ -122,11 +129,13 @@ class TableWidget(object):
                         s += "    <td></td>"
                 s += "  </tr>\n"
                 html.append(s)
-        html.append('</table>')
+            html.append('</table>')
+        else:
+            html = u"<span class='text-error'>无</span>"
         return HTMLString(''.join(html))
 
-class ListWidget(object):
 
+class ListWidget(object):
     def __init__(self, rows, item_col_spec, html_tag="ul", model_view=None, compressed=False, item_css_class=""):
         self.rows = rows
         self.item_col_spec = item_col_spec
@@ -143,16 +152,17 @@ class ListWidget(object):
             if self.rows:
                 for row in self.rows:
                     converter = ValueConverter(row, self.model_view)
-                    html.append(" <li class=\"%s\" >%s</li>\n" % (self.item_css_class, converter(row, self.item_col_spec)()))
+                    html.append(
+                        " <li class=\"%s\" >%s</li>\n" % (self.item_css_class, converter(row, self.item_col_spec)()))
             html.append("</%s>" % self.html_tag)
         else:
             uuid_ = uuid.uuid1()
             if self.rows:
-                html = ['<div class="accordion">']
+                html = ['<div class="accordion">',
+                        '<a href="#" data-target="#%s" data-toggle="collapse">%d</a>' % (uuid_, len(self.rows)),
+                        '<i class="icon-chevron-down"></i>',
+                        '<div id="%s" class="collapse in" data-builtin="true">\n<div class="accordion-inner">' % uuid_]
                 #html += ['<a href="#" data-target="#%s" data-toggle="collapse">%d</a>' % (uuid_, len(self.rows))]
-                html.append('<a href="#" data-target="#%s" data-toggle="collapse">%d</a>' % (uuid_, len(self.rows)))
-                html.append('<i class="icon-chevron-down"></i>')
-                html.append('<div id="%s" class="collapse in" data-builtin="true">\n<div class="accordion-inner">' % uuid_)
                 for row in self.rows:
                     converter = ValueConverter(row, self.model_view)
                     html.append(" <div>%s</div>\n" % converter(row, self.item_col_spec)())
@@ -160,6 +170,7 @@ class ListWidget(object):
             else:
                 html = ["0"]
         return HTMLString(''.join(html))
+
 
 class PlaceHolder(object):
     def __init__(self, template_fname, field_value, obj, model_view):
@@ -174,11 +185,13 @@ class PlaceHolder(object):
 
     def __call__(self, field, **kwargs):
         from flask import render_template
+
         return render_template(self.template_fname,
                                field_value=self.field_value,
                                obj=self.obj,
                                model_view=self.model_view,
                                **self.kwargs)
+
 
 if __name__ == "__main__":
     print Image("http://a.com/a.jpg", "an image")(None)
@@ -186,5 +199,6 @@ if __name__ == "__main__":
     print PlainText("abc<123")(None)
     from collections import namedtuple
     from flask.ext.databrowser.column_spec import LinkColumnSpec, ImageColumnSpec, ColumnSpec
+
     table_column_spec = [LinkColumnSpec("a", "some link"), ImageColumnSpec("b"), ColumnSpec("c")]
-    print TableWidget([namedtuple("A", ["a", "b", "c"])(i, i*2, i*3) for i in xrange(10)], ["a", "b", "c"])(None)
+    print TableWidget([namedtuple("A", ["a", "b", "c"])(i, i * 2, i * 3) for i in xrange(10)], ["a", "b", "c"])(None)
