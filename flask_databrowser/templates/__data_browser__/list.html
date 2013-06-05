@@ -162,7 +162,8 @@
     {% if __rows_action_desc__ %}
     var rows_action_desc = {{ __rows_action_desc__|tojson|safe }}; // row -> (name: row.name, actions: action_name-> forbidden_code)
     var actions = {{ __action_2_forbidden_message_formats__ | tojson | safe }}; // action_name -> ()
-    $("#list-table-body input").click(function () {
+
+    function actions_status() {
       var action_2_rows = {}; // action -> (forbidden_code -> [rows])
       $("#list-table-body input:checked").each(function () {
         var model_repr = rows_action_desc[$(this).val()].name;
@@ -200,7 +201,10 @@
         }
         $(this).attr("title", tooltip);
       });
-    });
+    }
+
+    $("#list-table-body input").click(actions_status);
+    actions_status();
     {% endif %}
   });
 </script>
