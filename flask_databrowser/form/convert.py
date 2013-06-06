@@ -1,3 +1,4 @@
+# -*- coding: UTF-8 -*-
 import types
 import functools
 import inspect
@@ -199,7 +200,7 @@ class AdminModelConverter(ModelConverterBase):
                             self.col_spec = col_spec
 
                         def __call__(self, **kwargs):
-                            grouper = form.Select2Widget()
+                            grouper = self.widget # 这个widget可能是readonly的，如果是grouper=form.widget()，可能导致readonly丢失
                             class FakeField(object):
 
                                 def __init__(self, name, data):
