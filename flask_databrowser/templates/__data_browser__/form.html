@@ -114,11 +114,12 @@
         });
       {% endif %}
       var checkSubmitFlag = false;
-      $("#submit-btn").click(function(){
+      $("form").submit(function(){
           if (checkSubmitFlag){
             return false;
           }else{
             checkSubmitFlag = true;
+            $(this).submit();
           }
       });
     });
