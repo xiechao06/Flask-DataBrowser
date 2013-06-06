@@ -87,5 +87,3 @@ class DeleteAction(BaseAction):
     def try_(self, processed_objs):
         if self.permission is not None:
             self.permission.test()
-
-        
