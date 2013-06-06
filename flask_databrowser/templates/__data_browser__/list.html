@@ -130,7 +130,7 @@
     $("input[name=rowtoggle]").click(function () {
       $("#list-table-body input[type=checkbox]").attr("checked", this.checked);
     });
-    $("#main-form .action-list input[name=__action__]").click(function(){
+    $("#main-form .action-list [name=__action__]").click(function(){
       var list_val = "";
       $("#list-table-body input:checked").each(function(){
         list_val += $(this).val() +",";
@@ -182,7 +182,7 @@
           action_2_rows[action_name][forbidden_code].push(model_repr);
         }
       });
-      $("input[name=__action__]").each(function () {
+      $("[name=__action__]").each(function () {
         var tooltip = "";
         if ($(this).val() in action_2_rows) {
           $(this).attr("disabled", true);
@@ -423,7 +423,13 @@
       <input id="batch-edit" type="submit" class="btn btn-info" value="{{ _('batch edit') }}" />
     {% endif %}
     {% for action in __actions__ %}
-    <input value="{{action.name}}" type="submit" name="__action__" class="{{action.css_class}}" data-warn="{{action.warn_msg}}" data-direct="{{action.direct}}"/>{% endfor %}
+      <button type="submit" name="__action__" class="{{ action.css_class }}" data-warn="{{ action.warn_msg }}" data-direct="{{ action.direct }}" value="{{ action.name }}">
+        {% if action.data_icon %}
+          <i class="{{ action.data_icon }}"></i>&nbsp;
+        {% endif %}
+        {{ action.name }}
+      </button>
+    {% endfor %}
   </span>
   {% endblock %}
 </div>
