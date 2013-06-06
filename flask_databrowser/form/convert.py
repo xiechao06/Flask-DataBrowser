@@ -200,7 +200,9 @@ class AdminModelConverter(ModelConverterBase):
                             self.col_spec = col_spec
 
                         def __call__(self, **kwargs):
-                            grouper = self.widget # 这个widget可能是readonly的，如果是grouper=form.widget()，可能导致readonly丢失
+                            grouper = self.widget  # 这个widget可能是base.py的WidgetProxy()，如果grouper=form.widget()
+                                                   # 可能导致readonly丢失
+
                             class FakeField(object):
 
                                 def __init__(self, name, data):
@@ -209,12 +211,12 @@ class AdminModelConverter(ModelConverterBase):
                                     self.data = data
 
                                 def iter_choices(self):
-                                    model = col_spec.group_by.property.mapper.class_ 
+                                    model = col_spec.group_by.property.mapper.class_
                                     pk = get_primary_key(model)
                                     for row in session.query(col_spec.group_by.property.mapper.class_).all():
                                         yield getattr(row, pk), unicode(row), getattr(row, pk) == self.data
-                            s = grouper(FakeField(self.col_spec.grouper_input_name, 
-                                                  getattr(self.data, col_spec.group_by.property.local_remote_pairs[0][0].name)), 
+                            s = grouper(FakeField(self.col_spec.grouper_input_name,
+                                                  getattr(self.data, col_spec.group_by.property.local_remote_pairs[0][0].name)),
                                         **({"disabled": True} if kwargs.get("disabled") else {})) + "   -    "
                             s += super(QuerySelectField_, self).__call__(**kwargs)
                             return s
@@ -322,7 +324,7 @@ class AdminModelConverter(ModelConverterBase):
     @converts('String', 'Unicode')
     def conv_String(self, column, field_args, **extra):
         if hasattr(column.type, 'enums'):
-            field_args['validators'].append(validators.AnyOf(column.type.enums, 
+            field_args['validators'].append(validators.AnyOf(column.type.enums,
                                                              message=_(u"value of this field must be %(values)s", values=", ".join(str(i) for i in column.type.enums[:-1])) +
                                                              _(u" or %(last_value)s", last_value=column.type.enums[-1]) if (len(column.type.enums) > 1) else ""))
             field_args['choices'] = [(f,f) for f in column.type.enums]
@@ -363,7 +365,7 @@ class AdminModelConverter(ModelConverterBase):
 
     @converts('Integer', 'SmallInteger')
     def handle_integer_types(self, column, field_args, **extra):
-        
+
         unsigned = getattr(column.type, 'unsigned', False)
         if unsigned:
             field_args['validators'].append(validators.NumberRange(min=0, message=_(u"this field must bigger than 0")))
@@ -492,14 +494,14 @@ def get_form(model, converter,
     field_dict = {}
     for name, prop, col_spec in properties:
         # Ignore protected properties
-        if ignore_hidden and name.startswith('_'): 
+        if ignore_hidden and name.startswith('_'):
             continue
         field = converter.convert(model, mapper, prop, field_args.get(name), hidden_pk, col_spec)
         if field is not None:
             if col_spec and not isinstance(col_spec, PlaceHolderColumnSpec) and col_spec.read_only:
                 field = make_disabled_field(field)
             field_dict[name] = field
-    
+
     return type(model.__name__ + 'Form', (base_class, ), field_dict)
 
 class InlineModelConverterBase(object):
