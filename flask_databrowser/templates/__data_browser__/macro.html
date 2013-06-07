@@ -237,8 +237,10 @@
         {% else %}
 
           <div data-role="trivial-control-group">
-            <input id="submit-btn" name="__builtin_action__" type="submit" class="btn btn-primary" value="{{ _('commit') }}"/>
-            <input id="reset-btn" type="reset" class="btn btn-primary" value="{{ _('reset') }}"/>
+            {% if not __read_only__%}
+              <input id="submit-btn" name="__builtin_action__" type="submit" class="btn btn-primary" value="{{ _('commit') }}"/>
+              <input id="reset-btn" type="reset" class="btn btn-primary" value="{{ _('reset') }}"/>
+            {% endif %}
             {% if cancel_url %}
               <a href="{{ cancel_url }}" class="btn">{{ _('back') }}</a>
             {% endif %}

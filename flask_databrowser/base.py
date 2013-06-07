@@ -643,7 +643,7 @@ class ModelView(object):
             fieldset_list.append(("", form))
 
         resp = self.render(self.get_edit_template(),
-                           obj=self.preprocess(model) if len(id_list)==1 else None,
+                           obj=self.preprocess(model) if len(id_list) == 1 else None,
                            form=form,
                            fieldset_list=fieldset_list,
                            pre_url=pre_url,
@@ -654,6 +654,7 @@ class ModelView(object):
                            return_url=return_url, hint_message=hint_message,
                            help_message=help_message,
                            model_view=self,
+                           __read_only__=read_only,
                            **kwargs)
         if form.is_submitted():
             # alas! something wrong
