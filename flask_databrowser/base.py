@@ -1407,8 +1407,9 @@ class DataBrowser(object):
     def get_create_url(self, model, target):
         try:
             model_view = self.__registered_view_map[model.__tablename__]
+            model_view.try_create()
             return model_view.url_for_object(None, url=request.url, on_fly=1, target=target)
-        except KeyError:
+        except (KeyError, PermissionDenied):
             return None
 
     def get_form_url(self, obj, **kwargs):
