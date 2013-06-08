@@ -1,26 +1,25 @@
 # -*- coding: UTF-8 -*-
-import types
-import sys
-import re
-import itertools
 import copy
-import operator
+import itertools
 import json
+import operator
+import re
+import sys
+import types
 import werkzeug
-from flask import (render_template, flash, request, url_for, redirect, abort, Flask, 
-                   make_response, jsonify)
 import yaml
-from flask.ext.sqlalchemy import Pagination
-from flask.ext.principal import PermissionDenied
+
+from flask import (render_template, flash, request, url_for, redirect, Flask, make_response, jsonify)
 from flask.ext.babel import ngettext, gettext as _
-from flask.ext.databrowser.utils import get_primary_key, named_actions, get_doc_from_table_def, test_request_type, make_disabled_field
-from flask.ext.databrowser.action import DeleteAction
+from flask.ext.principal import PermissionDenied
+from flask.ext.sqlalchemy import Pagination
+
+from flask.ext.databrowser.column_spec import (LinkColumnSpec, ColumnSpec, InputColumnSpec, PlaceHolderColumnSpec)
 from flask.ext.databrowser.convert import ValueConverter
-from flask.ext.databrowser.column_spec import (LinkColumnSpec, ColumnSpec,
-    InputColumnSpec, PlaceHolderColumnSpec)
+from flask.ext.databrowser.exceptions import ValidationError
 from flask.ext.databrowser.extra_widgets import PlaceHolder
 from flask.ext.databrowser.form import form
-from flask.ext.databrowser.exceptions import ValidationError
+from flask.ext.databrowser.utils import get_primary_key, get_doc_from_table_def, test_request_type
 
 WEB_PAGE = 1
 WEB_SERVICE = 2
@@ -107,13 +106,13 @@ class ModelView(object):
         if list_columns:
             for col in list_columns:
                 if isinstance(col, basestring):
-                    col_spec = self._col_spec_from_str(col)
+                    col = self._col_spec_from_str(col)
                 else:
                     assert isinstance(col, ColumnSpec)
-                    col_spec = col
-                    col_spec.label = self.__column_labels__.get(col.col_name, col.col_name) if (col.label is None) else col.label
+                    col.label = self.__column_labels__.get(col.col_name, col.col_name) if (
+                        col.label is None) else col.label
 
-                self.__list_column_specs.append(col_spec)
+                self.__list_column_specs.append(col)
 
         return self.__list_column_specs
 
@@ -122,11 +121,6 @@ class ModelView(object):
         return re.sub(r"([A-Z]+)", lambda m: "_" + m.groups()[0].lower(),
                       self.model.__name__).lstrip("_")
 
-    @property
-    def object_view_endpoint(self):
-        return re.sub(r"([A-Z]+)", lambda m: "_" + m.groups()[0].lower(),
-                      self.model.__name__).lstrip("_")
-    
     def before_request_hook(self):
         pass
 
@@ -135,7 +129,7 @@ class ModelView(object):
 
     def within_domain(self, url, bp_name):
         url = url.lower()
-        import urlparse, posixpath
+        import urlparse
 
         path_ = urlparse.urlparse(url).path
         segs = path_.split("/")[1:]
@@ -143,9 +137,7 @@ class ModelView(object):
             return False
         if segs[0] != bp_name.lower():
             return False
-        return any(
-            "/" + seg in {self.object_view_url, self.list_view_url} for seg in
-            segs[1:])
+        return any("/" + seg in {self.object_view_url, self.list_view_url} for seg in segs[1:])
 
     def __list_filters__(self):
         return []
@@ -154,8 +146,6 @@ class ModelView(object):
         return obj
 
     def render(self, template, **kwargs):
-        kwargs['_gettext'] = _
-        kwargs['_ngettext'] = ngettext
         from . import helpers
 
         kwargs['h'] = helpers
@@ -223,9 +213,6 @@ class ModelView(object):
         """
         pass
 
-
-        # Model handlers
-
     def create_model(self, form):
         """
             Create model from form.
@@ -239,11 +226,7 @@ class ModelView(object):
             self.session.add(model)
             self.session.commit()
             return model
-        except Exception, ex:
-        #flash(_('Failed to create %(model_name)s due to %(error)s', model_name=self.model_name, error=str(ex)),
-
-
-        #'error')
+        except Exception:
             self.session.rollback()
             raise
 
@@ -308,12 +291,9 @@ class ModelView(object):
                             flash(action.success_message(processed_objs), 'success')
                         return True
                     except Exception, ex:
-                        flash(_(
-                            'Failed to update %(model_name)s %(objs)s due to %('
-                            'error)s',
-                            model_name=self.model_name, objs=",".join(unicode(obj) for obj in processed_objs),
-                            error=str(ex)),
-                              'error')
+                        flash(
+                            _('Failed to update %(model_name)s %(objs)s due to %(error)s', model_name=self.model_name,
+                              objs=",".join(unicode(obj) for obj in processed_objs), error=str(ex)), 'error')
                         self.session.rollback()
                         raise
             raise ValidationError(
@@ -435,7 +415,8 @@ class ModelView(object):
         if form.is_submitted():
             # alas! something wrong
             resp = make_response(resp, 403)
-            resp.headers["Warning"] = u"\n".join([k + u"-" + u"; ".join(v) for k, v in form.errors.items()]).encode("utf-8")
+            resp.headers["Warning"] = u"\n".join([k + u"-" + u"; ".join(v) for k, v in form.errors.items()]).encode(
+                "utf-8")
         return resp
 
     def do_update_log(self, obj, action):
@@ -497,8 +478,7 @@ class ModelView(object):
         else:
             id_list = [i for i in id_.split(",") if i]
 
-        return_url = request.args.get('url') or url_for(
-            '.' + self.list_view_endpoint)
+        return_url = request.args.get('url') or url_for('.' + self.list_view_endpoint)
 
         if id_list is None:
             return redirect(return_url)
@@ -507,7 +487,7 @@ class ModelView(object):
         pre_url = next_url = ""
         if len(id_list) == 1:
             model = self.get_one(id_list[0])
-            self.try_view([model]) # first, we test if we could view
+            self.try_view([model])  # first, we test if we could view
             cdx = request.args.get("cdx", None, int)
             if cdx:
                 page, order_by, desc = self._parse_args()
@@ -543,7 +523,7 @@ class ModelView(object):
             except PermissionDenied:
                 read_only = True
             form = self.get_edit_form(obj=model)
-            if form.validate_on_submit(): # ON POST
+            if form.validate_on_submit():  # ON POST
                 ret = self.update_objs(form, [model])
                 if ret:
                     if isinstance(ret, werkzeug.wrappers.BaseResponse) and ret.status_code == 302:
