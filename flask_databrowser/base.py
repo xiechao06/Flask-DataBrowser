@@ -1390,9 +1390,10 @@ class DataBrowser(object):
         blueprint.after_request(model_view.after_request_hook)
         self.__registered_view_map[model_view.model.__tablename__] = model_view
 
-    def create_object_link_column_spec(self, model, label=None):
+    def get_object_link_column_spec(self, model, label=None):
         try:
             model_view = self.__registered_view_map[model.__tablename__]
+            model_view.try_view(model)
             from .utils import get_primary_key
 
             pk = get_primary_key(model)
@@ -1400,7 +1401,7 @@ class DataBrowser(object):
             return LinkColumnSpec(col_name=pk,
                                   formatter=lambda v, obj: model_view.url_for_object(obj, label=label, url=request.url),
                                   anchor=lambda v: unicode(v), label=label)
-        except KeyError:
+        except (KeyError, PermissionDenied):
             return None
 
     def get_create_url(self, model, target):
