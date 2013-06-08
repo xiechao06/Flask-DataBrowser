@@ -200,9 +200,7 @@ class AdminModelConverter(ModelConverterBase):
                             self.col_spec = col_spec
 
                         def __call__(self, **kwargs):
-                            grouper = self.widget  # 这个widget可能是base.py的WidgetProxy()，如果grouper=form.widget()
-                                                   # 可能导致readonly丢失
-
+                            grouper = form.Select2Widget()
                             class FakeField(object):
 
                                 def __init__(self, name, data):

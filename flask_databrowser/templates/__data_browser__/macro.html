@@ -154,28 +154,31 @@
               {{ f(disabled=True)|safe }}
             {% endif %}
           {% endif %}
-          {% if not f.__read_only__ %}
+          {% if not __read_only__ %}
             <input type="checkbox" data-role="hold_value" name="hold-value-{{f.name}}"
                  checked="checked">{{ _("keep unchanged") }}
           {% endif %}
         {% else %}
-          {% if not focus_set %}
-            {% if h.is_required_form_field(f)%}
-              {{ f(autofocus='autofocus', required=True)|safe }}
-              {% else %}
-              {{ f(autofocus='autofocus')|safe }}
-            {% endif %}
-            {% set focus_set = True %}
+          {% if __read_only__ %}
+            {{ f(disabled=True)|safe }}
           {% else %}
-            {% if h.is_required_form_field(f)%}
-              {{ f(required=True)|safe }}
+            {% if not focus_set %}
+              {% if h.is_required_form_field(f) %}
+                {{ f(autofocus='autofocus', required=True)|safe }}
+              {% else %}
+                {{ f(autofocus='autofocus')|safe }}
+              {% endif %}
+              {% set focus_set = True %}
             {% else %}
-              {{ f()|safe }}
+              {% if h.is_required_form_field(f) %}
+                {{ f(required=True)|safe }}
+              {% else %}
+                {{ f()|safe }}
+              {% endif %}
             {% endif %}
-          {% endif %}
-          {% if not __read_only__ and f.name in create_url_map %}
-            {{ f.__dict__ }}
-            <a href="{{ create_url_map[f.name] }}" data-role="new-related-obj" data-target="{{ f.name }}" class="btn btn-primary">{{ _("create") }}</a>
+            {% if not f.__read_only__ and f.name in create_url_map %}
+              <a href="{{ create_url_map[f.name] }}" data-role="new-related-obj" data-target="{{ f.name }}" class="btn btn-primary">{{ _("create") }}</a>
+            {% endif %}
           {% endif %}
         {% endif %}
         {% if f.errors %}

@@ -608,19 +608,20 @@ class ModelView(object):
                         dict(id=row.id, text=unicode(row)))
                 grouper_info[col.grouper_input_name] = grouper_2_cols
         create_url_map = {}
-        for col in model_columns:
-            if isinstance(col, InputColumnSpec) and not col.read_only:
-                continue
-            col_name = col.col_name if isinstance(col, InputColumnSpec) else col
-            try:
-                attr = getattr(self.model, col_name)
-                if hasattr(attr.property, "direction"):
-                    remote_side = attr.property.mapper.class_
-                    create_url = self.data_browser.get_create_url(remote_side, col_name)
-                    if create_url:
-                        create_url_map[col_name] = create_url
-            except AttributeError:
-                pass
+        if not read_only:  # 当前的form是只读，没有必要生成create_url_map
+            for col in model_columns:
+                if isinstance(col, InputColumnSpec) and not col.read_only:
+                    continue
+                col_name = col.col_name if isinstance(col, InputColumnSpec) else col
+                try:
+                    attr = getattr(self.model, col_name)
+                    if hasattr(attr.property, "direction"):
+                        remote_side = attr.property.mapper.class_
+                        create_url = self.data_browser.get_create_url(remote_side, col_name)
+                        if create_url:
+                            create_url_map[col_name] = create_url
+                except AttributeError:
+                    pass
 
         form = compound_form or form
         kwargs = {}
@@ -651,7 +652,8 @@ class ModelView(object):
                            create_url_map=create_url_map,
                            grouper_info=grouper_info,
                            actions=actions,
-                           return_url=return_url, hint_message=hint_message,
+                           return_url=return_url,
+                           hint_message=hint_message,
                            help_message=help_message,
                            model_view=self,
                            __read_only__=read_only,
@@ -796,20 +798,6 @@ class ModelView(object):
                 else:
                     setattr(obj, k, v)
         ret = self.__edit_form__(obj=obj)
-        class _WidgetProxy(object):
-
-            def __init__(self, widget):
-                self.widget = widget
-
-            def __call__(self, field, **kwargs):
-                kwargs['disabled'] = True
-                return self.widget(field, **kwargs)
-
-        # force read only
-        if read_only:
-            for f in ret:
-                if f.name != "csrf_token":
-                    f.widget = _WidgetProxy(f.widget)
         return ret
 
     def get_compound_edit_form(self, obj=None, form=None, read_only=False):
