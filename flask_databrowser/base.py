@@ -542,7 +542,7 @@ class ModelView(object):
                 read_only = False
             except PermissionDenied:
                 read_only = True
-            form = self.get_edit_form(obj=model, read_only=read_only)
+            form = self.get_edit_form(obj=model)
             if form.validate_on_submit(): # ON POST
                 ret = self.update_objs(form, [model])
                 if ret:
@@ -786,7 +786,7 @@ class ModelView(object):
                 ret.append(field)
         return FakeForm(form, ret)
 
-    def get_edit_form(self, obj=None, read_only=False):
+    def get_edit_form(self, obj=None):
         if self.__edit_form__ is None:
             self.__edit_form__ = self.scaffold_form(self._model_columns(obj))
         # if request specify some fields, then we override fields with this value
@@ -800,9 +800,9 @@ class ModelView(object):
         ret = self.__edit_form__(obj=obj)
         return ret
 
-    def get_compound_edit_form(self, obj=None, form=None, read_only=False):
+    def get_compound_edit_form(self, obj=None, form=None):
         if not form:
-            form = self.get_edit_form(obj=obj, read_only=read_only)
+            form = self.get_edit_form(obj=obj)
 
         form_columns = self.get_form_columns(obj)
         if not form_columns:
