@@ -9,17 +9,20 @@ import types
 import werkzeug
 import yaml
 
+from collections import OrderedDict
 from flask import (render_template, flash, request, url_for, redirect, Flask, make_response, jsonify)
-from flask.ext.babel import ngettext, gettext as _
+from flask.ext.babel import gettext as _
+from flask.ext.databrowser.utils import (get_primary_key, get_doc_from_table_def, test_request_type)
 from flask.ext.principal import PermissionDenied
 from flask.ext.sqlalchemy import Pagination
 
 from flask.ext.databrowser.column_spec import (LinkColumnSpec, ColumnSpec, InputColumnSpec, PlaceHolderColumnSpec)
 from flask.ext.databrowser.convert import ValueConverter
+from flask.ext.databrowser import filters
 from flask.ext.databrowser.exceptions import ValidationError
 from flask.ext.databrowser.extra_widgets import PlaceHolder
 from flask.ext.databrowser.form import form
-from flask.ext.databrowser.utils import get_primary_key, get_doc_from_table_def, test_request_type
+from flask.ext.databrowser.convert_utils import convert_column, get_dict_converter
 
 WEB_PAGE = 1
 WEB_SERVICE = 2
@@ -724,6 +727,7 @@ class ModelView(object):
                            hint_message=hint_message,
                            help_message=help_message,
                            model_view=self,
+                           __read_only__=read_only,
                            **kwargs)
         if form.is_submitted():
             # alas! something wrong
@@ -1094,7 +1098,7 @@ class ModelView(object):
 
             def _obj_to_dict(obj):
                 ret = {"id": obj["pk"], "repr": obj["repr_"], "forbidden_actions": _get_forbidden_actions(obj["obj"])}
-                ret.update(dict(izip(self.list_column_specs, obj["fields"])))
+                ret.update(dict(itertools.izip(self.list_column_specs, obj["fields"])))
                 return ret
 
             return jsonify({
@@ -1195,13 +1199,14 @@ class ModelView(object):
                             self.session.commit()
                             return jsonify({"reason": action.success_message(processed_objs)})
                         except Exception, ex:
+                            self.session.rollback()
                             return jsonify({
                                 "reason": _('Failed to update %(model_name)s %(objs)s due to %(error)s',
                                             model_name=self.model_name, 
                                             objs=",".join(unicode(obj) for obj in processed_objs),
                                             error=str(ex))
                             }), 403
-                            self.session.rollback()
+
 
                 return jsonify({"reason": _('invalid action %(action)s', action=action_name)}), 403
         
