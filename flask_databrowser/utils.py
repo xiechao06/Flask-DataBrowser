@@ -203,3 +203,4 @@ class ErrorHandler(object):
 def test_request_type():
     from flask import g
     g.request_from_mobile = request_from_mobile()
+

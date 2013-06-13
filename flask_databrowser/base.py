@@ -13,7 +13,9 @@ import yaml
 from flask.ext.sqlalchemy import Pagination
 from flask.ext.principal import PermissionDenied
 from flask.ext.babel import ngettext, gettext as _
-from flask.ext.databrowser.utils import get_primary_key, named_actions, get_doc_from_table_def, test_request_type, make_disabled_field
+from flask.ext.databrowser.utils import (get_primary_key, named_actions, 
+                                         get_doc_from_table_def, test_request_type, 
+                                         make_disabled_field)
 from flask.ext.databrowser.action import DeleteAction
 from flask.ext.databrowser.convert import ValueConverter
 from flask.ext.databrowser import filters
@@ -22,6 +24,8 @@ from flask.ext.databrowser.column_spec import (LinkColumnSpec, ColumnSpec,
 from flask.ext.databrowser.extra_widgets import PlaceHolder
 from flask.ext.databrowser.form import form
 from flask.ext.databrowser.exceptions import ValidationError
+from flask.ext.databrowser.convert_utils import convert_column, get_dict_converter
+from collections import OrderedDict
 
 WEB_PAGE = 1
 WEB_SERVICE = 2
@@ -51,6 +55,7 @@ class ModelView(object):
     create_template = edit_template = "__data_browser__/form.html"
     can_batchly_edit = True
     form_class = form.BaseForm
+    hidden_pk = True
 
     def __init__(self, model, model_name=""):
         self.model = model
@@ -59,11 +64,81 @@ class ModelView(object):
         self.extra_params = {}
         self.__model_name = model_name
         self.__list_column_specs = []
+        self.__normalized_create_columns = []
 
     @property
     def model_name(self):
         return self.__model_name or self.model.__name__
 
+    @property
+    def create_columns(self):
+        """
+        get all the *NORMALIZED* create columns for model view. which means,
+        if you override this method, you should guarantee that return value are
+        normalized. see ModelView.normalize_create_columns 
+        """
+        # only for backward compatiple, feel comfortable to ignore it
+        if hasattr(self, 'get_create_columns') and isinstance(self.get_create_columns, types.MethodType):
+            return self.normalize_create_columns(self.get_create_columns())
+
+        if not self.__normalized_create_columns:
+            self.__normalized_create_columns = self.normalize_create_columns(self.__create_columns__) 
+        return self.__normalized_create_columns
+
+    def normalize_create_columns(self, columns):
+        """
+        this utility function handle the following matters:
+
+            * if create columns not defined in fieldsets, add them to one fieldset whose name is empty string
+            * if __create_columns__ undefined, fill the create_columns from model
+            * convert all the column of 'basestring' to InputColumn
+            * purge the create columns, only columns defined in model, and is of 
+                type "basestring", "InputColumnSpec" or "PlaceHolderColumnSpec"(as_input) 
+                and if not foreign key could be displayed in create form
+            * fill the label and doc of each column
+
+        :return: an OrderedDict whose keys are fieldsets
+        """
+        ret = OrderedDict()
+        def _input_column_spec_from_prop(prop):
+            return InputColumnSpec(prop.key, 
+                                   doc=self.__column_docs__.get(prop.key) or get_doc_from_table_def(self.model, prop.key), 
+                                   label=self.__column_labels__.get(prop.key),
+                                   property_=prop)
+        def _test(prop):
+            if hasattr(prop, 'direction'):
+                local_column = prop.local_remote_pairs[0][0]
+                not_back_ref = bool(local_column.foreign_keys)
+                return not self.column_hide_backrefs or not_back_ref
+            else:
+                return not prop.columns[0].foreign_keys
+
+        if not columns:
+            ret[""] = [_input_column_spec_from_prop(prop) for prop in self.model.__mapper__.iterate_properties 
+                                                   if _test(prop)]
+            return ret
+        
+        col_name_2_prop = dict((prop.key, prop) for prop in self.model.__mapper__.iterate_properties if _test(prop))
+        if isinstance(columns, types.ListType) or isinstance(columns, types.TupleType):
+            create_columns = {"": columns}
+        else:
+            create_columns = columns
+
+        for fieldset_name, columns in create_columns.items():
+            ret[fieldset_name] = []
+            for col in columns:
+                if isinstance(col, basestring):
+                    if col in col_name_2_prop:
+                        ret[fieldset_name].append(_input_column_spec_from_prop(col_name_2_prop[col]))
+                elif col.col_name in col_name_2_prop and (isinstance(col, InputColumnSpec) or ((isinstance(col, PlaceHolderColumnSpec) and col.as_input))):
+                    col.property_ = col_name_2_prop[col.col_name]
+                    if col.label is None:
+                        col.label = self.__column_labels__.get(col.col_name)
+                    if col.doc is None:
+                        col.doc = self.__column_docs__.get(col.col_name) or get_doc_from_table_def(self.model, col.col_name)
+                    ret[fieldset_name].append(col) 
+        return ret
+                    
     @property
     def session(self):
         return self.data_browser.db.session
@@ -77,6 +152,10 @@ class ModelView(object):
         return "/apis" + self.list_view_url
 
     @property
+    def obj_api_url(self):
+        return "/apis" + self.object_view_url
+
+    @property
     def filters_api_url(self):
         return "/apis" + self.object_view_url + "-filters"
     
@@ -88,9 +167,14 @@ class ModelView(object):
     def list_view_endpoint(self):
         return self.object_view_endpoint + "_list"
 
+
     @property
     def list_api_endpoint(self):
         return self.object_view_endpoint + "_list_api"
+
+    @property
+    def obj_api_endpoint(self):
+        return self.object_view_endpoint + "_api"
 
     @property
     def sort_columns_api_endpoint(self):
@@ -104,6 +188,7 @@ class ModelView(object):
     def object_view_url(self):
         return "/" + re.sub(r"([A-Z]+)", lambda m: "-" + m.groups()[0].lower(),
                             self.model.__name__).lstrip("-")
+
     @property
     def list_column_specs(self):
         if self.__list_column_specs:
@@ -205,7 +290,6 @@ class ModelView(object):
                                   label=label,
                                   css_class="control-text")
         return col_spec
-
 
     def generate_model_string(self, link):
         return re.sub(r"([A-Z])+", lambda m: link + m.group(0).lower(),
@@ -426,7 +510,7 @@ class ModelView(object):
                 f.widget.set_args(**kwargs)
 
         fieldset_list = []
-        create_columns = self.get_create_columns()
+        create_columns = self.create_columns
         if isinstance(create_columns, types.DictType):
             for fieldset, cols in create_columns.items():
                 fieldset_list.append((fieldset, [form[col.col_name if isinstance(col, ColumnSpec) else col] for col in cols]))
@@ -719,7 +803,7 @@ class ModelView(object):
         return ret
 
     def get_create_form(self):
-        create_columns = self.get_create_columns()
+        create_columns = self.create_columns
         if self.__create_form__ is None:
             if isinstance(create_columns, types.DictType):
                 create_columns = list(itertools.chain(*create_columns.values()))
@@ -747,7 +831,7 @@ class ModelView(object):
         return self.__create_form__()
 
     def get_create_compound_form(self, form):
-        create_columns = self.get_create_columns()
+        create_columns = self.create_columns
         if not create_columns:
             return form
 
@@ -905,7 +989,6 @@ class ModelView(object):
             self.__batch_edit_form__ = self.scaffold_form(processed_cols)
         return self.__batch_edit_form__(obj=fake_obj)
 
-
     def url_for_list(self, *args, **kwargs):
         blueprint_name = "" if isinstance(self.blueprint,
                                           Flask) else self.blueprint.name
@@ -1021,10 +1104,43 @@ class ModelView(object):
             data = self.scaffold_list(data)
             kwargs["__order_by__"] = lambda col_name: col_name == order_by
 
-            return json.dumps({
+            def _get_forbidden_actions(obj):
+                ret = []
+                for action in self._get_customized_actions():
+                    test_code = action.test_enabled(obj)
+                    if test_code != 0:
+                        ret.append((action.name, test_code))
+                return ret
+
+            def _action_to_dict(action):
+                return {
+                    "name": action.name,
+                    "warn_msg": action.warn_msg,
+                    "icon": action.data_icon,
+                    "forbidden_message_formats": action.get_forbidden_msg_formats(),
+                }
+            # NOTE!!! direct action shouldn't be passed, they're meaningless to client
+            actions = [_action_to_dict(action) for action in self._get_customized_actions() if not action.direct]
+
+            can_create = False
+            try:
+                self.try_create()
+                can_create = True
+            except PermissionDenied:
+                pass
+
+            def _obj_to_dict(obj):
+                ret = {"id": obj["pk"], "repr": obj["repr_"], "forbidden_actions": _get_forbidden_actions(obj["obj"])}
+                ret.update(dict(izip(self.list_column_specs, obj["fields"])))
+                return ret
+
+            return jsonify({
                 "has_more": count > (offset or 0) + (limit or sys.maxint),
                 "total_cnt": count,
-                "data": [{"id": obj["pk"], "repr": obj["repr_"]} for obj in data] ,
+                "data": [_obj_to_dict(obj) for obj in data],
+                "actions": actions,
+                "can_create": can_create,
+                "can_batchly_edit": self.can_batchly_edit
             })
 
     def filters_api(self):
@@ -1060,7 +1176,6 @@ class ModelView(object):
         return jsonify({"filter_conditions": ret})
 
     def sort_columns_api(self):
-        ret = []
         self.try_view()
         def calc_order(c):
             if self.__default_order__:
@@ -1088,6 +1203,57 @@ class ModelView(object):
                                     forbidden_actions=row["forbidden_actions"],
                                     obj_url=obj_url))
         return json.dumps(ret), 200, {'Content-Type': "application/json"}
+
+    def obj_api(self, id_):
+
+        if request.method == "PUT":
+            if isinstance(id_, int):
+                id_list = [id_]
+            else:
+                id_list = [i for i in id_.split(",") if i]
+
+            processed_objs = [self.preprocess(self.get_one(id_)) for id_ in id_list]
+
+            action_name = request.json.get("__action__")
+            if action_name:
+                for action in self._get_customized_actions(processed_objs):
+                    if not action.direct and action.name == action_name:
+                        action.try_(processed_objs)
+                        for obj in processed_objs:
+                            ret_code = action.test_enabled(obj)
+                            if ret_code != 0:
+                                return jsonify({
+                                    "reason": _(u"can't apply %(action)s due to %(reason)s", 
+                                                action=action.name, 
+                                                reason=action.get_forbidden_msg_formats()[ret_code] % unicode(obj))
+                                }), 403
+                        try:
+                            ret = action.op_upon_list(processed_objs, self)
+                            self.session.commit()
+                            return jsonify({"reason": action.success_message(processed_objs)})
+                        except Exception, ex:
+                            return jsonify({
+                                "reason": _('Failed to update %(model_name)s %(objs)s due to %(error)s',
+                                            model_name=self.model_name, 
+                                            objs=",".join(unicode(obj) for obj in processed_objs),
+                                            error=str(ex))
+                            }), 403
+                            self.session.rollback()
+
+                return jsonify({"reason": _('invalid action %(action)s', action=action_name)}), 403
+        
+
+    def create_api(self):
+        self.try_create()
+
+        def _not_pk(col_spec):
+            if not hasattr(col_spec.property_, "direction"):
+                return not col_spec.property_.columns[0].primary_key
+            return True
+
+        return jsonify([(fieldset_name, 
+                         [convert_column(col, get_dict_converter(), self) for col in col_specs if (not self.hidden_pk or _not_pk(col))]) 
+                        for fieldset_name, col_specs in self.create_columns.items()])
 
     def _parse_args(self):
         page = request.args.get("page", 1, type=int)
@@ -1284,8 +1450,6 @@ class ModelView(object):
     def get_list_columns(self):
         return self.__list_columns__
 
-    def get_create_columns(self):
-        return self.__create_columns__
 
     def get_form_columns(self, obj=None):
         return self.__form_columns__
@@ -1315,7 +1479,6 @@ class ModelView(object):
         attribute 'class' returned from here
         """
         return ""
-
 
 class DataBrowser(object):
     error_template = "/__data_browser__/error.html"
@@ -1410,6 +1573,13 @@ class DataBrowser(object):
                                   model_view.sort_columns_api_endpoint,
                                   model_view.sort_columns_api,
                                   methods=["GET"])
+            blueprint.add_url_rule(model_view.obj_api_url + "/<id_>",
+                                  model_view.obj_api_endpoint,
+                                  model_view.obj_api,
+                                  methods=["GET", "PUT", "POST"])
+            blueprint.add_url_rule(model_view.obj_api_url,
+                                  model_view.obj_api_endpoint,
+                                  model_view.create_api)
 
         blueprint.before_request(model_view.before_request_hook)
         blueprint.after_request(model_view.after_request_hook)
@@ -1441,7 +1611,3 @@ class DataBrowser(object):
             return model_view.url_for_object(obj, **kwargs)
         except KeyError:
             return None
-
-
-
-

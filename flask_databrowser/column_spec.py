@@ -54,13 +54,14 @@ class InputColumnSpec(ColumnSpec):
     def __init__(self, col_name, 
                  group_by=None, # a grouper field, must be of `InstrumentedAttribute`
                  read_only=False, 
-                 doc="", 
+                 doc=None, 
                  formatter=None, 
                  label=None, 
                  css_class="", 
                  filter_=None, # a function to add filters to query 
                  opt_filter=None, # a function to filter options
                  validators=None, # user provided validators
+                 property_=None # corresponding to column definition in model
                 ):
         super(InputColumnSpec, self).__init__(col_name, genre=INPUT, doc=doc, formatter=formatter, label=label, css_class=css_class)
         self.group_by = group_by
@@ -68,6 +69,7 @@ class InputColumnSpec(ColumnSpec):
         self.filter_ = filter_ or (lambda v: v)
         self.opt_filter = opt_filter or (lambda obj: True)
         self.validators = validators or []
+        self.property_ = property_
     
     @property
     def grouper_input_name(self):
@@ -83,7 +85,7 @@ class ListColumnSpec(ColumnSpec):
 
 class PlaceHolderColumnSpec(ColumnSpec):
 
-    def __init__(self, col_name, template_fname, label=None, doc="", as_input=False, validators=None):
+    def __init__(self, col_name, template_fname, label=None, doc=None, as_input=False, validators=None):
         super(PlaceHolderColumnSpec, self).__init__(col_name, genre=PLACE_HOLDER, label=label, doc=doc)
         self.template_fname = template_fname
         self.as_input = as_input
