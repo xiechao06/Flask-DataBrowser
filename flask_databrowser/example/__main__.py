@@ -52,7 +52,8 @@ def main():
 
         list_template = "accounts/list.html"
         edit_template = create_template = "accounts/form.html"
-        can_batchly_edit = True
+        can_create = True
+        #can_batchly_edit = False
 
         def preprocess(self, obj):
             class _Proxy(object):
@@ -64,6 +65,9 @@ def main():
                 def __getattr__(self, attr):
                     return getattr(self.obj, attr)
             return _Proxy(obj)
+
+        def repr_obj(self, obj):
+            return obj.name
 
         def patch_row_css(self, idx, row):
             if row.roll_called == 1:

@@ -161,8 +161,8 @@ class Contains(BaseFilter):
 
 class Between(BaseFilter):
     
-    def __init__(self, col_name, name="", sep="--", default_value=None):
-        super(Between, self).__init__(col_name=col_name, name=name, default_value=default_value)
+    def __init__(self, col_name, name="", sep="--", default_value=None, display_col_name=None):
+        super(Between, self).__init__(col_name=col_name, name=name, default_value=default_value, display_col_name=display_col_name)
         self.sep = sep
 
     def __operator__(self, attr, value_list):
