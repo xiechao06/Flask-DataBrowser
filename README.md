@@ -7,5 +7,6 @@ Flask-DataBrowser
   * objects filtering
   * objects sorting
   * mobile devices
+  * test your code
 * let 4% things be possible
 * prevent 1% things to destroy other things  
