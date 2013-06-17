@@ -73,7 +73,15 @@ class InputColumnSpec(ColumnSpec):
     
     @property
     def grouper_input_name(self):
-        return self.col_name + '.' +  self.group_by.property.mapper.class_.__name__
+        if hasattr(self.group_by, "property"):
+            if self.group_by.is_mapper:
+                return self.col_name + '.' + self.group_by.property.mapper.class_.__name__
+            else:
+                return self.col_name + "." + self.group_by.key
+        elif hasattr(self.group_by, "__call__"):
+            return self.col_name + "." + self.group_by.func_name
+        else:
+            return self.col_name + "." + unicode(self.group_by)
 
 class ListColumnSpec(ColumnSpec):
 
@@ -95,3 +103,4 @@ class PlaceHolderColumnSpec(ColumnSpec):
             self.filter_ = None
             self.validators = validators or []
             self.opt_filter = None
+

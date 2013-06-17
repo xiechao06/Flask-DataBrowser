@@ -5,6 +5,8 @@ from wtforms import fields, widgets
 from flask.globals import _request_ctx_stack
 from flask.ext import wtf
 from flask.ext.babel import gettext, ngettext
+from wtforms.widgets import html_params, HTMLString
+
 
 class BaseForm(wtf.Form):
     """
@@ -83,7 +85,32 @@ class Select2Widget(widgets.Select):
         else:
             kwargs['data-role'] = u'select2'
 
-        return super(Select2Widget, self).__call__(field, **kwargs)
+            kwargs.setdefault('id', field.id)
+        if self.multiple:
+            kwargs['multiple'] = 'multiple'
+        html = [u'<select %s>' % html_params(name=field.name, **kwargs)]
+        for grouplabel, choices in field.iter_optgroups():
+            html.append(self.render_optgroup(grouplabel, choices))
+        html.append(u'</select>')
+        return HTMLString(u''.join(html))
+
+    @classmethod
+    def render_optgroup(cls, grouplabel, choices):
+        html = []
+        if grouplabel is not None:
+            options = {'label': grouplabel}
+            html.append(u'<optgroup %s>' % html_params(**options))
+        for value, label, selected in choices:
+            html.append(cls.render_option(value, label, selected))
+        if grouplabel is not None:
+            html.append(u'</optgroup>')
+        return HTMLString(u''.join(html))
+
+
+class OptGroupWidget(object):
+
+    def __call__(self, field, **kwargs):
+        return Select2Widget.render_optgroup(field.label.text, field.choices)
 
 
 class Select2Field(fields.SelectField):

@@ -226,6 +226,15 @@ class AdminModelConverter(ModelConverterBase):
                 if not local_column.foreign_keys and getattr(self.view, 'column_hide_backrefs', False):
                     return None
 
+                if col_spec and col_spec.group_by:
+                    if hasattr(col_spec.group_by, "__call__"):
+                        kwargs["grouper"] = col_spec.group_by
+                    elif hasattr(col_spec.group_by, "property"):
+                        column = col_spec.group_by.property
+                        if col_spec.group_by.is_mapper:
+                            column = get_primary_key(column)
+                        kwargs["grouper"] = lambda x: getattr(x, column.key)
+
                 return QuerySelectMultipleField(
                     widget=form.Select2Widget(multiple=True),
                     **kwargs)

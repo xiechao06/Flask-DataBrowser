@@ -3,9 +3,10 @@
 """
 import operator
 
-from wtforms import widgets
+from wtforms import widgets, Field
 from wtforms.fields import SelectFieldBase
 from wtforms.validators import ValidationError
+from .form import OptGroupWidget
 
 try:
     from sqlalchemy.orm.util import identity_key
@@ -19,7 +20,42 @@ __all__ = (
     )
 
 
-class QuerySelectField(SelectFieldBase):
+class GroupedSelectField(SelectFieldBase):
+    optgroup_widget = OptGroupWidget()
+
+    def __init__(self, label=None, validators=None, option_widget=None, **kwargs):
+        self.grouper = kwargs.pop("grouper", None)
+        super(GroupedSelectField, self).__init__(label, validators, option_widget, **kwargs)
+
+    def iter_choices(self):
+        """
+        Provides data for choice widget rendering. Must return a sequence or
+        iterable of (value, label, selected) tuples.
+        """
+        raise NotImplementedError()
+
+    def __iter__(self):
+        if self.grouper:
+            optgroup_opts = dict(widget=self.optgroup_widget, _name=self.name, _form=None)
+            i = 0
+            for grouplabel, choices in self.iter_optgroups():
+                og = self._OptGroup(label=grouplabel, **optgroup_opts)
+                og.process(None)
+                og.choices = choices #(o(value, label, selected, i) for value, label, selected in choices)
+                yield og
+                i += 1
+        else:
+            super(GroupedSelectField, self).__iter__()
+
+    class _OptGroup(Field):
+        def _value(self):
+            return self.data
+
+    def iter_optgroups(self):
+        raise NotImplementedError()
+
+
+class QuerySelectField(GroupedSelectField):
     """
     Will display a select drop-down field to choose between ORM results in a
     sqlalchemy `Query`.  The `data` property actually will store/keep an ORM
@@ -76,6 +112,8 @@ class QuerySelectField(SelectFieldBase):
         self.query = None
         self._object_list = None
         self.opt_filter = opt_filter or (lambda obj: True)
+        self._group_list = []
+        self._values = None
 
     def _get_data(self):
         if self._formdata is not None:
@@ -93,10 +131,15 @@ class QuerySelectField(SelectFieldBase):
 
     def _get_object_list(self):
         if self._object_list is None:
-            query = self.query or self.query_factory()
             get_pk = self.get_pk
-            self._object_list = list((unicode(get_pk(obj)), obj) for obj in query if self.opt_filter(obj))
+            self._object_list = list((unicode(get_pk(obj)), obj) for obj in self._query_objects())
         return self._object_list
+
+    def _query_objects(self):
+        if self._values is None:
+            query = self.query or self.query_factory()
+            self._values = list(obj for obj in query if self.opt_filter(obj))
+        return self._values
 
     def iter_choices(self):
         if self.allow_blank:
@@ -104,6 +147,24 @@ class QuerySelectField(SelectFieldBase):
 
         for pk, obj in self._get_object_list():
             yield (pk, self.get_label(obj), obj == self.data)
+
+    def _get_group_list(self):
+        if not self._group_list:
+            if self.grouper:
+                import itertools
+                for grouper, values in itertools.groupby(sorted(self._query_objects(), key=self.grouper), key=self.grouper):
+                    self._group_list.append((grouper, list(values)))
+
+            else:
+                self._group_list.append((None, self._query_objects()))
+        return self._group_list
+
+    def iter_optgroups(self):
+        for grouplabel, choices in self._get_group_list():
+            cs = []
+            for obj in choices:
+                cs.append((self.get_pk(obj), self.get_label(obj), obj == self.data))
+            yield (grouplabel, cs)
 
     def process_formdata(self, valuelist):
         if valuelist:

@@ -674,9 +674,15 @@ class ModelView(object):
                                                                               col.col_name).property.mapper.class_)).all() if col.opt_filter(row)]
                 for row in rows:
                     # should use pk here
-                    grouper_2_cols.setdefault(
-                        getattr(row, col.group_by.property.key).id, []).append(
-                        dict(id=row.id, text=unicode(row)))
+                    if hasattr(col.group_by, "property"):
+                        key = getattr(row, col.group_by.property.key)
+                        if col.group_by.is_mapper:
+                            key = key.id
+                    elif hasattr(col.group_by, "__call__"):
+                        key = col.group_by(row)
+                    else:
+                        key = row
+                    grouper_2_cols.setdefault(key, []).append(dict(id=row.id, text=unicode(row)))
                 grouper_info[col.grouper_input_name] = grouper_2_cols
         create_url_map = {}
         if not read_only:  # 当前的form是只读，没有必要生成create_url_map
