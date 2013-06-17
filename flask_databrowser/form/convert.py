@@ -146,6 +146,17 @@ class AdminModelConverter(ModelConverterBase):
 
         return None
 
+    def add_grouper(self, col_spec):
+        if hasattr(col_spec.group_by, "__call__"):
+            return col_spec.group_by
+        elif hasattr(col_spec.group_by, "property"):
+            column = col_spec.group_by.property
+            if col_spec.group_by.is_mapper:
+                column = get_primary_key(column)
+            return lambda x: getattr(x, column.key)
+        else:
+            return lambda x: x
+
     def convert(self, model, mapper, prop, field_args, hidden_pk, col_spec=None):
         kwargs = {
             'validators': col_spec.validators if col_spec else [],
@@ -225,20 +236,16 @@ class AdminModelConverter(ModelConverterBase):
                 # Skip backrefs
                 if not local_column.foreign_keys and getattr(self.view, 'column_hide_backrefs', False):
                     return None
-
                 if col_spec and col_spec.group_by:
-                    if hasattr(col_spec.group_by, "__call__"):
-                        kwargs["grouper"] = col_spec.group_by
-                    elif hasattr(col_spec.group_by, "property"):
-                        column = col_spec.group_by.property
-                        if col_spec.group_by.is_mapper:
-                            column = get_primary_key(column)
-                        kwargs["grouper"] = lambda x: getattr(x, column.key)
+                    kwargs["grouper"] = self.add_grouper(col_spec)
 
                 return QuerySelectMultipleField(
                     widget=form.Select2Widget(multiple=True),
                     **kwargs)
             elif prop.direction.name == 'MANYTOMANY':
+                if col_spec and col_spec.group_by:
+                    kwargs["grouper"] = self.add_grouper(col_spec)
+
                 return QuerySelectMultipleField(
                     widget=form.Select2Widget(multiple=True),
                     **kwargs)

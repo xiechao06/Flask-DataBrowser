@@ -669,7 +669,8 @@ class ModelView(object):
         model_columns = self._model_columns(model)
         for col in model_columns:
             grouper_2_cols = {}
-            if isinstance(col, InputColumnSpec) and col.group_by:
+            if isinstance(col, InputColumnSpec) and col.group_by and getattr(self.model,
+                                                                             col.col_name).property.direction.name == "MANYTOONE":
                 rows = [row for row in col.filter_(self.session.query(getattr(self.model,
                                                                               col.col_name).property.mapper.class_)).all() if col.opt_filter(row)]
                 for row in rows:
