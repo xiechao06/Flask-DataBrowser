@@ -671,18 +671,18 @@ class ModelView(object):
             grouper_2_cols = {}
             if isinstance(col, InputColumnSpec) and col.group_by and getattr(self.model,
                                                                              col.col_name).property.direction.name == "MANYTOONE":
+                assert hasattr(col.group_by, "property") or hasattr(col.group_by, "__call__")
                 rows = [row for row in col.filter_(self.session.query(getattr(self.model,
                                                                               col.col_name).property.mapper.class_)).all() if col.opt_filter(row)]
                 for row in rows:
                     # should use pk here
+                    key = None
                     if hasattr(col.group_by, "property"):
                         key = getattr(row, col.group_by.property.key)
                         if col.group_by.is_mapper:
                             key = key.id
                     elif hasattr(col.group_by, "__call__"):
                         key = col.group_by(row)
-                    else:
-                        key = row
                     grouper_2_cols.setdefault(key, []).append(dict(id=row.id, text=unicode(row)))
                 grouper_info[col.grouper_input_name] = grouper_2_cols
         create_url_map = {}
