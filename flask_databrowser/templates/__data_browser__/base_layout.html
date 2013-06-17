@@ -39,11 +39,24 @@
           $(".flash").fadeOut("slow");
         }, 3000);
         $("[data-toggle=tooltip]").tooltip();
-      $(".accordion").on("shown", function(event) {
+        $(".accordion").on("shown",function (event) {
           event.stopPropagation();
-      }).on("hidden", function(event) {
-      event.stopPropagation()});
-      })</script>
+        }).on("hidden", function (event) {
+              event.stopPropagation()
+            });
+        function my_matcher(term, text, option) {
+          var bool = text.toUpperCase().indexOf(term.toUpperCase()) >= 0;
+          if (option.parent("optgroup").length > 0) {
+            return bool || option.parent("optgroup").attr("label").toUpperCase().indexOf(term.toUpperCase()) >= 0;
+          }
+          return bool;
+        }
+        $("select").select2({
+          matcher:my_matcher,
+          width: "resolve"
+        })
+      })
+    </script>
     {% block __data_browser__builtin_head_block %}
     {% endblock %}
     {% block __data_browser__customized_head_block %}

@@ -50,6 +50,7 @@ def main():
 
     class UserModelView(databrowser.ModelView):
 
+        column_hide_backrefs = False
         list_template = "accounts/list.html"
         edit_template = create_template = "accounts/form.html"
         can_create = True
@@ -100,7 +101,8 @@ def main():
                                             formatter=lambda v, model: "http://farm9.staticflickr.com/8522/8478415115_152c6f5e55_m.jpg", doc=u"头像， ^_^!")]
         __form_columns__[u"额外的"] = [
             TableColumnSpec("dogs", css_class="table table-striped table-hover table-condensed table-bordered"),
-            ListColumnSpec("car_list", css_class="alert alert-info", item_css_class="alert-error"),
+            InputColumnSpec("car_list", css_class="alert alert-info", group_by=lambda x: x.model[0]),
+            # "car_list"
         ]
 
         __batch_form_columns__ = OrderedDict()
