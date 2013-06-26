@@ -19,3 +19,8 @@ def get_dict_converter():
     return DictConverter()
 
 
+def extract_validators(col_spec, model_view):
+    # TODO only sqlalchemy supported here
+    from flask.ext.databrowser.convert_utils.sa import extract_validators
+    return extract_validators(col_spec.property_.columns[0], model_view)
+

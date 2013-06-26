@@ -2,6 +2,7 @@
 import types
 import functools
 import inspect
+import copy
 
 from wtforms import fields, validators
 from sqlalchemy import Boolean, Column
@@ -147,8 +148,9 @@ class AdminModelConverter(ModelConverterBase):
         return None
 
     def convert(self, model, mapper, prop, field_args, hidden_pk, col_spec=None):
+        # note!!! use copy here, otherwise col_spec.validators will be changed
         kwargs = {
-            'validators': col_spec.validators if col_spec else [],
+            'validators': copy.copy(col_spec.validators) if col_spec else [],
             'filters': []
         }
 

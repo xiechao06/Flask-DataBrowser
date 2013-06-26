@@ -63,8 +63,8 @@ class TestCreateAPI(basetest.BaseTest):
         with self.app.test_request_context():
             with self.app.test_client() as c:
                 rv = c.get("/foo0/apis/user")
-                fieldset_map = json.loads(rv.data)
-                fields = dict((f["name"], f) for f in fieldset_map[""])
+                fieldset_list = json.loads(rv.data)["fieldsets"]
+                fields = dict((f["name"], f) for f in fieldset_list[0][1])
                 assert len(fields) == 4
                 assert 'name' in fields
                 assert 'group' in fields
@@ -136,8 +136,8 @@ class TestCreateAPI(basetest.BaseTest):
         with self.app.test_request_context():
             with self.app.test_client() as c:
                 rv = c.get("/foo1/apis/user")
-                fieldset_map = json.loads(rv.data)
-                fields = dict((f["name"], f) for f in fieldset_map[""])
+                fieldset_list = json.loads(rv.data)["fieldsets"]
+                fields = dict((f["name"], f) for f in fieldset_list[0][1])
                 assert len(fields) == 5
                 assert 'id' in fields
                 assert 'name' in fields
@@ -158,8 +158,8 @@ class TestCreateAPI(basetest.BaseTest):
         with self.app.test_request_context():
             with self.app.test_client() as c:
                 rv = c.get("/foo2/apis/group")
-                fieldset_map = json.loads(rv.data)
-                fields = dict((f["name"], f) for f in fieldset_map[""])
+                fieldset_list = json.loads(rv.data)["fieldsets"]
+                fields = dict((f["name"], f) for f in fieldset_list[0][1])
                 assert len(fields) == 2
                 assert 'name' in fields
                 assert 'users' in fields
@@ -184,8 +184,8 @@ class TestCreateAPI(basetest.BaseTest):
         with self.app.test_request_context():
             with self.app.test_client() as c:
                 rv = c.get("/foo3/apis/user")
-                fieldset_map = json.loads(rv.data)
-                fields = dict((f["name"], f) for f in fieldset_map[""])
+                fieldset_list = json.loads(rv.data)["fieldsets"]
+                fields = dict((f["name"], f) for f in fieldset_list[0][1])
                 assert len(fields) == 1
                 assert 'age' in fields
 
@@ -203,6 +203,48 @@ class TestCreateAPI(basetest.BaseTest):
     def test_many_to_many(self):
         # TODO untested
         pass
+
+    def test_commit(self):
+        class UserModelView(ModelView):
+            __create_columns__ = ['name', 'title', 'group', InputColumnSpec("age", validators=[validators.NumberRange(18, 101)])]
+
+        model_view = UserModelView(self.__tables.User)
+        blueprint = Blueprint("foo5", __name__, static_folder="static", 
+                            template_folder="templates")
+        self.browser.register_model_view(model_view, blueprint)
+        self.app.register_blueprint(blueprint, url_prefix="/foo5")
+        with self.app.test_request_context():
+            with self.app.test_client() as c:
+                data =  {
+                    "name": "foo",
+                    "title": "Mr", 
+                    "group": '1',
+                    "age": 22,
+                }
+                headers = [('Content-Type', 'application/json')]
+                rv = c.post("/foo5/apis/user", content_type='application/json', data=json.dumps(data))
+                assert rv.status_code == 200
+                rsp = json.loads(rv.data)
+                assert rsp['repr'] == 'foo'
+                data = {
+                    "name": 'foo',
+                    'title': 'Mr',
+                    'group': '3',
+                    'age': 1
+                }
+                rv = c.post("/foo5/apis/user", content_type='application/json', data=json.dumps(data))
+                assert rv.status_code == 403
+                rsp = json.loads(rv.data)
+                assert len(rsp['errors']) == 3
+                print rsp
+                assert 'name' in rsp['errors']
+                assert 'group' in rsp['errors']
+                assert 'age' in rsp['errors']
+
+        self.db.session.delete(self.__tables.User.query.filter(self.__tables.User.name=='foo').one())
+        self.db.session.commit()
+
+
 
 if __name__ == "__main__":
     TestCreateAPI().run_plainly()

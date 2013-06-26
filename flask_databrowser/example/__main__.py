@@ -53,6 +53,7 @@ def main():
         list_template = "accounts/list.html"
         edit_template = create_template = "accounts/form.html"
         can_create = True
+        column_hide_backrefs = False
         #can_batchly_edit = False
 
         def preprocess(self, obj):
@@ -90,8 +91,10 @@ def main():
         __list_columns__ = ["id", "name", "group", "password", "roll_called", "group.name", "create_time", ImageColumnSpec("avatar", alt=u"头像", 
             formatter=lambda v, model: "http://farm9.staticflickr.com/8522/8478415115_152c6f5e55_m.jpg", doc=u"头像，^_^！"), "good"]
         __create_columns__ = OrderedDict()
-        __create_columns__["secondary"] = [PlaceHolderColumnSpec("age", template_fname="/accounts/age-snippet.html", as_input=True), "roll_called"]
         __create_columns__["primary"] = ["name", "group", "password"]
+        #__create_columns__["secondary"] = [PlaceHolderColumnSpec("age", template_fname="/accounts/age-snippet.html", as_input=True), 
+                                           #"roll_called", "birthday", "create_time", "car_list"]
+
 
         __form_columns__ = OrderedDict()
         __form_columns__[u"主要的"] = ["id", "name", PlaceHolderColumnSpec("group", template_fname="/accounts/group-snippet.html", as_input=True), "password", 
@@ -115,6 +118,7 @@ def main():
 
         __column_docs__ = {
             "password": u"md5值",
+            "roll_called": u"点名过",
         }
 
         __sortable_columns__ = ["id", "name", "group"]

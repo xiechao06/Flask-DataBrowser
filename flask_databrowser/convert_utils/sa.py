@@ -105,32 +105,68 @@ class DictConverter(object):
         # note!!! Unique is left off, since it has no meaning to client
         if isinstance(validator, validators.DataRequired):
             ret['name'] = 'required'
+            ret['message'] = validator.message
+            if ret['message'] is None:
+                ret['message'] = _('This field is required.')
         elif isinstance(validator, validators.Regexp):
             ret['name'] = 'regexp'
             ret['regexp'] =  validator.regex
+            ret['message'] = validator.message
+            if ret['message'] is None:
+                ret['message'] = _('the input must be like %s' % validator.regex)
         elif isinstance(validator, validators.URL):
             ret['name'] = 'url'
+            ret['message'] = validator.message
+            if ret['message'] is None:
+                ret['message'] = _('Invalid URL')
         elif isinstance(validator, validators.AnyOf):
             ret['name'] = 'anyof'
             ret['values'] = validator.values
+            if validator.message:
+                ret['message'] = validator.message % dict(values=validator.values_formatter(validator.values))
+            else:
+                ret['message'] = _('Invalid value, must be one of: %(values)s.', values=validator.values_formatter(validator.values))
         elif isinstance(validator, validators.NoneOf):
             ret['name'] = 'noneof'
             ret['values'] = validator.values
+            if validator.message:
+                ret['message'] = validator.message % dict(values=validator.values_formatter(validator.values))
+            else:
+                ret['message'] = _('Invalid value, must be one of: %(values)s.', values=validator.values_formatter(validator.values))
         elif isinstance(validator, validators.Length):
             ret['name'] = 'length'
             ret['min'] = validator.min
             ret['max'] = validator.max
+            message = validator.message 
+            if message is None:
+                if validator.max == -1:
+                    message = _('Field must be at least %%(min)d character long.')
+                elif validator.min == -1:
+                    message = _('Field cannot be longer than %%(max)d character.')
+                else:
+                    message = _('Field must be between %%(min)d and %%(max)d characters long.')
+            ret['message'] = message % dict(min=validator.min, max=validator.max)
         elif isinstance(validator, validators.NumberRange):
             ret['name'] = 'range'
             ret['min'] = validator.min
             ret['max'] = validator.max
+            message = validator.message 
+            if message is None:
+                if validator.max is None:
+                    message = _('Number must be greater than %%(min)s.')
+                elif validator.min is None:
+                    message = _('Number must be less than %%(max)s.')
+                else:
+                    message = _('Number must be between %%(min)s and %%(max)s.')
+            ret['message'] = message % dict(min=validator.min, max=validator.max)
         elif isinstance(validator, validators.Email):
             ret['name'] = 'email'
-        if ret:
             ret['message'] = validator.message
+            if ret['message'] is None:
+                self.message = _('Invalid email address.')
         return ret or None
 
-def _get_validators(column, model_view):
+def extrac_validators(column, model_view):
     """
     get validators from non-relationship property
     """
@@ -156,9 +192,9 @@ def _get_validators(column, model_view):
                                         message=_(u"value of this field must be %(values)s", values=", ".join(str(i) for i in column.type.enums[:-1])) +
                                         _(u" or %(last_value)s", last_value=column.type.enums[-1]) if (len(column.type.enums) > 1) else "")) 
         else:
-            ret.append(validators.Length(max=column.type.length, message=_(u"length exceeds %(max_length)%d", max_length=column.type.length)))
+            ret.append(validators.Length(max=column.type.length))
     elif isinstance(column.type, Text) or isinstance(column.type, UnicodeText):
-        ret.append(validators.Length(max=column.type.length, message=_(u"length exceeds %(max_length)%d", max_length=column.type.length)))
+        ret.append(validators.Length(max=column.type.length))
     elif isinstance(column.type, Integer) or isinstance(column.type, SmallInteger):
         unsigned = getattr(column.type, 'unsigned', False)
         if unsigned:
@@ -197,7 +233,7 @@ def convert_column(col_spec, converter, model_view):
             ret['default'] = None
         else:
             default = default.arg
-            ret["default"] = remote_model.query.get(default() if hasattr(default, '__call__') else default)
+            ret["default"] = remote_model.query.get(default(None) if hasattr(default, '__call__') else default)
         return converter.convert_select(col_spec.property_.direction, **ret)
     else:
         column = col_spec.property_.columns[0]
@@ -207,7 +243,7 @@ def convert_column(col_spec, converter, model_view):
             ret["default"] = None
         else:
             default = default.arg
-            ret["default"] = default() if hasattr(default, "__call__") else default
+            ret["default"] = unicode(default(None) if hasattr(default, "__call__") else default)
         # get type and validators
-        ret["validators"] = _get_validators(col_spec.property_.columns[0], model_view) + col_spec.validators
+        ret["validators"] = extrac_validators(col_spec.property_.columns[0], model_view) + col_spec.validators
         return converter.convert(column.type, **ret)

@@ -17,6 +17,7 @@ class BaseTest(object):
         self.app = Flask(__name__)
         Babel(self.app)
         self.app.config["SQLALCHEMY_DATABASE_URI"] = dbstr
+        self.app.config["CSRF_ENABLED"] = False
 
         self.db = SQLAlchemy(self.app)
         self.setup_models()
@@ -41,9 +42,10 @@ class BaseTest(object):
     def setup_models(self):
         pass
 
-    def run_plainly(self):
+    def run_plainly(self, tests=None):
         self.setup()
         for k, v in self.__class__.__dict__.items():
             if k.startswith("test") and isinstance(v, types.FunctionType):
-                v(self)
+                if not tests or (k in tests):
+                    v(self)
         self.teardown()

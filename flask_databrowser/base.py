@@ -6,10 +6,12 @@ import operator
 import re
 import sys
 import types
+from collections import OrderedDict
+
 import werkzeug
 import yaml
+from werkzeug.datastructures import MultiDict
 
-from collections import OrderedDict
 from flask import (render_template, flash, request, url_for, redirect, Flask, make_response, jsonify)
 from flask.ext.babel import gettext as _
 from flask.ext.databrowser.utils import (get_primary_key, get_doc_from_table_def, test_request_type)
@@ -22,7 +24,7 @@ from flask.ext.databrowser import filters
 from flask.ext.databrowser.exceptions import ValidationError
 from flask.ext.databrowser.extra_widgets import PlaceHolder
 from flask.ext.databrowser.form import form
-from flask.ext.databrowser.convert_utils import convert_column, get_dict_converter
+from flask.ext.databrowser.convert_utils import convert_column, get_dict_converter, extract_validators
 
 WEB_PAGE = 1
 WEB_SERVICE = 2
@@ -134,6 +136,7 @@ class ModelView(object):
                     if col.doc is None:
                         col.doc = self.__column_docs__.get(col.col_name) or get_doc_from_table_def(self.model, col.col_name)
                     ret[fieldset_name].append(col) 
+
         return ret
                     
     @property
@@ -1098,7 +1101,9 @@ class ModelView(object):
 
             def _obj_to_dict(obj):
                 ret = {"id": obj["pk"], "repr": obj["repr_"], "forbidden_actions": _get_forbidden_actions(obj["obj"])}
-                ret.update(dict(itertools.izip(self.list_column_specs, obj["fields"])))
+                for col in self.list_column_specs:
+                    col_name = col if isinstance(col, basestring) else col.col_name
+                    ret[col_name] = unicode(operator.attrgetter(col_name)(obj["obj"]))
                 return ret
 
             return jsonify({
@@ -1214,15 +1219,35 @@ class ModelView(object):
     def create_api(self):
         self.try_create()
 
-        def _not_pk(col_spec):
-            if not hasattr(col_spec.property_, "direction"):
-                return not col_spec.property_.columns[0].primary_key
-            return True
+        if request.method == "GET":
+            def _not_pk(col_spec):
+                if not hasattr(col_spec.property_, "direction"):
+                    return not col_spec.property_.columns[0].primary_key
+                return True
 
-        return jsonify([(fieldset_name, 
-                         [convert_column(col, get_dict_converter(), self) for col in col_specs if (not self.hidden_pk or _not_pk(col))]) 
-                        for fieldset_name, col_specs in self.create_columns.items()])
-
+            return jsonify({
+                "fieldsets": [(fieldset_name, 
+                             [convert_column(col, get_dict_converter(), self) for col in col_specs if (not self.hidden_pk or _not_pk(col))]) 
+                            for fieldset_name, col_specs in self.create_columns.items()]
+            })
+        else:
+            columns = itertools.chain(*self.create_columns.values())
+            columns = dict((col.col_name, col) for col in columns)
+            formdata = MultiDict()
+            create_form = self.get_create_form()
+            if not create_form.validate():
+                return jsonify({
+                    "errors": create_form.errors
+                }), 403
+            obj = self.populate_obj(create_form)
+            self.on_model_change(create_form, obj)
+            self.session.add(obj)
+            self.session.commit()
+            return jsonify({
+                'id': self.scaffold_pk(obj),
+                'repr': self.repr_obj(obj)
+            })
+                 
     def _parse_args(self):
         page = request.args.get("page", 1, type=int)
         order_by = request.args.get("order_by")
@@ -1547,7 +1572,8 @@ class DataBrowser(object):
                                   methods=["GET", "PUT", "POST"])
             blueprint.add_url_rule(model_view.obj_api_url,
                                   model_view.obj_api_endpoint,
-                                  model_view.create_api)
+                                  model_view.create_api, 
+                                  methods=["GET", "POST"])
 
         blueprint.before_request(model_view.before_request_hook)
         blueprint.after_request(model_view.after_request_hook)
