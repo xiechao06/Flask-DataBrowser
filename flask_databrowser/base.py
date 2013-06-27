@@ -114,46 +114,7 @@ class ModelView(object):
         :return: an OrderedDict whose keys are fieldsets
         """
         return self._normalize_columns(columns, lambda col: isinstance(col, basestring) or isinstance(col, InputColumnSpec) or (isinstance(col, PlaceHolderColumnSpec) and col.as_input))
-        ret = OrderedDict()
-        def _input_column_spec_from_prop(prop):
-            return InputColumnSpec(prop.key, 
-                                   doc=self.__column_docs__.get(prop.key) or get_doc_from_table_def(self.model, prop.key), 
-                                   label=self.__column_labels__.get(prop.key),
-                                   property_=prop)
-        def _test(prop):
-            if hasattr(prop, 'direction'):
-                local_column = prop.local_remote_pairs[0][0]
-                not_back_ref = bool(local_column.foreign_keys)
-                return not self.column_hide_backrefs or not_back_ref
-            else:
-                return not prop.columns[0].foreign_keys
 
-        if not columns:
-            ret[""] = [_input_column_spec_from_prop(prop) for prop in self.model.__mapper__.iterate_properties 
-                                                   if _test(prop)]
-            return ret
-        
-        col_name_2_prop = dict((prop.key, prop) for prop in self.model.__mapper__.iterate_properties if _test(prop))
-        if isinstance(columns, types.ListType) or isinstance(columns, types.TupleType):
-            create_columns = {"": columns}
-        else:
-            create_columns = columns
-
-        for fieldset_name, columns in create_columns.items():
-            ret[fieldset_name] = []
-            for col in columns:
-                if isinstance(col, basestring):
-                    if col in col_name_2_prop:
-                        ret[fieldset_name].append(_input_column_spec_from_prop(col_name_2_prop[col]))
-                elif col.col_name in col_name_2_prop and (isinstance(col, InputColumnSpec) or ((isinstance(col, PlaceHolderColumnSpec) and col.as_input))):
-                    col.property_ = col_name_2_prop[col.col_name]
-                    if col.label is None:
-                        col.label = self.__column_labels__.get(col.col_name)
-                    if col.doc is None:
-                        col.doc = self.__column_docs__.get(col.col_name) or get_doc_from_table_def(self.model, col.col_name)
-                    ret[fieldset_name].append(col) 
-
-        return ret
 
     def _normalize_columns(self, columns, test):
         """

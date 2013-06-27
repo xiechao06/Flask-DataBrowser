@@ -23,7 +23,7 @@ class BaseTest(object):
         self.setup_models()
         self.db.create_all()
         try:
-            db.init_app(app)
+            self.db.init_app(self.app)
         except:
             # 第二次执行init_app时，由于app已经执行过request，将导致app无法再次初始化。
             pass
