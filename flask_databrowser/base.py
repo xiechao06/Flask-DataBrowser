@@ -6,10 +6,12 @@ import operator
 import re
 import sys
 import types
+from collections import OrderedDict
+
 import werkzeug
 import yaml
+from werkzeug.datastructures import MultiDict
 
-from collections import OrderedDict
 from flask import (render_template, flash, request, url_for, redirect, Flask, make_response, jsonify)
 from flask.ext.babel import gettext as _
 from flask.ext.databrowser.utils import (get_primary_key, get_doc_from_table_def, test_request_type)
@@ -22,7 +24,7 @@ from flask.ext.databrowser import filters
 from flask.ext.databrowser.exceptions import ValidationError
 from flask.ext.databrowser.extra_widgets import PlaceHolder
 from flask.ext.databrowser.form import form
-from flask.ext.databrowser.convert_utils import convert_column, get_dict_converter
+from flask.ext.databrowser.convert_utils import convert_column, get_dict_converter, extract_validators
 
 WEB_PAGE = 1
 WEB_SERVICE = 2
@@ -40,8 +42,8 @@ class ModelView(object):
     __customized_actions__ = []
     __create_columns__ = []
     __max_col_len__ = 255
-
     __model_list__ = []
+    __extra_fields__ = {}
 
     serv_type = WEB_PAGE | WEB_SERVICE
 
@@ -62,6 +64,7 @@ class ModelView(object):
         self.__model_name = model_name
         self.__list_column_specs = []
         self.__normalized_create_columns = []
+        self.__normalized_form_columns = []
 
     @property
     def model_name(self):
@@ -82,19 +85,46 @@ class ModelView(object):
             self.__normalized_create_columns = self.normalize_create_columns(self.__create_columns__) 
         return self.__normalized_create_columns
 
+    @property
+    def form_columns(self):
+        """
+        get all the *NORMALIZED* form columns for model view. which means,
+        if you override this method, you should guarantee that return value are
+        normalized. see ModelView.normalize_form_columns 
+        """
+        # only for backward compatiple, feel comfortable to ignore it
+        if hasattr(self, 'get_form_columns') and isinstance(self.get_form_columns, types.MethodType):
+            return self._normalize_form_columns(self.get_form_columns())
+        if not self.__normalized_form_columns:
+            self.__normalized_form_columns = self._normalize_form_columns(self.__form_columns__)
+        return self.__normalized_form_columns
+
     def normalize_create_columns(self, columns):
         """
         this utility function handle the following matters:
 
-            * if create columns not defined in fieldsets, add them to one fieldset whose name is empty string
+            * if columns not defined in fieldsets, add them to one fieldset whose name is empty string
             * if __create_columns__ undefined, fill the create_columns from model
             * convert all the column of 'basestring' to InputColumn
             * purge the create columns, only columns defined in model, and is of 
                 type "basestring", "InputColumnSpec" or "PlaceHolderColumnSpec"(as_input) 
-                and if not foreign key could be displayed in create form
+                and no foreign key could be displayed in create form
             * fill the label and doc of each column
 
         :return: an OrderedDict whose keys are fieldsets
+        """
+        return self._normalize_columns(columns, lambda col: isinstance(col, basestring) or isinstance(col, InputColumnSpec) or (isinstance(col, PlaceHolderColumnSpec) and col.as_input))
+
+
+    def _normalize_columns(self, columns, test):
+        """
+        this utility function handle the following matters:
+
+            * if columns not defined in fieldsets, add them to one fieldset whose name is empty string
+            * if columns are empty undefined, fill the form_columns from model
+            * convert all the column of 'basestring' to InputColumn
+            * purge the create columns, only columns defined in model, foreign key could be displayed in edit form, and pass the test
+            * fill the label and doc of each column
         """
         ret = OrderedDict()
         def _input_column_spec_from_prop(prop):
@@ -114,27 +144,31 @@ class ModelView(object):
             ret[""] = [_input_column_spec_from_prop(prop) for prop in self.model.__mapper__.iterate_properties 
                                                    if _test(prop)]
             return ret
-        
+
         col_name_2_prop = dict((prop.key, prop) for prop in self.model.__mapper__.iterate_properties if _test(prop))
         if isinstance(columns, types.ListType) or isinstance(columns, types.TupleType):
-            create_columns = {"": columns}
+            fieldsets = {"": [c for c in columns if test(c)]}
         else:
-            create_columns = columns
+            fieldsets = dict((k, [c for c in v if test(c)]) for k, v in columns.items())
 
-        for fieldset_name, columns in create_columns.items():
+        for fieldset_name, columns in fieldsets.items():
             ret[fieldset_name] = []
             for col in columns:
                 if isinstance(col, basestring):
                     if col in col_name_2_prop:
                         ret[fieldset_name].append(_input_column_spec_from_prop(col_name_2_prop[col]))
-                elif col.col_name in col_name_2_prop and (isinstance(col, InputColumnSpec) or ((isinstance(col, PlaceHolderColumnSpec) and col.as_input))):
+                elif col.col_name in col_name_2_prop:
                     col.property_ = col_name_2_prop[col.col_name]
                     if col.label is None:
                         col.label = self.__column_labels__.get(col.col_name)
                     if col.doc is None:
                         col.doc = self.__column_docs__.get(col.col_name) or get_doc_from_table_def(self.model, col.col_name)
                     ret[fieldset_name].append(col) 
+        
         return ret
+
+    def _normalize_form_columns(self, columns):
+        return self._normalize_columns(columns, lambda col: True)
                     
     @property
     def session(self):
@@ -172,6 +206,10 @@ class ModelView(object):
     @property
     def obj_api_endpoint(self):
         return self.object_view_endpoint + "_api"
+
+    @property
+    def create_api_endpoint(self):
+        return self.object_view_endpoint + "_create_api"
 
     @property
     def sort_columns_api_endpoint(self):
@@ -1105,7 +1143,9 @@ class ModelView(object):
 
             def _obj_to_dict(obj):
                 ret = {"id": obj["pk"], "repr": obj["repr_"], "forbidden_actions": _get_forbidden_actions(obj["obj"])}
-                ret.update(dict(itertools.izip(self.list_column_specs, obj["fields"])))
+                for col in self.list_column_specs:
+                    col_name = col if isinstance(col, basestring) else col.col_name
+                    ret[col_name] = unicode(operator.attrgetter(col_name)(obj["obj"]))
                 return ret
 
             return jsonify({
@@ -1179,14 +1219,53 @@ class ModelView(object):
         return json.dumps(ret), 200, {'Content-Type': "application/json"}
 
     def obj_api(self, id_):
+        """
+        this api handles 2 things:
+       
+        * perform actions upon objects
+        * get the object itself and edit form  
+            why we mix the object and edit form together? since whether a column could be altered (eg. not readonly),
+            is related to the object
+        * get some extra information from preprocessed object
+        """
+        if isinstance(id_, int):
+            id_list = [id_]
+        else:
+            id_list = [i for i in id_.split(",") if i]
+        
+        processed_objs = [self.preprocess(self.get_one(id_)) for id_ in id_list]
+        
+        if len(id_list) == 1:
+            obj = self.get_one(id_list[0])
+            self.try_view([obj])  # first, we test if we could view
+            preprocessed_obj = processed_objs[0]
+            try:
+                self.try_edit([preprocessed_obj])
+                read_only = False
+            except PermissionDenied:
+                read_only = True
+        else:
+            objs = [self.get_one(id_) for id_ in id_list]
+            preprocessed_objs = [self.preprocess(obj) for obj in objs]
+            self.try_view(preprocessed_objs) # first, we test if we could view
+            obj = None
+            if request.method == "GET":
+                obj = type("_temp", (object,), {})()
+                for prop in self.model.__mapper__.iterate_properties:
+                    attr = prop.key
+                    default_value = getattr(objs[0], attr)
+                    if all(getattr(obj_,
+                                   attr) == default_value for obj_ in
+                           objs):
+                        setattr(obj, attr, default_value)
+            try:
+                self.try_edit(preprocessed_objs)
+                read_only = False
+            except PermissionDenied:
+                read_only = True
+        
 
         if request.method == "PUT":
-            if isinstance(id_, int):
-                id_list = [id_]
-            else:
-                id_list = [i for i in id_.split(",") if i]
-
-            processed_objs = [self.preprocess(self.get_one(id_)) for id_ in id_list]
 
             action_name = request.json.get("__action__")
             if action_name:
@@ -1216,19 +1295,62 @@ class ModelView(object):
 
 
                 return jsonify({"reason": _('invalid action %(action)s', action=action_name)}), 403
+        else: # GET
+             
+            form_columns = dict([(k, [c for c in v if isinstance(c, InputColumnSpec) or (isinstance(c, PlaceHolderColumnSpec) and c.as_input)]) 
+                                 for k, v in self.form_columns.items()])
         
+            def _not_pk(col_spec):
+                if not hasattr(col_spec.property_, "direction"):
+                    return not col_spec.property_.columns[0].primary_key
+                return True
+            
+            def _make_readonly(col):
+                col['read_only'] = read_only
+                return col
+
+            extra_fields = {}
+            if len(id_list) == 1:
+                extra_fields = dict([(k, v(preprocessed_obj)) for k, v in self.__extra_fields__.items()])
+            return jsonify({
+                "fieldsets": [(fieldset_name, 
+                               [_make_readonly(convert_column(col, get_dict_converter(), self, obj)) 
+                                for col in col_specs if (not self.hidden_pk or _not_pk(col))]) 
+                            for fieldset_name, col_specs in form_columns.items()],
+                'extra_fields': extra_fields
+            })
 
     def create_api(self):
         self.try_create()
 
-        def _not_pk(col_spec):
-            if not hasattr(col_spec.property_, "direction"):
-                return not col_spec.property_.columns[0].primary_key
-            return True
+        if request.method == "GET":
+            def _not_pk(col_spec):
+                if not hasattr(col_spec.property_, "direction"):
+                    return not col_spec.property_.columns[0].primary_key
+                return True
 
-        return jsonify([(fieldset_name, 
-                         [convert_column(col, get_dict_converter(), self) for col in col_specs if (not self.hidden_pk or _not_pk(col))]) 
-                        for fieldset_name, col_specs in self.create_columns.items()])
+            return jsonify({
+                "fieldsets": [(fieldset_name, 
+                             [convert_column(col, get_dict_converter(), self) for col in col_specs if (not self.hidden_pk or _not_pk(col))]) 
+                            for fieldset_name, col_specs in self.create_columns.items()]
+            })
+        else:
+            columns = itertools.chain(*self.create_columns.values())
+            columns = dict((col.col_name, col) for col in columns)
+            formdata = MultiDict()
+            create_form = self.get_create_form()
+            if not create_form.validate():
+                return jsonify({
+                    "errors": create_form.errors
+                }), 403
+            obj = self.populate_obj(create_form)
+            self.on_model_change(create_form, obj)
+            self.session.add(obj)
+            self.session.commit()
+            return jsonify({
+                'id': self.scaffold_pk(obj),
+                'repr': self.repr_obj(obj)
+            })
 
     def _parse_args(self):
         page = request.args.get("page", 1, type=int)
@@ -1553,8 +1675,9 @@ class DataBrowser(object):
                                   model_view.obj_api,
                                   methods=["GET", "PUT", "POST"])
             blueprint.add_url_rule(model_view.obj_api_url,
-                                  model_view.obj_api_endpoint,
-                                  model_view.create_api)
+                                  model_view.create_api_endpoint,
+                                  model_view.create_api, 
+                                  methods=["GET", "POST"])
 
         blueprint.before_request(model_view.before_request_hook)
         blueprint.after_request(model_view.after_request_hook)

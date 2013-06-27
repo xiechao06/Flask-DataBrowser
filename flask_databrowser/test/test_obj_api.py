@@ -8,7 +8,7 @@ from flask.ext.databrowser.test import basetest
 from flask.ext.databrowser import ModelView, DataBrowser
 from flask.ext.databrowser.column_spec import InputColumnSpec
 
-class TestCreateAPI(basetest.BaseTest):
+class TestObjectAPI(basetest.BaseTest):
 
     def setup_models(self):
 
@@ -40,7 +40,7 @@ class TestCreateAPI(basetest.BaseTest):
 
 
     def setup(self):
-        super(TestCreateAPI, self).setup()
+        super(TestObjectAPI, self).setup()
         self.browser = DataBrowser(self.app, self.db)
         group1 = self.__tables.Group(name="group1")
         group2 = self.__tables.Group(name="group2")
@@ -52,8 +52,8 @@ class TestCreateAPI(basetest.BaseTest):
         self.db.session.add(user2)
         self.db.session.commit()
     
-    def test_with_no_create_columns(self):
-        # we assert when no create columns are defined, creat api return correctly
+
+    def test_with_no_form_columns(self):
         model_view = ModelView(self.__tables.User)
         blueprint = Blueprint("foo0", __name__, static_folder="static", 
                             template_folder="templates")
@@ -62,7 +62,7 @@ class TestCreateAPI(basetest.BaseTest):
 
         with self.app.test_request_context():
             with self.app.test_client() as c:
-                rv = c.get("/foo0/apis/user")
+                rv = c.get("/foo0/apis/user/1")
                 fieldset_list = json.loads(rv.data)["fieldsets"]
                 fields = dict((f["name"], f) for f in fieldset_list[0][1])
                 assert len(fields) == 4
@@ -76,7 +76,7 @@ class TestCreateAPI(basetest.BaseTest):
                 assert field['label'] is None
                 assert field['doc'] == u'姓名'
                 assert not field['read_only']
-                assert field['default'] is None
+                assert field['value'] == 'user1'
                 assert field['group_by'] is None
                 assert len(field['validators']) == 2
                 validator_map = dict((v['name'], v) for v in field['validators'])
@@ -89,7 +89,7 @@ class TestCreateAPI(basetest.BaseTest):
                 assert field['type'] == 'select'
                 assert field['label'] is None
                 assert field['doc'] is None
-                assert field['default'] == 1
+                assert field['value'] == 1
                 assert not field['read_only']
                 assert field['group_by'] is None
                 assert len(field['validators']) == 1
@@ -102,6 +102,7 @@ class TestCreateAPI(basetest.BaseTest):
                 field = fields['age']
                 assert field['type'] == 'integer'
                 assert field['label'] is None
+                assert field['value'] == 100
                 assert field['doc'] is None
                 assert not field['read_only']
                 assert field['group_by'] is None
@@ -120,14 +121,10 @@ class TestCreateAPI(basetest.BaseTest):
                 assert options['Ms'] == 'Ms'
                 assert options['Mr'] == 'Mr'
                 assert options['Mrs'] == 'Mrs'
-    
-    def test_not_hidden_pk(self):
-        ## we assert primary key isn't hidden when we meant to
-        class UserModelView(ModelView):
+                assert field['value'] is None
 
-            hidden_pk = False
-
-        model_view = UserModelView(self.__tables.User)
+    def test_batch_edit(self):
+        model_view = ModelView(self.__tables.User)
         blueprint = Blueprint("foo1", __name__, static_folder="static", 
                             template_folder="templates")
         self.browser.register_model_view(model_view, blueprint)
@@ -135,116 +132,109 @@ class TestCreateAPI(basetest.BaseTest):
 
         with self.app.test_request_context():
             with self.app.test_client() as c:
-                rv = c.get("/foo1/apis/user")
+                rv = c.get("/foo1/apis/user/1,2")
+
                 fieldset_list = json.loads(rv.data)["fieldsets"]
                 fields = dict((f["name"], f) for f in fieldset_list[0][1])
-                assert len(fields) == 5
-                assert 'id' in fields
+                assert len(fields) == 4
                 assert 'name' in fields
                 assert 'group' in fields
                 assert 'age' in fields
+                assert 'title' in fields
 
-    def test_many_to_one(self):
-        ## we test many to one relationship
-        class GroupModelView(ModelView):
+                field = fields['name']
+                assert field['type'] == 'string'
+                assert field['label'] is None
+                assert field['doc'] == u'姓名'
+                assert not field['read_only']
+                assert field['value'] is None
+                assert field['group_by'] is None
+                assert len(field['validators']) == 2
+                validator_map = dict((v['name'], v) for v in field['validators'])
+                assert 'length' in validator_map
+                assert 'required' in validator_map
+                validator = validator_map['length']
+                assert validator['max'] == 32
 
-            column_hide_backrefs = False
+                field = fields['group']
+                assert field['type'] == 'select'
+                assert field['label'] is None
+                assert field['doc'] is None
+                assert field['value'] == 1
+                assert not field['read_only']
+                assert field['group_by'] is None
+                assert len(field['validators']) == 1
+                assert field['validators'][0]['name'] == 'required'
+                assert len(field['options']) == 2
+                options = dict(field['options'])
+                assert options[1] == 'group1'
+                assert options[2] == 'group2'
 
-        model_view = GroupModelView(self.__tables.Group)
+                field = fields['age']
+                assert field['type'] == 'integer'
+                assert field['label'] is None
+                assert field['value'] == 100
+                assert field['doc'] is None
+                assert not field['read_only']
+                assert field['group_by'] is None
+                assert not field['validators']
+
+                field = fields['title']
+                assert field['type'] == 'select'
+                assert field['label'] is None
+                assert field['doc'] is None
+                assert not field['read_only']
+                assert field['group_by'] is None
+                assert len(field['validators']) == 1
+                assert field['validators'][0]['name'] == 'anyof'
+                assert len(field['options']) == 3
+                options = dict(field['options'])
+                assert options['Ms'] == 'Ms'
+                assert options['Mr'] == 'Mr'
+                assert options['Mrs'] == 'Mrs'
+                assert field['value'] is None
+
+    def test_extra_fields(self):
+        class UserModelView(ModelView):
+
+            __extra_fields__ = {
+                'old': lambda preprocessed_obj: preprocessed_obj.age > 65
+            }
+
+        model_view = UserModelView(self.__tables.User)
         blueprint = Blueprint("foo2", __name__, static_folder="static", 
                             template_folder="templates")
         self.browser.register_model_view(model_view, blueprint)
         self.app.register_blueprint(blueprint, url_prefix="/foo2")
+
         with self.app.test_request_context():
             with self.app.test_client() as c:
-                rv = c.get("/foo2/apis/group")
+                rv = c.get("/foo2/apis/user/1")
                 fieldset_list = json.loads(rv.data)["fieldsets"]
                 fields = dict((f["name"], f) for f in fieldset_list[0][1])
-                assert len(fields) == 2
+                assert len(fields) == 4
                 assert 'name' in fields
-                assert 'users' in fields
+                assert 'group' in fields
+                assert 'age' in fields
+                assert 'title' in fields
 
-                field = fields['users'] 
-                assert field['type'] == 'select'
-                assert len(field['options']) == 2
-                options = dict(field['options'])
-                assert options[1] == 'user1'
-                assert options[2] == 'user2'
+                extra_fields = json.loads(rv.data)['extra_fields']
+                assert len(extra_fields) == 1
+                assert extra_fields['old'] is True
 
-    def test_extra_validators(self):
-        class UserModelView(ModelView):
-
-            __create_columns__ = [InputColumnSpec("age", validators=[validators.NumberRange(18, 101)])]
-
-        model_view = UserModelView(self.__tables.User)
-        blueprint = Blueprint("foo3", __name__, static_folder="static", 
-                            template_folder="templates")
-        self.browser.register_model_view(model_view, blueprint)
-        self.app.register_blueprint(blueprint, url_prefix="/foo3")
-        with self.app.test_request_context():
             with self.app.test_client() as c:
-                rv = c.get("/foo3/apis/user")
+                rv = c.get("/foo2/apis/user/1,2")
                 fieldset_list = json.loads(rv.data)["fieldsets"]
                 fields = dict((f["name"], f) for f in fieldset_list[0][1])
-                assert len(fields) == 1
+                assert len(fields) == 4
+                assert 'name' in fields
+                assert 'group' in fields
                 assert 'age' in fields
+                assert 'title' in fields
 
-                field = fields['age']
-                assert field['type'] == 'integer'
-                assert len(field['validators']) == 1
-                validator = field['validators'][0]
-                assert validator['name'] == 'range'
-                assert validator['min'] == 18
-                assert validator['max'] == 101
-        
-        # TODO more validators should be tested here
-
-    
-    def test_many_to_many(self):
-        # TODO untested
-        pass
-
-    def test_commit(self):
-        class UserModelView(ModelView):
-            __create_columns__ = ['name', 'title', 'group', InputColumnSpec("age", validators=[validators.NumberRange(18, 101)])]
-
-        model_view = UserModelView(self.__tables.User)
-        blueprint = Blueprint("foo5", __name__, static_folder="static", 
-                            template_folder="templates")
-        self.browser.register_model_view(model_view, blueprint)
-        self.app.register_blueprint(blueprint, url_prefix="/foo5")
-        with self.app.test_request_context():
-            with self.app.test_client() as c:
-                data =  {
-                    "name": "foo",
-                    "title": "Mr", 
-                    "group": '1',
-                    "age": 22,
-                }
-                headers = [('Content-Type', 'application/json')]
-                rv = c.post("/foo5/apis/user", content_type='application/json', data=json.dumps(data))
-                assert rv.status_code == 200
-                rsp = json.loads(rv.data)
-                assert rsp['repr'] == 'foo'
-                data = {
-                    "name": 'foo',
-                    'title': 'Mr',
-                    'group': '3',
-                    'age': 1
-                }
-                rv = c.post("/foo5/apis/user", content_type='application/json', data=json.dumps(data))
-                assert rv.status_code == 403
-                rsp = json.loads(rv.data)
-                assert len(rsp['errors']) == 3
-                print rsp
-                assert 'name' in rsp['errors']
-                assert 'group' in rsp['errors']
-                assert 'age' in rsp['errors']
-
-        self.db.session.delete(self.__tables.User.query.filter(self.__tables.User.name=='foo').one())
-        self.db.session.commit()
-
+                extra_fields = json.loads(rv.data)['extra_fields']
+                assert not extra_fields
 
 
 if __name__ == "__main__":
-    TestCreateAPI().run_plainly()
+    TestObjectAPI().run_plainly()

@@ -14,11 +14,12 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(32), nullable=False, unique=True)
     password = db.Column(db.String(128), nullable=False)
-    group_id = db.Column(db.Integer, db.ForeignKey("TB_GROUP.id"))
+    group_id = db.Column(db.Integer, db.ForeignKey("TB_GROUP.id"), nullable=False)
     group = db.relationship("Group", backref="users")
     create_time = db.Column(db.DateTime, default=datetime.now, doc=u"创建于")
     roll_called = db.Column(db.Boolean, default=False)
-    age = db.Column(db.Integer)
+    age = db.Column(db.Integer, default=24)
+    birthday = db.Column(db.Date, default=datetime.today().date())
 
     def __unicode__(self):
         return self.name
@@ -53,7 +54,7 @@ class Group(db.Model):
     name = db.Column(db.String(32), nullable=False, unique=True, doc=u"用户组名称")
 
     def __unicode__(self):
-        return u"<Group: %s>" % self.name
+        return self.name
 
     def __repr__(self):
         return unicode(self).encode("utf-8")
