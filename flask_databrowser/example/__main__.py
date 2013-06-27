@@ -92,8 +92,8 @@ def main():
             formatter=lambda v, model: "http://farm9.staticflickr.com/8522/8478415115_152c6f5e55_m.jpg", doc=u"头像，^_^！"), "good"]
         __create_columns__ = OrderedDict()
         __create_columns__["primary"] = ["name", "group", "password"]
-        #__create_columns__["secondary"] = [PlaceHolderColumnSpec("age", template_fname="/accounts/age-snippet.html", as_input=True), 
-                                           #"roll_called", "birthday", "create_time", "car_list"]
+        __create_columns__["secondary"] = [PlaceHolderColumnSpec("age", template_fname="/accounts/age-snippet.html", as_input=True), 
+                                           "roll_called", "birthday", "create_time", "car_list"]
 
 
         __form_columns__ = OrderedDict()

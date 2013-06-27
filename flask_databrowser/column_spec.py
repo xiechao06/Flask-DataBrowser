@@ -11,7 +11,7 @@ PLACE_HOLDER = 7
 
 class ColumnSpec(object):
 
-    def __init__(self, col_name, genre=PLAIN_TEXT, doc="", formatter=None, label=None, css_class="control-text", trunc=None):
+    def __init__(self, col_name, genre=PLAIN_TEXT, doc=None, formatter=None, label=None, css_class="control-text", trunc=None):
         self.col_name = col_name
         self.genre = genre
         self.formatter = formatter
@@ -24,18 +24,18 @@ PlainTextColumnSpec = ColumnSpec # alias to ColumnSpec
 
 class ImageColumnSpec(ColumnSpec):
 
-    def __init__(self, col_name, alt="", doc="", formatter=None, label="", css_class=None):
+    def __init__(self, col_name, alt="", doc=None, formatter=None, label=None, css_class=None):
         super(ImageColumnSpec, self).__init__(col_name, genre=IMAGE, doc=doc, formatter=formatter, label=label, css_class=css_class)
         self.alt = alt
 
 class LinkColumnSpec(ColumnSpec):
-    def __init__(self, col_name, anchor="", doc="", formatter=None, label="", css_class="control-text"):
+    def __init__(self, col_name, anchor="", doc=None, formatter=None, label=None, css_class="control-text"):
         super(LinkColumnSpec, self).__init__(col_name, genre=LINK, doc=doc, formatter=formatter, label=label, css_class=css_class)
         self.anchor = anchor
 
 class TableColumnSpec(ColumnSpec):
 
-    def __init__(self, col_name, col_specs=[], anchor="", doc="", formatter=None, label="", css_class="table table-condensed table-bordered", 
+    def __init__(self, col_name, col_specs=[], anchor="", doc=None, formatter=None, label=None, css_class="table table-condensed table-bordered", 
         sum_fields=[], preprocess=None):
         """
         :param col_name: the col_name of the object must return an iterable, and each item must be of 'db.Model'
@@ -77,7 +77,7 @@ class InputColumnSpec(ColumnSpec):
 
 class ListColumnSpec(ColumnSpec):
 
-    def __init__(self, col_name, item_col_spec=None, doc="", formatter=None, label="", css_class="", compressed=False, item_css_class=""):
+    def __init__(self, col_name, item_col_spec=None, doc=None, formatter=None, label=None, css_class="", compressed=False, item_css_class=""):
         super(ListColumnSpec, self).__init__(col_name, genre=UNORDERED_LIST, doc=doc, formatter=formatter, label=label, css_class=css_class)
         self.item_col_spec = item_col_spec
         self.compressed = compressed

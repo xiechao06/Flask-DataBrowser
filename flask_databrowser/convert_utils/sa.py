@@ -72,6 +72,7 @@ class DictConverter(object):
         ret["multiple"] = not direction.name == "MANYTOONE"
         ret["options"] = [(pk, unicode(opt)) for pk, opt in ret["options"]]
         ret["default"] = ret['default'] and getattr(ret['default'], get_primary_key(ret['default'])) 
+        ret["value"] = ret['value'] and getattr(ret['value'], get_primary_key(ret['value'])) 
         return ret
 
     def convert(self, col_type, **kwargs):
@@ -201,7 +202,7 @@ def extrac_validators(column, model_view):
             ret.append(validators.NumberRange(min=0, message=_(u"this field must bigger than 0")))
     return ret
 
-def convert_column(col_spec, converter, model_view):
+def convert_column(col_spec, converter, model_view, obj):
     """
     NOTE!!! obviously, for column in the format of InputColumnSpec or PlaceHolderColumnSpec, only "label",
     "read_only", "doc", "filter_", "opt_filter" and "validators" take effects
@@ -223,9 +224,9 @@ def convert_column(col_spec, converter, model_view):
         elif col_spec.property_.direction.name != 'MANYTOMANY': # many to many allowed to be empty
             ret['validators'].append(validators.DataRequired(message=_(u"this field can't be empty")))
         if col_spec.filter_:
-            ret['options'] = [(getattr(obj, get_primary_key(remote_model)), obj) for obj in col_spec.filter_(model_view.session.query(remote_model)).all()]
+            ret['options'] = [(getattr(obj_, get_primary_key(remote_model)), obj_) for obj_ in col_spec.filter_(model_view.session.query(remote_model)).all()]
         else:
-            ret['options'] = [(getattr(obj, get_primary_key(remote_model)), obj) for obj in model_view.session.query(remote_model).all()]
+            ret['options'] = [(getattr(obj_, get_primary_key(remote_model)), obj_) for obj_ in model_view.session.query(remote_model).all()]
         if col_spec.opt_filter:
             ret['options'] = [(pk, opt) for pk, opt in ret['options'] if (col_spec.opt_filter(opt))]
         default = local_column.default
@@ -234,6 +235,8 @@ def convert_column(col_spec, converter, model_view):
         else:
             default = default.arg
             ret["default"] = remote_model.query.get(default(None) if hasattr(default, '__call__') else default)
+        if obj:
+            ret['value'] = getattr(obj, col_spec.col_name, None)
         return converter.convert_select(col_spec.property_.direction, **ret)
     else:
         column = col_spec.property_.columns[0]
@@ -244,6 +247,8 @@ def convert_column(col_spec, converter, model_view):
         else:
             default = default.arg
             ret["default"] = unicode(default(None) if hasattr(default, "__call__") else default)
+        if obj:
+            ret['value'] = getattr(obj, col_spec.col_name, None)
         # get type and validators
         ret["validators"] = extrac_validators(col_spec.property_.columns[0], model_view) + col_spec.validators
         return converter.convert(column.type, **ret)
