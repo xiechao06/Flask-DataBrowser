@@ -72,7 +72,7 @@ class DictConverter(object):
         ret["multiple"] = not direction.name == "MANYTOONE"
         ret["options"] = [(pk, unicode(opt)) for pk, opt in ret["options"]]
         ret["default"] = ret['default'] and getattr(ret['default'], get_primary_key(ret['default'])) 
-        ret["value"] = ret['value'] and getattr(ret['value'], get_primary_key(ret['value'])) 
+        ret["value"] = ret.get('value', None) and getattr(ret['value'], get_primary_key(ret['value']))
         return ret
 
     def convert(self, col_type, **kwargs):

@@ -220,10 +220,10 @@ class TestObjectAPI(basetest.BaseTest):
 
                 extra_fields = json.loads(rv.data)['extra_fields']
                 assert len(extra_fields) == 1
-                assert extra_fields['old'] == True 
+                assert extra_fields['old'] is True
 
             with self.app.test_client() as c:
-                rv = c.get("/foo2/apis/user/1, 2")
+                rv = c.get("/foo2/apis/user/1,2")
                 fieldset_list = json.loads(rv.data)["fieldsets"]
                 fields = dict((f["name"], f) for f in fieldset_list[0][1])
                 assert len(fields) == 4
@@ -237,4 +237,4 @@ class TestObjectAPI(basetest.BaseTest):
 
 
 if __name__ == "__main__":
-    TestObjectAPI().run_plainly(['test_extra_fields'])
+    TestObjectAPI().run_plainly()
