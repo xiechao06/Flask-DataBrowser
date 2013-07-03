@@ -84,15 +84,17 @@ class Select2Widget(widgets.Select):
             kwargs['data-role'] = u'select2blank'
         else:
             kwargs['data-role'] = u'select2'
-
+        if hasattr(field, "iter_optgroups"):
             kwargs.setdefault('id', field.id)
-        if self.multiple:
-            kwargs['multiple'] = 'multiple'
-        html = [u'<select %s>' % html_params(name=field.name, **kwargs)]
-        for grouplabel, choices in field.iter_optgroups():
-            html.append(self.render_optgroup(grouplabel, choices))
-        html.append(u'</select>')
-        return HTMLString(u''.join(html))
+            if self.multiple:
+                kwargs['multiple'] = 'multiple'
+            html = [u'<select %s>' % html_params(name=field.name, **kwargs)]
+            for grouplabel, choices in field.iter_optgroups():
+                html.append(self.render_optgroup(grouplabel, choices))
+            html.append(u'</select>')
+            return HTMLString(u''.join(html))
+        else:
+            return super(Select2Widget, self).__call__(field, **kwargs)
 
     @classmethod
     def render_optgroup(cls, grouplabel, choices):

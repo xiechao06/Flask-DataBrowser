@@ -717,8 +717,7 @@ class ModelView(object):
                     key = None
                     if hasattr(col.group_by, "property"):
                         key = getattr(row, col.group_by.property.key)
-                        if col.group_by.is_mapper:
-                            key = key.id
+                        key = getattr(key, get_primary_key(col.group_by.mapper.class_))
                     elif hasattr(col.group_by, "__call__"):
                         key = col.group_by(row)
                     grouper_2_cols.setdefault(key, []).append(dict(id=row.id, text=unicode(row)))
