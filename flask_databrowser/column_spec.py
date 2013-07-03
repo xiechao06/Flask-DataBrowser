@@ -74,10 +74,10 @@ class InputColumnSpec(ColumnSpec):
     @property
     def grouper_input_name(self):
         if hasattr(self.group_by, "property"):
-            if self.group_by.is_mapper:
-                return self.col_name + '.' + self.group_by.property.mapper.class_.__name__
-            else:
-                return self.col_name + "." + self.group_by.key
+            try:
+                return self.col_name + "." + self.group_by.property.mapper.class_.__name__
+            except AttributeError:
+                return self.col_name + "." + unicode(self.group_by)
         elif hasattr(self.group_by, "__call__"):
             return self.col_name + "." + self.group_by.func_name
         else:
