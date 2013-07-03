@@ -152,7 +152,7 @@ class AdminModelConverter(ModelConverterBase):
             return col_spec.group_by
         elif hasattr(col_spec.group_by, "property"):
             column = col_spec.group_by.property
-            if col_spec.group_by.is_mapper:
+            if hasattr(col_spec.group_by, "is_mapper") and col_spec.group_by.is_mapper:
                 column = get_primary_key(column)
             return lambda x: getattr(x, column.key)
         else:
