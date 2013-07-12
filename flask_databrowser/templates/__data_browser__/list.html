@@ -146,7 +146,7 @@
       if ($(this).attr("data-direct") == "True"){
         return true;
       }
-      var hint = sprintf("{{ _("Are you sure to %%s selected item(s)?") }}", $(this).val());
+      var hint = sprintf("{{ _("Are you sure to %%s the selected item(s)?") }}", $(this).val());
       var warn = $(this).attr("data-warn");
       if (warn.length > 0) {
         hint += "\n\n\n  - "+ '{{ _("Attention!") }}' + ' ' + warn;
