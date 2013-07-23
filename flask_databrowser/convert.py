@@ -59,7 +59,7 @@ class ValueConverter(object):
         elif col_spec.genre == column_spec.PLACE_HOLDER:
             w = extra_widgets.PlaceHolder(col_spec.template_fname, v, self.obj, self.model_view)
         elif col_spec.genre == column_spec.SELECT:
-            w = extra_widgets.SelectField(v, self.obj, self.model_view, choices=col_spec.choices)
+            w = extra_widgets.SelectWidget(v, self.obj, self.model_view, choices=col_spec.choices)
         else:  # plaintext
             # we try to convert it to link
             w = extra_widgets.PlainText(unicode(v) if v is not None else "", trunc=col_spec.trunc)

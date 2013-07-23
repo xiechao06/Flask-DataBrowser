@@ -193,7 +193,7 @@ class PlaceHolder(object):
                                **self.kwargs)
 
 
-class SelectField(Select):
+class SelectWidget(Select):
     def __init__(self, field_value, obj, model_view, choices, coerce=text_type, mulitple=False):
         self.choices = choices
         self.field_value = field_value
