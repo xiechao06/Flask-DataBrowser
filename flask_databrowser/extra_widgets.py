@@ -4,7 +4,7 @@ extra widgets beside wtform's widgets
 """
 import operator
 import uuid
-from wtforms.widgets import HTMLString, html_params
+from wtforms.widgets import HTMLString, html_params,Select
 from wtforms.compat import text_type
 from flask.ext.databrowser.column_spec import ColumnSpec
 from flask.ext.databrowser.utils import get_primary_key
@@ -193,6 +193,30 @@ class PlaceHolder(object):
                                **self.kwargs)
 
 
+class SelectField(Select):
+    def __init__(self, field_value, obj, model_view, choices, coerce=text_type, mulitple=False):
+        self.choices = choices
+        self.field_value = field_value
+        self.obj = obj
+        self.model_view = model_view
+        self.coerce = coerce
+        self.multiple = mulitple
+
+    def iter_choices(self):
+        for value, label in self.choices:
+            yield (value, label, self.coerce(value) == self.field_value)
+
+    def __call__(self, field, **kwargs):
+        # kwargs.setdefault('id', field.id)
+        if self.multiple:
+            kwargs['multiple'] = True
+        html = ['<select %s>' % html_params(name=field.name, **kwargs)]
+        for val, label, selected in self.iter_choices():
+            html.append(self.render_option(val, label, selected))
+        html.append('</select>')
+        return HTMLString(''.join(html))
+
+
 if __name__ == "__main__":
     print Image("http://a.com/a.jpg", "an image")(None)
     print Link("a.com", "http://a.com")(None)
@@ -202,3 +226,4 @@ if __name__ == "__main__":
 
     table_column_spec = [LinkColumnSpec("a", "some link"), ImageColumnSpec("b"), ColumnSpec("c")]
     print TableWidget([namedtuple("A", ["a", "b", "c"])(i, i * 2, i * 3) for i in xrange(10)], ["a", "b", "c"])(None)
+

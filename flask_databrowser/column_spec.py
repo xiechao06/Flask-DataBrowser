@@ -7,6 +7,7 @@ UNORDERED_LIST = 5
 INPUT = 6   # this is a special column type, the actual input type is determined
             # by the column's type
 PLACE_HOLDER = 7
+SELECT = 8
 
 
 class ColumnSpec(object):
@@ -22,16 +23,19 @@ class ColumnSpec(object):
 
 PlainTextColumnSpec = ColumnSpec # alias to ColumnSpec
 
+
 class ImageColumnSpec(ColumnSpec):
 
     def __init__(self, col_name, alt="", doc=None, formatter=None, label=None, css_class=None):
         super(ImageColumnSpec, self).__init__(col_name, genre=IMAGE, doc=doc, formatter=formatter, label=label, css_class=css_class)
         self.alt = alt
 
+
 class LinkColumnSpec(ColumnSpec):
     def __init__(self, col_name, anchor="", doc=None, formatter=None, label=None, css_class="control-text"):
         super(LinkColumnSpec, self).__init__(col_name, genre=LINK, doc=doc, formatter=formatter, label=label, css_class=css_class)
         self.anchor = anchor
+
 
 class TableColumnSpec(ColumnSpec):
 
@@ -48,6 +52,7 @@ class TableColumnSpec(ColumnSpec):
     
     def __iter__(self):
         return iter(self.col_specs)
+
 
 class InputColumnSpec(ColumnSpec):
 
@@ -83,6 +88,7 @@ class InputColumnSpec(ColumnSpec):
         else:
             return self.col_name + "." + unicode(self.group_by)
 
+
 class ListColumnSpec(ColumnSpec):
 
     def __init__(self, col_name, item_col_spec=None, doc=None, formatter=None, label=None, css_class="", compressed=False, item_css_class=""):
@@ -90,6 +96,7 @@ class ListColumnSpec(ColumnSpec):
         self.item_col_spec = item_col_spec
         self.compressed = compressed
         self.item_css_class = item_css_class
+
 
 class PlaceHolderColumnSpec(ColumnSpec):
 
@@ -104,3 +111,12 @@ class PlaceHolderColumnSpec(ColumnSpec):
             self.validators = validators or []
             self.opt_filter = None
 
+
+class SelectColumnSpec(ColumnSpec):
+    def __init__(self, col_name, read_only=False, doc=None, formatter=None, label=None, css_class="", validators=None,
+                 choices=None):
+        super(SelectColumnSpec, self).__init__(col_name, genre=SELECT, doc=doc, formatter=formatter, label=label,
+                                               css_class=css_class)
+        self.read_only = read_only
+        self.validators = validators or []
+        self.choices = choices or []
