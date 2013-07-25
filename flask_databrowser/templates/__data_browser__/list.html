@@ -372,6 +372,20 @@
     </tr>
     {% endfor %}
   </tbody>
+  <tfoot>
+  <tr>
+    {% if model_view.can_batchly_edit %}
+      <th class="span1"><input type="checkbox" name="rowtoggle"/></th>
+    {% elif __actions__ %}
+      <th></th>
+    {% endif %}
+    {% for c in __list_columns__ %}
+      <th>
+        {{ c.label }}
+      </th>
+    {% endfor %}
+  </tr>
+  </tfoot>
 </table>
 {% endmacro %}
 
