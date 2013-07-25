@@ -225,6 +225,13 @@ class QuerySelectMultipleField(QuerySelectField):
         for pk, obj in self._get_object_list():
             yield (pk, self.get_label(obj), obj in self.data)
 
+    def iter_optgroups(self):
+        for grouplabel, choices in self._get_group_list():
+            cs = []
+            for obj in choices:
+                cs.append((self.get_pk(obj), self.get_label(obj), obj in self.data))
+            yield (grouplabel, cs)
+
     def process_formdata(self, valuelist):
         self._formdata = set(valuelist)
 

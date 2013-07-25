@@ -206,11 +206,7 @@ class Only(BaseFilter):
         """
         # NOTE! we don't join table here
         if self.value:
-            if hasattr(self.attr.property, 'direction'):
-                # translate the relation
-                filter_criterion = self.test(self.attr.property.local_remote_pairs[0][0])
-            else:
-                filter_criterion = self.test(self.attr)
+            filter_criterion = self.test(self.attr)
             q = q.filter(filter_criterion)
         return q
 
