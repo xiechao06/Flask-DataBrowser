@@ -1390,28 +1390,29 @@ class ModelView(object):
         """
         from flask import request, url_for
 
-        sortable_columns = self.__sortable_columns__ or get_primary_key(
-            self.model)
+        def _(order_by, desc):
+            sortable_columns = self.__sortable_columns__ or get_primary_key(self.model)
 
-        for c in self.list_column_specs:
-            if c.col_name in sortable_columns:
-                args = request.args.copy()
-                args["order_by"] = c.col_name
-                if order_by == c.col_name: # the table is sorted by c, so revert the order
-                    if not desc:
-                        args["desc"] = 1
-                    else:
-                        try:
-                            args.pop("desc")
-                        except KeyError:
-                            pass
-                sort_url = url_for(
-                    ".".join([self.blueprint.name, self.list_view_endpoint]),
-                    **args)
-            else:
-                sort_url = ""
-            yield dict(name=c.col_name, label=c.label, doc=c.doc,
-                       sort_url=sort_url)
+            for c in self.list_column_specs:
+                if c.col_name in sortable_columns:
+                    args = request.args.copy()
+                    args["order_by"] = c.col_name
+                    if order_by == c.col_name: # the table is sorted by c, so revert the order
+                        if not desc:
+                            args["desc"] = 1
+                        else:
+                            try:
+                                args.pop("desc")
+                            except KeyError:
+                                pass
+                    sort_url = url_for(
+                        ".".join([self.blueprint.name, self.list_view_endpoint]),
+                        **args)
+                else:
+                    sort_url = ""
+                yield dict(name=c.col_name, label=c.label, doc=c.doc,
+                           sort_url=sort_url)
+        return list(_(order_by=order_by, desc=desc))
 
     def scaffold_filters(self):
         return [dict(label="a", op=dict(name="lt", id="a__lt"))]
