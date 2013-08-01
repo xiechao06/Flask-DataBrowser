@@ -66,6 +66,13 @@ class ModelView(object):
         self.__normalized_create_columns = []
         self.__normalized_form_columns = []
 
+    def get_extra_params(self):
+        if self.extra_params and hasattr(self.extra_params, "__call__"):
+            return self.extra_params()
+        else:
+            return self.extra_params
+
+
     @property
     def model_name(self):
         return self.__model_name or self.model.__name__
@@ -505,7 +512,7 @@ class ModelView(object):
                 if create_url:
                     create_url_map[col] = create_url
         kwargs = {}
-        form_kwargs = self.extra_params.get("create_view", {})
+        form_kwargs = self.get_extra_params().get("create_view", {})
         for k, v in form_kwargs.items():
             if isinstance(v, types.FunctionType):
                 v = v(self)
@@ -515,7 +522,7 @@ class ModelView(object):
         form = compound_form or form
 
         kwargs = {}
-        form_kwargs = self.extra_params.get("create_view", {})
+        form_kwargs = self.get_extra_params().get("create_view", {})
         for k, v in form_kwargs.items():
             if isinstance(v, types.FunctionType):
                 v = v(self)
@@ -740,7 +747,7 @@ class ModelView(object):
 
         form = compound_form or form
         kwargs = {}
-        form_kwargs = self.extra_params.get("form_view", {})
+        form_kwargs = self.get_extra_params().get("form_view", {})
         for k, v in form_kwargs.items():
             if isinstance(v, types.FunctionType):
                 v = v(self)
@@ -1067,7 +1074,7 @@ class ModelView(object):
             kwargs["__pagination__"] = Pagination(None, page,
                                                   self.data_browser.page_size,
                                                   count, kwargs["__data__"])
-            list_kwargs = self.extra_params.get("list_view", {})
+            list_kwargs = self.get_extra_params().get("list_view", {})
             kwargs["help_message"] = self.get_list_help()
             for k, v in list_kwargs.items():
                 if isinstance(v, types.FunctionType):
