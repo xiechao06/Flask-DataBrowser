@@ -564,6 +564,16 @@ class ModelView(object):
                     'name': self.create_columns.keys()[current_step - 1],
                     'url': urlparse.urlunparse(('', '', request.path, '', '&'.join(k+'='+str(v) for k, v in args.items()), ''))
                 }
+                
+                previous_columns = {}
+                for i in xrange(0, current_step):
+                    for c in self.create_columns.values()[i]:
+                        previous_columns[c.col_name] = c.label or c.col_name
+
+                if previous_columns:
+                    for k, v in request.args.iterlists():
+                        if k in previous_columns:
+                            kwargs.setdefault('previous_steps_info',[]).append((previous_columns[k], v[0] if len(v) == 1 else v))
 
             if current_step < len(self.create_columns) - 1:
                 args = request.args.to_dict()

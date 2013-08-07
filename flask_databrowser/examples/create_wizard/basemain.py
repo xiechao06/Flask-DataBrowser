@@ -40,6 +40,8 @@ class UserModelView(databrowser.ModelView):
     __create_columns__[u"设置密码"] = [PlaceHolderColumnSpec('password', template_fname='/accounts/password-snippet.html', as_input=True)]
     __create_columns__[u'设置生日'] = ['birthday']
 
+    __column_labels__ = {'name': u'用户名'}
+
 accounts_bp = Blueprint("accounts", __name__, static_folder="static", 
                         template_folder="templates")
 
