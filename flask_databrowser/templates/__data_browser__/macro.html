@@ -287,6 +287,8 @@
     {% call form_tag() %}
       {% if last_step is not none or next_step is not none %}
         {% set current_step = request.args.get('__step__', 0)|int %}
+      {% else %}
+        {% set current_step = None %}
       {% endif %}
       {{ render_form_fields(form, current_step=current_step) }}
       {{ render_form_buttons(cancel_url, extra, last_step, next_step) }}

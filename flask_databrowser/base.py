@@ -111,7 +111,9 @@ class ModelView(object):
 
     def get_step_create_template(self, step):
         try:
-            return self.step_create_templates[step]
+            ret = self.step_create_templates[step]
+            if not ret:
+                return '__data_browser__/form.html'
         except IndexError:
             return '__data_browser__/form.html'
 
