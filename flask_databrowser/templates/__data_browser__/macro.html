@@ -283,7 +283,18 @@
 </div>
 {% endmacro %}
 
-{% macro render_form(form, cancel_url, extra=None, last_step=None, next_step=None) -%}
+{% macro render_previous_steps_info(previous_steps_info) %}
+<div class='alert alert-success'>
+  <h5>{{ _("Fields already filled") }}</h5>
+  <ul>
+    {% for k, v in previous_steps_info %}
+      <li><small><i>{{ k }} - {{ v }}</i></small></li>
+    {% endfor %}
+  </ul>
+</div>
+{% endmacro %}
+
+{% macro render_form(form, cancel_url, extra=None, last_step=None, next_step=None, previous_steps_info=None) -%}
     {% call form_tag() %}
       {% if last_step is not none or next_step is not none %}
         {% set current_step = request.args.get('__step__', 0)|int %}
@@ -291,6 +302,7 @@
         {% set current_step = None %}
       {% endif %}
       {{ render_form_fields(form, current_step=current_step) }}
+      {{ render_previous_steps_info(previous_steps_info=previous_steps_info) }}
       {{ render_form_buttons(cancel_url, extra, last_step, next_step) }}
     {% endcall %}
 {% endmacro %}
