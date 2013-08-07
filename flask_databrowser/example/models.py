@@ -2,12 +2,6 @@
 from datetime import datetime
 from basemain import db
 
-user_and_group_table = db.Table('TB_ASSOCIATION',
-                                db.Column('user_id', db.Integer,
-                                          db.ForeignKey('TB_USER.id')),
-                                db.Column('group_id', db.Integer,
-                                          db.ForeignKey('TB_GROUP.id')))
-
 class User(db.Model):
     __tablename__ = "TB_USER"
 

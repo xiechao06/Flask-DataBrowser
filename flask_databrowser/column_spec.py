@@ -100,7 +100,7 @@ class ListColumnSpec(ColumnSpec):
 
 class PlaceHolderColumnSpec(ColumnSpec):
 
-    def __init__(self, col_name, template_fname, label=None, doc=None, as_input=False, validators=None):
+    def __init__(self, col_name, template_fname, label=None, doc=None, as_input=False, validators=None, filter_=None):
         super(PlaceHolderColumnSpec, self).__init__(col_name, genre=PLACE_HOLDER, label=label, doc=doc)
         self.template_fname = template_fname
         self.as_input = as_input
@@ -110,6 +110,7 @@ class PlaceHolderColumnSpec(ColumnSpec):
             self.filter_ = None
             self.validators = validators or []
             self.opt_filter = None
+        self.filter_ = filter_ or (lambda q: q)
 
 
 class SelectColumnSpec(ColumnSpec):

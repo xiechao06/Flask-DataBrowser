@@ -1,4 +1,6 @@
 # -*- coding: UTF-8 -*-
+import operator
+
 from flask.ext.databrowser import extra_widgets
 from flask.ext.databrowser import column_spec
 from flask.ext.databrowser.utils import get_description
@@ -57,7 +59,11 @@ class ValueConverter(object):
             w = extra_widgets.ListWidget(v, item_col_spec=col_spec.item_col_spec, model_view=self.model_view,
                                          compressed=col_spec.compressed, item_css_class=col_spec.item_css_class)
         elif col_spec.genre == column_spec.PLACE_HOLDER:
-            w = extra_widgets.PlaceHolder(col_spec.template_fname, v, self.obj, self.model_view)
+            options = []
+            col_def = operator.attrgetter(col_spec.col_name)(self.obj.__class__)
+            if hasattr(col_def.property, 'direction'):
+                options = [o for o in col_spec.filter_(self.model_view.session.query(col_def.property.mapper.class_))]
+            w = extra_widgets.PlaceHolder(col_spec.template_fname, v, self.obj, self.model_view, options=options)
         elif col_spec.genre == column_spec.SELECT:
             w = extra_widgets.SelectWidget(v, self.obj, self.model_view, choices=col_spec.choices)
         else:  # plaintext

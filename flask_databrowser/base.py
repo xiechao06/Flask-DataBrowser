@@ -945,7 +945,7 @@ class ModelView(object):
             create_columns = list(itertools.chain(*create_columns.values()))
 
         ret = []
-        value_converter = ValueConverter(None, self)
+        value_converter = ValueConverter(self.model(), self)
         for col in create_columns:
             if isinstance(col, InputColumnSpec):
                 ret.append(form[col.col_name])
