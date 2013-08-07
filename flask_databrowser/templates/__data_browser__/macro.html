@@ -81,13 +81,13 @@
     </ul>
   </div>
 {% endmacro %}
-{% macro render_form_fields(form, focus_set=False) %}
+{% macro render_form_fields(form, focus_set=False, current_step=None) %}
   {{ form.hidden_tag() if form.hidden_tag is defined }}
   {% if fieldset_list|length == 1 %}
     {% set fieldset, fields = fieldset_list[0] %}
     <fieldset>
       {% if fieldset %}
-        <legend>{{ fieldset }}</legend>
+        <legend>{% if current_step is not none %}{{ _('Step %(step)d', step=current_step + 1) }}: {% endif %}{{ fieldset }}</legend>
       {% endif %}
       {{ render_fields(fields) }}
     </fieldset>
@@ -206,69 +206,90 @@
     <input name="__builtin_action__" type="submit" class="btn" value="{{ _('add another') }}" />
 {% endmacro %}
 
-{% macro render_form_buttons(cancel_url, extra=None) %}
-    <div class="navbar-fixed-bottom navbar-inverse navbar"  style="position: fixed; margin-left: 0px" id="footer-action-bar">
-      <div>
-        {% if g.request_from_mobile %}
-            <div class="navbar-inner" >
-              <ul class="nav btn-group" id="actions">
-                <li>
-                  <input id="submit-btn" name="__builtin_action__" type="submit" class="btn btn-primary btn-large" value="{{ _('commit') }}"/>
-                </li>
-                <li>
-                  <input id="reset-btn" type="reset" class="btn btn-primary btn-large" value="{{ _('reset') }}"/>
-                </li>
-                {% if cancel_url %}
-                  <li>
-                    <input class="btn btn-large" type="button" onclick="location='{{ cancel_url }}'" value="{{ _('back') }}"/>
-                  </li>
-                {% endif %}
-              </ul>
-              <div class="dropup btn-group">
-              <button class="btn dropdown-toggle" data-toggle="dropdown">
-                  <i class="icon-reorder icon-2x"></i>
-                </button>
-                <ul class="dropdown-menu pull-right">
-                  {% for action in actions %}
-                    <li>
-                      <input value="{{ action.name }}" type="submit" name="__action__" class="{{ action.css_class }}" data-warn="{{ action.warn_msg }}" data-direct="{{ action.direct }}"/>
-                    </li>
-                  {% endfor %}
-                </ul>
-              </div>
-              <a href="#top" class="btn btn-navbar"><i class="icon-arrow-up"></i></a>
-          </div>
-        {% else %}
-
-          <div data-role="trivial-control-group">
-            {% if not __read_only__%}
-              <input id="submit-btn" name="__builtin_action__" type="submit" class="btn btn-primary" value="{{ _('commit') }}"/>
-              <input id="reset-btn" type="reset" class="btn btn-primary" value="{{ _('reset') }}"/>
-            {% endif %}
-            {% if cancel_url %}
-              <a href="{{ cancel_url }}" class="btn">{{ _('back') }}</a>
-            {% endif %}
-          </div>
-          {% if extra=="create" or actions %}
-            <div data-role="customized-control-group">
-              {% if extra == "create" %}
-                {{ create() }}
-              {% else %}
-                {% for action in actions %}
-                  <input name="__action__" value="{{ action.name }}" type="submit" name="action" class="{{ action.css_class }}" data-direct="{{ action.direct }}"/>
-                {% endfor %}
-              {% endif %}
-            </div>
-          {% endif %}
-        {% endif %}
+{% macro render_form_buttons(cancel_url, extra=None, last_step=None, next_step=None) %}
+<div class='row-fluid'>
+    <div class="span6">
+    {% if last_step %}
+      <div class='pull-left'>
+        <a href="{{ last_step.url }}" class='btn'><i class="icon-arrow-left"></i>{{ _('Last step') }}: {{ last_step.name }}</a> 
       </div>
+    {% elif last_step is not none or next_step is not none %}
+      <input class="btn" type="button" onclick="location='{{ cancel_url }}'" value="{{ _('back') }}"/>
+    {% endif %}
+    {% if next_step %}
+      <div class='pull-right'>
+        <button data-target="{{ next_step.url }}" class='btn' data-role='next-step' >{{ _('Next step') }}: {{ next_step.name }}<i class="icon-arrow-right"></i></button>
+      </div>
+    {% endif %}
     </div>
+</div>
+<div class="navbar-fixed-bottom navbar-inverse navbar"  style="position: fixed; margin-left: 0px" id="footer-action-bar">
+  <div>
+    {% if g.request_from_mobile %}
+        <div class="navbar-inner" >
+          <ul class="nav btn-group" id="actions">
+            <li>
+              <input id="submit-btn" name="__builtin_action__" type="submit" class="btn btn-primary btn-large" value="{{ _('commit') }}"/>
+            </li>
+            <li>
+              <input id="reset-btn" type="reset" class="btn btn-primary btn-large" value="{{ _('reset') }}"/>
+            </li>
+            {% if cancel_url %}
+              <li>
+                <input class="btn btn-large" type="button" onclick="location='{{ cancel_url }}'" value="{{ _('back') }}"/>
+              </li>
+            {% endif %}
+          </ul>
+          <div class="dropup btn-group">
+          <button class="btn dropdown-toggle" data-toggle="dropdown">
+              <i class="icon-reorder icon-2x"></i>
+            </button>
+            <ul class="dropdown-menu pull-right">
+              {% for action in actions %}
+                <li>
+                  <input value="{{ action.name }}" type="submit" name="__action__" class="{{ action.css_class }}" data-warn="{{ action.warn_msg }}" data-direct="{{ action.direct }}"/>
+                </li>
+              {% endfor %}
+            </ul>
+          </div>
+          <a href="#top" class="btn btn-navbar"><i class="icon-arrow-up"></i></a>
+      </div>
+    {% else %}
+
+      {% if next_step is none%}
+        <div data-role="trivial-control-group">
+          {% if not __read_only__%}
+            <input id="submit-btn" name="__builtin_action__" type="submit" class="btn btn-primary" value="{{ _('commit') }}"/>
+            <input id="reset-btn" type="reset" class="btn btn-primary" value="{{ _('reset') }}"/>
+          {% endif %}
+          {% if cancel_url %}
+            <a href="{{ cancel_url }}" class="btn">{{ _('back') }}</a>
+          {% endif %}
+        </div>
+        {% if extra=="create" or actions %}
+          <div data-role="customized-control-group">
+            {% if extra == "create" %}
+              {{ create() }}
+            {% else %}
+              {% for action in actions %}
+                <input name="__action__" value="{{ action.name }}" type="submit" name="action" class="{{ action.css_class }}" data-direct="{{ action.direct }}"/>
+              {% endfor %}
+            {% endif %}
+          </div>
+        {% endif %}
+      {% endif %}
+    {% endif %}
+  </div>
+</div>
 {% endmacro %}
 
-{% macro render_form(form, cancel_url, extra=None) -%}
+{% macro render_form(form, cancel_url, extra=None, last_step=None, next_step=None) -%}
     {% call form_tag() %}
-        {{ render_form_fields(form) }}
-        {{ render_form_buttons(cancel_url, extra) }}
+      {% if last_step is not none or next_step is not none %}
+        {% set current_step = request.args.get('__step__', 0)|int %}
+      {% endif %}
+      {{ render_form_fields(form, current_step=current_step) }}
+      {{ render_form_buttons(cancel_url, extra, last_step, next_step) }}
     {% endcall %}
 {% endmacro %}
 

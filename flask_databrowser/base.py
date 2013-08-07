@@ -7,6 +7,7 @@ import re
 import sys
 import types
 from collections import OrderedDict
+import urlparse
 
 import werkzeug
 import yaml
@@ -55,6 +56,8 @@ class ModelView(object):
     can_batchly_edit = True
     form_class = form.BaseForm
     hidden_pk = True
+    create_in_steps = False
+    step_create_templates = []
 
     def __init__(self, model, model_name=""):
         self.model = model
@@ -98,6 +101,12 @@ class ModelView(object):
         if not self.__normalized_form_columns:
             self.__normalized_form_columns = self._normalize_form_columns(self.__form_columns__)
         return self.__normalized_form_columns
+
+    def get_step_create_template(self, step):
+        try:
+            return self.step_create_templates[step]
+        except IndexError:
+            return '__data_browser__/form.html'
 
     def normalize_create_columns(self, columns):
         """
@@ -149,7 +158,7 @@ class ModelView(object):
         if isinstance(columns, types.ListType) or isinstance(columns, types.TupleType):
             fieldsets = {"": [c for c in columns if test(c)]}
         else:
-            fieldsets = dict((k, [c for c in v if test(c)]) for k, v in columns.items())
+            fieldsets = OrderedDict((k, [c for c in v if test(c)]) for k, v in columns.items())
 
         for fieldset_name, columns in fieldsets.items():
             ret[fieldset_name] = []
@@ -476,6 +485,11 @@ class ModelView(object):
             '.' + self.list_view_endpoint)
         on_fly = int(request.args.get("on_fly", 0))
 
+        if self.create_in_steps:
+            current_step = int(request.args.get('__step__', 0))
+            create_columns = dict([self.create_columns.items()[current_step]])
+        else:
+            create_columns = self.create_columns
         form = self.get_create_form()
         # if submit and validated, go, else re-display the create page and show the errors
         if form.validate_on_submit():
@@ -511,7 +525,7 @@ class ModelView(object):
                 v = v(self)
             kwargs[k] = v
 
-        compound_form = self.get_create_compound_form(form)
+        compound_form = self.get_create_compound_form(form, create_columns)
         form = compound_form or form
 
         kwargs = {}
@@ -526,14 +540,36 @@ class ModelView(object):
                 f.widget.set_args(**kwargs)
 
         fieldset_list = []
-        create_columns = self.create_columns
         if isinstance(create_columns, types.DictType):
             for fieldset, cols in create_columns.items():
                 fieldset_list.append((fieldset, [form[col.col_name if isinstance(col, ColumnSpec) else col] for col in cols]))
         else:
             fieldset_list.append(("", form))
 
-        resp = self.render(self.create_template, form=form,
+        last_step = None
+        next_step = None
+        if self.create_in_steps:
+            create_template = self.get_step_create_template(current_step)
+            if current_step:
+                args = request.args.to_dict()
+                args['__step__'] = current_step - 1
+                last_step = {
+                    'name': self.create_columns.keys()[current_step - 1],
+                    'url': urlparse.urlunparse(('', '', request.path, '', '&'.join(k+'='+str(v) for k, v in args.items()), ''))
+                }
+
+            if current_step < len(self.create_columns) - 1:
+                args = request.args.to_dict()
+                args['__step__'] = current_step + 1
+                next_step = {
+                    'name': self.create_columns.keys()[current_step + 1],
+                    'url': urlparse.urlunparse(('', '', request.path, '', '&'.join(k+'='+str(v) for k, v in args.items()), ''))
+                }
+        else:
+            create_template = self.create_template
+        kwargs['last_step'] = last_step
+        kwargs['next_step'] = next_step
+        resp = self.render(create_template, form=form,
                            fieldset_list=fieldset_list,
                            create_url_map=create_url_map,
                            return_url=return_url, extra="" if on_fly else "create",
@@ -852,13 +888,15 @@ class ModelView(object):
                 if prop.key not in default_args:
                     default_args[prop.key] = None
             obj = type("_temp", (object, ), default_args)()
-            return self.__create_form__(obj=obj)
+            ret = self.__create_form__(obj=obj, **default_args)
+            # set the default args in form, otherwise the last step of creation won't be finished
+            for k, v in default_args.items():
+                if v and hasattr(ret, k) and k not in request.form:
+                    getattr(ret, k).data = v
+            return ret
         return self.__create_form__()
 
-    def get_create_compound_form(self, form):
-        create_columns = self.create_columns
-        if not create_columns:
-            return form
+    def get_create_compound_form(self, form, create_columns):
 
         # I fake a form since I won't compose my fields and get the
         # hidden_tag (used to generate csrf) from model's form

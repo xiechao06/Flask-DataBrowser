@@ -14,7 +14,6 @@ from flask.ext.babel import Babel
 Babel(app)
 
 
-#-*- coding:utf-8 -*-
 from datetime import datetime
 import logging
 from models import Log

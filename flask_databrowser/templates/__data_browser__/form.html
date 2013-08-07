@@ -16,7 +16,7 @@
     {% endif %}
   {% endblock %}
   <div class="container">
-    {{ lib.render_form(form, return_url, extra) }}
+    {{ lib.render_form(form, return_url, extra, last_step, next_step) }}
 
     <div id="help-modal" class="modal hide fade">
       <div class="modal-header">
@@ -121,6 +121,18 @@
             checkSubmitFlag = true;
             $(this).submit();
           }
+      });
+      $('button[data-role="next-step"]').click(function () {
+          var target = new Url($(this).attr('data-target'));
+          var inputs = $("form .controls").find('input,select,checkbox');
+          for (var i=0; i < inputs.length; ++i) {
+             var e= inputs[i];
+             target.query[$(e).attr('name')] = $(e).val()
+          };
+          if ($(this).parents('form').get(0).checkValidity()) {
+            location = target.toString();
+          }
+          return false;
       });
     });
   </script>
