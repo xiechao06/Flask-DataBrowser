@@ -1,0 +1,10 @@
+<input type="text" {{ field_value or '' }}" name="group" id="group" autofocus="autofocus" placeholder="input password here"/>
+
+<div>
+可选数据包括:
+<ul>
+  {% for o in options %}
+  <li>{{ o.name }}</li>
+  {% endfor %}
+</ul>
+</div>
