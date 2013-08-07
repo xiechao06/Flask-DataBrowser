@@ -38,6 +38,8 @@ class UserModelView(databrowser.ModelView):
     __create_columns__ = OrderedDict()
     __create_columns__[u"取名"] = ["name"]
     __create_columns__[u"设置密码"] = [PlaceHolderColumnSpec('password', template_fname='/accounts/password-snippet.html', as_input=True)]
+    __create_columns__[u'设置群组'] = [PlaceHolderColumnSpec('group', template_fname='/accounts/group-snippet.html', as_input=True,
+                                                                filter_=lambda q: q.filter_by(name='StarTrek'))]
     __create_columns__[u'设置生日'] = ['birthday']
 
     __column_labels__ = {'name': u'用户名'}

@@ -173,23 +173,25 @@ class ListWidget(object):
 
 
 class PlaceHolder(object):
-    def __init__(self, template_fname, field_value, obj, model_view):
+    def __init__(self, template_fname, field_value, obj, model_view, options):
         self.template_fname = template_fname
         self.obj = obj
         self.field_value = field_value
         self.kwargs = {}
         self.model_view = model_view
+        self.options = options
 
     def set_args(self, **kwargs):
         self.kwargs = kwargs
 
     def __call__(self, field, **kwargs):
         from flask import render_template
-
+        
         return render_template(self.template_fname,
                                field_value=self.field_value,
                                obj=self.obj,
                                model_view=self.model_view,
+                               options=self.options,
                                **self.kwargs)
 
 
