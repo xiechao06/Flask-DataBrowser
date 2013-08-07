@@ -54,7 +54,6 @@ def main():
         list_template = "accounts/list.html"
         edit_template = create_template = "accounts/form.html"
         can_create = True
-        column_hide_backrefs = False
         #can_batchly_edit = False
 
         def preprocess(self, obj):
