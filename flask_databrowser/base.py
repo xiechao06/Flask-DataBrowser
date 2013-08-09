@@ -461,7 +461,7 @@ class ModelView(object):
         except Exception, ex:
             flash(
                 _('Failed to update %(model_name)s %(obj)s due to %(error)s',
-                  model_name=self.model_name, model=",".join([unicode(obj) for obj in objs]),
+                  model_name=self.model_name, obj=",".join([unicode(obj) for obj in objs]),
                   error=str(ex)), 'error')
             self.session.rollback()
             return False
