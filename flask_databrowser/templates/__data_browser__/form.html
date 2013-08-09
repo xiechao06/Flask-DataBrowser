@@ -124,11 +124,13 @@
       });
       $('button[data-role="next-step"]').click(function () {
           var target = new Url($(this).attr('data-target'));
-          var inputs = $("form .controls").find('input,select,checkbox');
+          var inputs = $("form .control-group").find('input,select');
           for (var i=0; i < inputs.length; ++i) {
              var e= inputs[i];
-             target.query[$(e).attr('name')] = $(e).val()
-          };
+            if($(e).attr("name")){
+              target.query[$(e).attr('name')] = $(e).val()
+            }
+          }
           if ($(this).parents('form').get(0).checkValidity()) {
             location = target.toString();
           }
