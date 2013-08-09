@@ -562,7 +562,7 @@ class ModelView(object):
                 args['__step__'] = current_step - 1
                 last_step = {
                     'name': self.create_columns.keys()[current_step - 1],
-                    'url': urlparse.urlunparse(('', '', request.path, '', '&'.join(k+'='+str(v) for k, v in args.items()), ''))
+                    'url': urlparse.urlunparse(('', '', request.path, '', '&'.join(k+'='+unicode(v) for k, v in args.items()), ''))
                 }
                 
                 previous_columns = {}
@@ -580,7 +580,7 @@ class ModelView(object):
                 args['__step__'] = current_step + 1
                 next_step = {
                     'name': self.create_columns.keys()[current_step + 1],
-                    'url': urlparse.urlunparse(('', '', request.path, '', '&'.join(k+'='+str(v) for k, v in args.items()), ''))
+                    'url': urlparse.urlunparse(('', '', request.path, '', '&'.join(k+'='+unicode(v) for k, v in args.items()), ''))
                 }
         else:
             create_template = self.create_template
