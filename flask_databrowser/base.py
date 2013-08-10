@@ -573,6 +573,9 @@ class ModelView(object):
                 if previous_columns:
                     for k, v in request.args.iterlists():
                         if k in previous_columns:
+                            col_def = operator.attrgetter(k)(self.model)
+                            if hasattr(col_def.property, 'direction'): # is a relation ship
+                                v = unicode(col_def.property.mapper.class_.query.get(v))
                             kwargs.setdefault('previous_steps_info',[]).append((previous_columns[k], v[0] if len(v) == 1 else v))
 
             if current_step < len(self.create_columns) - 1:
