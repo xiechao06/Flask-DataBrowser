@@ -21,6 +21,7 @@ from flask.ext.sqlalchemy import Pagination
 
 from flask.ext.databrowser.column_spec import (LinkColumnSpec, ColumnSpec, InputColumnSpec, PlaceHolderColumnSpec)
 from flask.ext.databrowser.convert import ValueConverter
+from flask.ext.databrowser import sa_utils
 from flask.ext.databrowser import filters
 from flask.ext.databrowser.exceptions import ValidationError
 from flask.ext.databrowser.extra_widgets import PlaceHolder
@@ -573,6 +574,9 @@ class ModelView(object):
                 if previous_columns:
                     for k, v in request.args.iterlists():
                         if k in previous_columns:
+                            col_def = operator.attrgetter(k)(self.model)
+                            if hasattr(col_def.property, 'direction'): # is a relation ship
+                                v = unicode(sa_utils.remote_side(col_def).query.get(v))
                             kwargs.setdefault('previous_steps_info',[]).append((previous_columns[k], v[0] if len(v) == 1 else v))
 
             if current_step < len(self.create_columns) - 1:

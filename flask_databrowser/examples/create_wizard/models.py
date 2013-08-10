@@ -30,3 +30,6 @@ class Group(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(32), nullable=False, unique=True, doc=u"用户组名称")
 
+    def __unicode__(self):
+        return self.name
+
