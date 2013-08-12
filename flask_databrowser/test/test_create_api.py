@@ -8,11 +8,11 @@ from flask.ext.databrowser.test import basetest
 from flask.ext.databrowser import ModelView, DataBrowser
 from flask.ext.databrowser.column_spec import InputColumnSpec
 
+
 class TestCreateAPI(basetest.BaseTest):
-
     def setup_models(self):
-
         db = self.db
+
         class Group(db.Model):
             __tablename__ = "TB_GROUP"
 
@@ -38,7 +38,6 @@ class TestCreateAPI(basetest.BaseTest):
 
         self.__tables = namedtuple("foo", ["User", "Group"])(User, Group)
 
-
     def setup(self):
         super(TestCreateAPI, self).setup()
         self.browser = DataBrowser(self.app, self.db)
@@ -51,12 +50,11 @@ class TestCreateAPI(basetest.BaseTest):
         self.db.session.add(user1)
         self.db.session.add(user2)
         self.db.session.commit()
-    
+
     def test_with_no_create_columns(self):
         # we assert when no create columns are defined, creat api return correctly
         model_view = ModelView(self.__tables.User)
-        blueprint = Blueprint("foo0", __name__, static_folder="static", 
-                            template_folder="templates")
+        blueprint = Blueprint("foo0", __name__, static_folder="static", template_folder="templates")
         self.browser.register_model_view(model_view, blueprint)
         self.app.register_blueprint(blueprint, url_prefix="/foo0")
 
@@ -120,16 +118,15 @@ class TestCreateAPI(basetest.BaseTest):
                 assert options['Ms'] == 'Ms'
                 assert options['Mr'] == 'Mr'
                 assert options['Mrs'] == 'Mrs'
-    
+
     def test_not_hidden_pk(self):
         ## we assert primary key isn't hidden when we meant to
         class UserModelView(ModelView):
-
             hidden_pk = False
 
         model_view = UserModelView(self.__tables.User)
-        blueprint = Blueprint("foo1", __name__, static_folder="static", 
-                            template_folder="templates")
+        blueprint = Blueprint("foo1", __name__, static_folder="static",
+                              template_folder="templates")
         self.browser.register_model_view(model_view, blueprint)
         self.app.register_blueprint(blueprint, url_prefix="/foo1")
 
@@ -147,12 +144,11 @@ class TestCreateAPI(basetest.BaseTest):
     def test_many_to_one(self):
         ## we test many to one relationship
         class GroupModelView(ModelView):
-
             column_hide_backrefs = False
 
         model_view = GroupModelView(self.__tables.Group)
-        blueprint = Blueprint("foo2", __name__, static_folder="static", 
-                            template_folder="templates")
+        blueprint = Blueprint("foo2", __name__, static_folder="static",
+                              template_folder="templates")
         self.browser.register_model_view(model_view, blueprint)
         self.app.register_blueprint(blueprint, url_prefix="/foo2")
         with self.app.test_request_context():
@@ -164,7 +160,7 @@ class TestCreateAPI(basetest.BaseTest):
                 assert 'name' in fields
                 assert 'users' in fields
 
-                field = fields['users'] 
+                field = fields['users']
                 assert field['type'] == 'select'
                 assert len(field['options']) == 2
                 options = dict(field['options'])
@@ -173,12 +169,11 @@ class TestCreateAPI(basetest.BaseTest):
 
     def test_extra_validators(self):
         class UserModelView(ModelView):
-
             __create_columns__ = [InputColumnSpec("age", validators=[validators.NumberRange(18, 101)])]
 
         model_view = UserModelView(self.__tables.User)
-        blueprint = Blueprint("foo3", __name__, static_folder="static", 
-                            template_folder="templates")
+        blueprint = Blueprint("foo3", __name__, static_folder="static",
+                              template_folder="templates")
         self.browser.register_model_view(model_view, blueprint)
         self.app.register_blueprint(blueprint, url_prefix="/foo3")
         with self.app.test_request_context():
@@ -196,28 +191,29 @@ class TestCreateAPI(basetest.BaseTest):
                 assert validator['name'] == 'range'
                 assert validator['min'] == 18
                 assert validator['max'] == 101
-        
-        # TODO more validators should be tested here
 
-    
+                # TODO more validators should be tested here
+
+
     def test_many_to_many(self):
         # TODO untested
         pass
 
     def test_commit(self):
         class UserModelView(ModelView):
-            __create_columns__ = ['name', 'title', 'group', InputColumnSpec("age", validators=[validators.NumberRange(18, 101)])]
+            __create_columns__ = ['name', 'title', 'group',
+                                  InputColumnSpec("age", validators=[validators.NumberRange(18, 101)])]
 
         model_view = UserModelView(self.__tables.User)
-        blueprint = Blueprint("foo5", __name__, static_folder="static", 
-                            template_folder="templates")
+        blueprint = Blueprint("foo5", __name__, static_folder="static",
+                              template_folder="templates")
         self.browser.register_model_view(model_view, blueprint)
         self.app.register_blueprint(blueprint, url_prefix="/foo5")
         with self.app.test_request_context():
             with self.app.test_client() as c:
-                data =  {
+                data = {
                     "name": "foo",
-                    "title": "Mr", 
+                    "title": "Mr",
                     "group": '1',
                     "age": 22,
                 }
@@ -241,9 +237,8 @@ class TestCreateAPI(basetest.BaseTest):
                 assert 'group' in rsp['errors']
                 assert 'age' in rsp['errors']
 
-        self.db.session.delete(self.__tables.User.query.filter(self.__tables.User.name=='foo').one())
+        self.db.session.delete(self.__tables.User.query.filter(self.__tables.User.name == 'foo').one())
         self.db.session.commit()
-
 
 
 if __name__ == "__main__":
