@@ -40,6 +40,9 @@ class BaseTest(object):
         self.ECHO_DB = False
 
     def setup_models(self):
+        '''
+        all the sub classes should setup models here
+        '''
         pass
 
     def run_plainly(self, tests=None):
