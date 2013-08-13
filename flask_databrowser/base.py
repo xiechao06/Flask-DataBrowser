@@ -428,11 +428,11 @@ class ModelView(object):
                             return False
                     try:
                         ret = action.op_upon_list(processed_objs, self)
+                        self.session.commit()
                         if isinstance(ret, werkzeug.wrappers.BaseResponse) and ret.status_code == 302:
                             if not action.direct:
                                 flash(action.success_message(processed_objs), 'success')
                             return ret
-                        self.session.commit()
                         if not action.direct:
                             flash(action.success_message(processed_objs), 'success')
                         return True
@@ -747,7 +747,7 @@ class ModelView(object):
             else:
                 form = self.get_batch_edit_form(request.form, model_list, read_only)
             # we must validate batch edit as well
-            if form.validate_on_submit(): # ON POST
+            if form.is_submitted(): # ON POST
                 ret = self.update_objs(form, model_list)
                 if ret:
                     if isinstance(ret, werkzeug.wrappers.BaseResponse) and ret.status_code == 302:

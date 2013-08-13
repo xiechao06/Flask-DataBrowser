@@ -129,6 +129,7 @@
     });
     $("input[name=rowtoggle]").click(function () {
       $("#list-table-body input[type=checkbox]").attr("checked", this.checked);
+      $("input[name=rowtoggle]").attr("checked", this.checked);
     });
     $("#main-form .action-list [name=__action__]").click(function(){
       var list_val = "";
