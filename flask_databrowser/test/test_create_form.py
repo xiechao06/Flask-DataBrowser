@@ -14,6 +14,11 @@ class TestCreate(basetest.BaseTest):
         super(TestCreate, self).setup()
         self.browser = DataBrowser(self.app, self.db)
 
+        @self.app.errorhandler(Exception)
+        def error_handler(error):
+            if isinstance(error, RuntimeError):
+                return error.message, 401
+
     def setup_models(self):
         db = self.db
 
