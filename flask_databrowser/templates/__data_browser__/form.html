@@ -128,11 +128,13 @@
           for (var i=0; i < inputs.length; ++i) {
              var e= inputs[i];
             if($(e).attr("name")){
-              target.query[$(e).attr('name')] = $(e).val()
+              target.query[$(e).attr('name')] = $(e).val();
             }
           }
-          if ($(this).parents('form').get(0).checkValidity()) {
-            location = target.toString();
+          var form = $(this).parents('form');
+          if (form.get(0).checkValidity()) {
+            form.attr("action", target.toString());
+            form.submit();
           }
       });
     });

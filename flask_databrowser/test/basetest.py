@@ -6,6 +6,7 @@ from flask import Flask, Blueprint
 from flask.ext.sqlalchemy import SQLAlchemy
 from flask.ext.babel import Babel
 
+
 class BaseTest(object):
     def setup(self):
         self.config()
@@ -18,7 +19,7 @@ class BaseTest(object):
         Babel(self.app)
         self.app.config["SQLALCHEMY_DATABASE_URI"] = dbstr
         self.app.config["CSRF_ENABLED"] = False
-
+        self.app.config["SECRET_KEY"] = "D8123;d;"
         self.db = SQLAlchemy(self.app)
         self.setup_models()
         self.db.create_all()
@@ -40,6 +41,9 @@ class BaseTest(object):
         self.ECHO_DB = False
 
     def setup_models(self):
+        """
+        all the sub classes should setup models here
+        """
         pass
 
     def run_plainly(self, tests=None):

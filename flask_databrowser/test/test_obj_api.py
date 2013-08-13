@@ -1,18 +1,16 @@
 #! /usr/bin/env python
 # -*- coding: UTF-8 -*-
 import json
-from collections import namedtuple, OrderedDict
-from wtforms import validators
-from flask import Flask, Blueprint, url_for
+from collections import namedtuple
+from flask import Blueprint
 from flask.ext.databrowser.test import basetest
 from flask.ext.databrowser import ModelView, DataBrowser
-from flask.ext.databrowser.column_spec import InputColumnSpec
+
 
 class TestObjectAPI(basetest.BaseTest):
-
     def setup_models(self):
-
         db = self.db
+
         class Group(db.Model):
             __tablename__ = "TB_GROUP"
 
@@ -21,7 +19,6 @@ class TestObjectAPI(basetest.BaseTest):
 
             def __unicode__(self):
                 return self.name
-
 
         class User(db.Model):
             __tablename__ = "TB_USER"
@@ -38,7 +35,6 @@ class TestObjectAPI(basetest.BaseTest):
 
         self.__tables = namedtuple("foo", ["User", "Group"])(User, Group)
 
-
     def setup(self):
         super(TestObjectAPI, self).setup()
         self.browser = DataBrowser(self.app, self.db)
@@ -51,12 +47,10 @@ class TestObjectAPI(basetest.BaseTest):
         self.db.session.add(user1)
         self.db.session.add(user2)
         self.db.session.commit()
-    
 
     def test_with_no_form_columns(self):
         model_view = ModelView(self.__tables.User)
-        blueprint = Blueprint("foo0", __name__, static_folder="static", 
-                            template_folder="templates")
+        blueprint = Blueprint("foo0", __name__, static_folder="static", template_folder="templates")
         self.browser.register_model_view(model_view, blueprint)
         self.app.register_blueprint(blueprint, url_prefix="/foo0")
 
@@ -125,8 +119,8 @@ class TestObjectAPI(basetest.BaseTest):
 
     def test_batch_edit(self):
         model_view = ModelView(self.__tables.User)
-        blueprint = Blueprint("foo1", __name__, static_folder="static", 
-                            template_folder="templates")
+        blueprint = Blueprint("foo1", __name__, static_folder="static",
+                              template_folder="templates")
         self.browser.register_model_view(model_view, blueprint)
         self.app.register_blueprint(blueprint, url_prefix="/foo1")
 
@@ -196,14 +190,12 @@ class TestObjectAPI(basetest.BaseTest):
 
     def test_extra_fields(self):
         class UserModelView(ModelView):
-
             __extra_fields__ = {
                 'old': lambda preprocessed_obj: preprocessed_obj.age > 65
             }
 
         model_view = UserModelView(self.__tables.User)
-        blueprint = Blueprint("foo2", __name__, static_folder="static", 
-                            template_folder="templates")
+        blueprint = Blueprint("foo2", __name__, static_folder="static", template_folder="templates")
         self.browser.register_model_view(model_view, blueprint)
         self.app.register_blueprint(blueprint, url_prefix="/foo2")
 
