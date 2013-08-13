@@ -15,10 +15,14 @@ from getopt import getopt
 from flask import Flask, Blueprint, redirect
 from flask.ext import databrowser
 from collections import OrderedDict
+from flask.ext.login import LoginManager
+from flask.ext.principal import PermissionDenied
+from flask.ext.databrowser.action import DeleteAction
 
 app = Flask(__name__)
+LoginManager(app)
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///temp.db"
-app.config['SQLALCHEMY_ECHO'] = True
+app.config['SQLALCHEMY_ECHO'] = False
 app.config["DEBUG"] = True
 app.config["SECRET_KEY"] = "JHdkj1;"
 app.config["CSRF_ENABLED"] = False
@@ -32,12 +36,9 @@ from flask.ext.databrowser.column_spec import PlaceHolderColumnSpec
 class UserModelView(databrowser.ModelView):
 
     can_create = True
-    create_in_steps = True
-    create_step_templates = [None, None, '/accounts/create-step-2.html']
-    
+    __customized_actions__ = [DeleteAction()]
     __create_columns__ = OrderedDict()
-    __create_columns__[u'设置群组'] = [PlaceHolderColumnSpec('group', template_fname='/accounts/group-snippet.html', as_input=True,
-                                                                filter_=lambda q: q.filter_by(name='StarTrek'))]
+    __create_columns__[u'设置群组'] = ["group"]
     __create_columns__[u"取名"] = ["name"]
     __create_columns__[u"设置密码"] = [PlaceHolderColumnSpec('password', template_fname='/accounts/password-snippet.html', as_input=True)]
     __create_columns__[u'设置生日'] = ['birthday']

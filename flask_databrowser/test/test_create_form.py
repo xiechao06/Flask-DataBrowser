@@ -8,16 +8,11 @@ from flask.ext.databrowser.test import basetest
 from flask.ext.databrowser import ModelView, DataBrowser
 from collections import OrderedDict
 
-class TestCreate(basetest.BaseTest):
 
+class TestCreate(basetest.BaseTest):
     def setup(self):
         super(TestCreate, self).setup()
         self.browser = DataBrowser(self.app, self.db)
-
-        @self.app.errorhandler(RuntimeError)
-        def error_handler(error):
-            if isinstance(error, RuntimeError):
-                return error.message, 401
 
     def setup_models(self):
         db = self.db
@@ -57,6 +52,7 @@ class TestCreate(basetest.BaseTest):
         """
         when try_create raise exception, can't GET or POST
         """
+
         class UserModelView(ModelView):
             def try_create(self):
                 raise PermissionDenied("can't create")
@@ -73,7 +69,7 @@ class TestCreate(basetest.BaseTest):
                 })
                 assert rv.status_code == 401
                 assert rv.data == "can't create"
-                
+
     def test_no_configuration(self):
         self.register()
         with self.app.test_request_context():
@@ -81,6 +77,7 @@ class TestCreate(basetest.BaseTest):
                 rv = c.get("/foo1/user")
                 assert rv.status_code == 200
                 from pyquery import PyQuery as pq
+
                 d = pq(rv.data)
                 controls = [i for i in d(".control-group").items()]
                 assert len(controls) == 3
@@ -117,6 +114,7 @@ class TestCreate(basetest.BaseTest):
                 rv = c.get("/foo1/user")
                 assert rv.status_code == 200
                 from pyquery import PyQuery as pq
+
                 d = pq(rv.data)
                 fieldsets = [i for i in d("fieldset").items()]
                 assert len(fieldsets) == 2
@@ -134,6 +132,7 @@ class TestCreate(basetest.BaseTest):
             with self.app.test_client() as c:
                 rv = c.get("/foo1/user")
                 from pyquery import PyQuery as pq
+
                 d = pq(rv.data)
                 fieldsets = [i for i in d("fieldset").items()]
                 assert len(fieldsets) == 1
@@ -145,13 +144,14 @@ class TestCreate(basetest.BaseTest):
             with self.app.test_client() as c:
                 rv = c.get("/foo1/user")
                 from pyquery import PyQuery as pq
+
                 d = pq(rv.data)
                 group = d("[data-role=trivial-control-group]")
                 assert len(group) == 1
                 assert len(group("[type=submit]")) == 1
                 assert len(group("[type=reset]")) == 1
                 #TODO actions
-    
+
     def test_create_on_fly(self):
         self.register()
         with self.app.test_request_context():
@@ -161,6 +161,7 @@ class TestCreate(basetest.BaseTest):
                 rv = c.post("/foo1/user?on_fly=1", data={"group": 1, "name": "foo", "id": 1})
                 assert 200 == rv.status_code
                 from pyquery import PyQuery as pq
+
                 d = pq(rv.data)
                 assert len(d("#my-modal")) == 1
 
@@ -168,6 +169,7 @@ class TestCreate(basetest.BaseTest):
         class UserModelView(ModelView):
             __create_columns__ = OrderedDict()
             from flask.ext.databrowser.column_spec import InputColumnSpec
+
             __create_columns__["group"] = ["group"]
             __create_columns__["name"] = [InputColumnSpec("name", read_only=True)]
 
@@ -176,13 +178,16 @@ class TestCreate(basetest.BaseTest):
             with self.app.test_client() as c:
                 rv = c.get("/foo1/user")
                 from pyquery import PyQuery as pq
+
                 d = pq(rv.data)
                 assert d("[name=name]").attr("disabled")
 
     def test_place_holder_column_spec(self):
         class UserModelView(ModelView):
             from flask.ext.databrowser.column_spec import PlaceHolderColumnSpec
-            __create_columns__ = ["name", PlaceHolderColumnSpec("group", template_fname="place.html", label="group", as_input=True)]
+
+            __create_columns__ = ["name", PlaceHolderColumnSpec("group", template_fname="place.html", label="group",
+                                                                as_input=True)]
 
         self.register(UserModelView)
         with self.app.test_request_context():
@@ -191,8 +196,10 @@ class TestCreate(basetest.BaseTest):
 
                 rv = c.get("/foo1/user")
                 from pyquery import PyQuery as pq
+
                 d = pq(rv.data)
                 assert len(d("[data-role=options]")) == 1
+
 
 if __name__ == "__main__":
     TestCreate().run_plainly()

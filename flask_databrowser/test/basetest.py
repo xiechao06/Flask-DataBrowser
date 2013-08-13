@@ -5,7 +5,7 @@ import os
 from flask import Flask, Blueprint
 from flask.ext.sqlalchemy import SQLAlchemy
 from flask.ext.babel import Babel
-
+from flask.ext.login import LoginManager
 
 class BaseTest(object):
     def setup(self):
@@ -17,6 +17,7 @@ class BaseTest(object):
 
         self.app = Flask(__name__)
         Babel(self.app)
+        LoginManager(self.app)
         self.app.config["SQLALCHEMY_DATABASE_URI"] = dbstr
         self.app.config["CSRF_ENABLED"] = False
         self.app.config["SECRET_KEY"] = "D8123;d;"
