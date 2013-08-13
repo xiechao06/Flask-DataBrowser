@@ -213,8 +213,8 @@
       <div class='pull-left'>
         <a href="{{ last_step.url }}" class='btn'><i class="icon-arrow-left"></i>{{ _('Last step') }}: {{ last_step.name }}</a> 
       </div>
-    {% elif last_step is not none or next_step is not none %}
-      <input class="btn" type="button" onclick="location='{{ cancel_url }}'" value="{{ _('back') }}"/>
+    {% elif last_step is defined and last_step is not none or (next_step is defined and next_step is not none) %}
+      <a class="btn" href='{{ cancel_url }}'>{{ _('back') }}</a>
     {% endif %}
     {% if next_step %}
       <div class='pull-right'>
@@ -256,7 +256,7 @@
       </div>
     {% else %}
 
-      {% if next_step is none%}
+      {% if next_step is undefined or next_step is none%}
         <div data-role="trivial-control-group">
           {% if not __read_only__%}
             <input id="submit-btn" name="__builtin_action__" type="submit" class="btn btn-primary" value="{{ _('commit') }}"/>
