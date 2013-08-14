@@ -58,7 +58,7 @@
     });
       {% if model_view.can_batchly_edit %}
         $("#list-table-body input[type=checkbox]").hide();
-      {% elif __actions %}
+      {% elif __actions__ %}
         $("#list-table-body input[type=radio]").hide();
       {% endif %}
     // use bigger checkbox or radio
@@ -305,19 +305,18 @@
 <ul id="list-table-body" class="nav nav-tabs nav-stacked">
   {% for row in __data__ %}
   <li>
-    {% if model_view.can_batchly_edit %}
-      <a href="{{ model_view.url_for_object(row.obj, url=request.url, cdx=loop.index) }}">
+    <a href="{{ model_view.url_for_object(row.obj, url=request.url, cdx=loop.index) }}">
+      {% if model_view.can_batchly_edit %}
         <i class="icon-check-empty icon-large"></i>
         <input type="checkbox" value="{{ row.pk }}" name="selected-ids" id="checkbox-{{ row.pk }}"/>
-        {{ row.repr_|safe }}
-      </a>
-    {% elif __actions__ %} {# as checkbox #}
-      <a href="{{ model_view.url_for_object(row.obj, url=request.url, cdx=loop.index) }}">
+      {% elif __actions__ %}
         <i class="icon-circle-blank icon-large"></i>
         <input type="radio" value="{{ row.pk }}" name="selected-ids" id="checkbox-{{ row.pk }}"/>
-        {{ row.repr_|safe }}
-      </a>
-    {% endif %}
+        {% else %}
+        <i class="icon-link icon-large hidden"></i>
+      {% endif %}
+      {{ row.repr_|safe }}
+    </a>
   </li>
   {% endfor %}
 </ul>
