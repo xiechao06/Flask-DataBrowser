@@ -1,5 +1,4 @@
-Flask-DataBrowser
-[![Build Status](https://travis-ci.org/xiechao06/Flask-DataBrowser.png?branch=master)](https://travis-ci.org/xiechao06/Flask-DataBrowser)
+Flask-DataBrowser [![Build Status](https://travis-ci.org/xiechao06/Flask-DataBrowser.png?branch=master)](https://travis-ci.org/xiechao06/Flask-DataBrowser)
 =================
 
 
