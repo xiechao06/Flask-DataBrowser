@@ -78,9 +78,10 @@ class ValueConverter(object):
             w = extra_widgets.PlainText(unicode(v) if v is not None else "", trunc=col_spec.trunc)
 
         class FakeField(object):
-            def __init__(self, label, name, widget, css_class=None, description=None):
+            def __init__(self, label, name, widget, css_class=None, description=None, id=None):
                 self.label = label
                 self.name = name
+                self.id = id or name
                 self.widget = widget
                 self.type = "ReadOnlyField"
                 self.css_class = css_class

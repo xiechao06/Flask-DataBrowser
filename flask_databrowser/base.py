@@ -10,6 +10,7 @@ from collections import OrderedDict
 import urlparse
 
 import werkzeug
+from werkzeug.utils import secure_filename
 import yaml
 from werkzeug.datastructures import MultiDict
 
@@ -19,7 +20,8 @@ from flask.ext.databrowser.utils import (get_primary_key, get_doc_from_table_def
 from flask.ext.principal import PermissionDenied
 from flask.ext.sqlalchemy import Pagination
 
-from flask.ext.databrowser.column_spec import (LinkColumnSpec, ColumnSpec, InputColumnSpec, PlaceHolderColumnSpec)
+from flask.ext.databrowser.column_spec import (LinkColumnSpec, ColumnSpec, InputColumnSpec, PlaceHolderColumnSpec,
+                                               FileColumnSpec)
 from flask.ext.databrowser.convert import ValueConverter
 from flask.ext.databrowser import sa_utils
 from flask.ext.databrowser import filters
@@ -451,8 +453,21 @@ class ModelView(object):
             holded_fields = set(name[len("hold-value-"):] for name, field in request.form.iteritems() if name.startswith("hold-value-"))
             for obj in objs:
                 for name, field in form._fields.iteritems():
+                    from wtforms.fields import FileField
+                    if isinstance(field, FileField):
+                        file_ = request.files[field.name]
+                        if file_:
+                            filename = secure_filename(file_.filename)
+                            import os
+                            upload_folder = self.data_browser.app.config.get("UPLOAD_FOLDER", "")
+                            if not os.path.isdir(upload_folder):
+                                os.makedirs(upload_folder)
+                            file_.save(os.path.join(self.data_browser.app.config.get("UPLOAD_FOLDER", ""), filename))
+                            setattr(obj, field.name, filename)
+                        continue
                     if name not in holded_fields and field.data is not None:
                         field.populate_obj(obj, name)
+
                 self.do_update_log(obj, _("update"))
                 flash(_(u"%(model_name)s %(obj)s was updated and saved",
                         model_name=self.model_name, obj=unicode(obj)))
@@ -641,7 +656,7 @@ class ModelView(object):
                      model_name=self.model_name,
                      objs=",".join(unicode(model) for model in objs))
 
-    def edit_hint_message(self,obj, read_only=False):
+    def edit_hint_message(self, obj, read_only=False):
         if read_only:
             return _(
                 u"you are viewing %(model_name)s-%(obj)s, "
@@ -784,7 +799,7 @@ class ModelView(object):
             for col in model_columns:
                 if isinstance(col, InputColumnSpec) and not col.read_only:
                     continue
-                col_name = col.col_name if isinstance(col, InputColumnSpec) else col
+                col_name = col.col_name if isinstance(col, InputColumnSpec) or isinstance(col, FileColumnSpec) else col
                 try:
                     attr = getattr(self.model, col_name)
                     if hasattr(attr.property, "direction"):
@@ -878,6 +893,8 @@ class ModelView(object):
                 # try_edit will override the field's read_only attribute
             elif isinstance(col, basestring) and (not '.' in col):
                 col_name = col
+            elif isinstance(col, FileColumnSpec):
+                col_name = col.col_name
             else:
                 continue
             if col_name in model_clumns:
@@ -1011,13 +1028,17 @@ class ModelView(object):
             def errors(self):
                 return self.model_form.errors
 
+            @property
+            def has_file_field(self):
+                return self.model_form.has_file_field
+
         ret = []
         
         if isinstance(form_columns, types.DictType):
             form_columns = list(itertools.chain(*form_columns.values()))
 
         for col in form_columns:
-            if isinstance(col, InputColumnSpec):
+            if isinstance(col, InputColumnSpec) or isinstance(col, FileColumnSpec):
                 ret.append(form[col.col_name])
             elif isinstance(col, basestring):
                 try:
