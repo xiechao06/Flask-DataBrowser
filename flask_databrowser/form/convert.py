@@ -7,10 +7,10 @@ import copy
 from wtforms import fields, validators
 from sqlalchemy import Boolean, Column
 
-from .import form
+from . import form
 from .validators import Unique
 from .fields import QuerySelectField, QuerySelectMultipleField
-from flask.ext.databrowser.column_spec import InputColumnSpec, PlaceHolderColumnSpec
+from flask.ext.databrowser.column_spec import InputColumnSpec, PlaceHolderColumnSpec, FileColumnSpec
 from flask.ext.databrowser.utils import make_disabled_field, get_description, get_primary_key
 from flask.ext.babel import gettext as _
 
@@ -25,7 +25,9 @@ def converts(*args):
     def _inner(func):
         func._converter_for = frozenset(args)
         return func
+
     return _inner
+
 
 class ModelConverterBase(object):
     def __init__(self, converters=None, use_mro=True):
@@ -61,6 +63,7 @@ class ModelConverterBase(object):
                 return self.converters[col_type.__name__]
 
         return None
+
 
 class InlineFormAdmin(object):
     """
@@ -108,10 +111,12 @@ class InlineFormAdmin(object):
         """
         return form_class
 
+
 class AdminModelConverter(ModelConverterBase):
     """
         SQLAlchemy model to form converter
     """
+
     def __init__(self, session, view):
         super(AdminModelConverter, self).__init__()
 
@@ -178,7 +183,7 @@ class AdminModelConverter(ModelConverterBase):
 
             kwargs['get_label'] = functools.partial(
                 self._get_label_func(prop.key, kwargs) or (
-                lambda x, model: unicode(x)),
+                    lambda x, model: unicode(x)),
                 model=model)
 
             if not local_column.foreign_keys or local_column.nullable: # backref shouldn't be validated
@@ -206,6 +211,7 @@ class AdminModelConverter(ModelConverterBase):
             if prop.direction.name == 'MANYTOONE':
                 if col_spec and col_spec.group_by:
                     session = self.session
+
                     class QuerySelectField_(QuerySelectField):
 
                         def __init__(self, col_spec, *args, **kwargs):
@@ -214,6 +220,7 @@ class AdminModelConverter(ModelConverterBase):
 
                         def __call__(self, **kwargs):
                             grouper = form.Select2Widget()
+
                             class FakeField(object):
 
                                 def __init__(self, name, data):
@@ -226,14 +233,17 @@ class AdminModelConverter(ModelConverterBase):
                                     pk = get_primary_key(model)
                                     for row in session.query(col_spec.group_by.property.mapper.class_).all():
                                         yield getattr(row, pk), unicode(row), getattr(row, pk) == self.data
+
                             s = grouper(FakeField(self.col_spec.grouper_input_name,
-                                                  getattr(self.data, col_spec.group_by.property.local_remote_pairs[0][0].name)),
+                                                  getattr(self.data,
+                                                          col_spec.group_by.property.local_remote_pairs[0][0].name)),
                                         **({"disabled": True} if kwargs.get("disabled") else {})) + "   -    "
                             s += super(QuerySelectField_, self).__call__(**kwargs)
                             return s
+
                     return QuerySelectField_(col_spec, widget=form.Select2Widget(), **kwargs)
                 return QuerySelectField(widget=form.Select2Widget(),
-                    **kwargs)
+                                        **kwargs)
             elif prop.direction.name == 'ONETOMANY':
                 # Skip backrefs
                 if not local_column.foreign_keys and getattr(self.view, 'column_hide_backrefs', False):
@@ -277,15 +287,17 @@ class AdminModelConverter(ModelConverterBase):
                         return fields.HiddenField()
                     else:
                         kwargs['validators'].append(Unique(self.session,
-                            model,
-                            column, message=_("This field must be unique, but it already exists!")))
+                                                           model,
+                                                           column, message=_(
+                                "This field must be unique, but it already exists!")))
                         unique = True
 
                 # If field is unique, validate it
                 if column.unique and not unique:
                     kwargs['validators'].append(Unique(self.session,
-                        model,
-                        column, message=_("This field must be unique, but it already exists!")))
+                                                       model,
+                                                       column,
+                                                       message=_("This field must be unique, but it already exists!")))
 
                 if not column.nullable and not isinstance(column.type, Boolean):
                     kwargs['validators'].append(validators.Required(message=_(u"this field can't be empty")))
@@ -322,30 +334,40 @@ class AdminModelConverter(ModelConverterBase):
                     return override(**kwargs)
 
                 # Run converter
-                converter = self.get_converter(column)
+                if isinstance(col_spec, FileColumnSpec):
+                    converter = self.converters["File"]
+                else:
+                    converter = self.get_converter(column)
 
                 if converter is None:
                     return None
 
                 return converter(model=model, mapper=mapper, prop=prop,
-                    column=column, field_args=kwargs)
+                                 column=column, field_args=kwargs)
 
         return None
 
     @classmethod
     def _string_common(cls, column, field_args, **extra):
         if column.type.length:
-            field_args['validators'].append(validators.Length(max=column.type.length, message=_(u"length exceeds %(max_length)%d", max_length=column.type.length)))
+            field_args['validators'].append(validators.Length(max=column.type.length,
+                                                              message=_(u"length exceeds %(max_length)%d",
+                                                                        max_length=column.type.length)))
 
     @converts('String', 'Unicode')
     def conv_String(self, column, field_args, **extra):
         if hasattr(column.type, 'enums'):
             field_args['validators'].append(validators.AnyOf(column.type.enums,
-                                                             message=_(u"value of this field must be %(values)s", values=", ".join(str(i) for i in column.type.enums[:-1])) +
-                                                             _(u" or %(last_value)s", last_value=column.type.enums[-1]) if (len(column.type.enums) > 1) else ""))
-            field_args['choices'] = [(f,f) for f in column.type.enums]
+                                                             message=_(u"value of this field must be %(values)s",
+                                                                       values=", ".join(
+                                                                           str(i) for i in column.type.enums[:-1])) +
+                                                                     _(u" or %(last_value)s",
+                                                                       last_value=column.type.enums[-1]) if (
+                                                             len(column.type.enums) > 1) else ""))
+            field_args['choices'] = [(f, f) for f in column.type.enums]
             return form.Select2Field(**field_args)
         self._string_common(column=column, field_args=field_args, **extra)
+
         class MyTextField(fields.TextField):
             def __call__(self, **kwargs):
                 if column.type.length:
@@ -353,10 +375,15 @@ class AdminModelConverter(ModelConverterBase):
                 if self._value() is None and column.default is not None:
                     kwargs['value'] = column.default.arg
                 return super(MyTextField, self).__call__(**kwargs)
+
         return MyTextField(**field_args)
 
+    @converts('File')
+    def conv_File(self, column, field_args, **extra):
+        return fields.FileField(**field_args)
+
     @converts('Text', 'UnicodeText',
-        'sqlalchemy.types.LargeBinary', 'sqlalchemy.types.Binary')
+              'sqlalchemy.types.LargeBinary', 'sqlalchemy.types.Binary')
     def conv_Text(self, field_args, **extra):
         self._string_common(field_args=field_args, **extra)
         return fields.TextAreaField(**field_args)
@@ -385,10 +412,12 @@ class AdminModelConverter(ModelConverterBase):
         unsigned = getattr(column.type, 'unsigned', False)
         if unsigned:
             field_args['validators'].append(validators.NumberRange(min=0, message=_(u"this field must bigger than 0")))
+
         class MyIntegerField(fields.IntegerField):
             def __call__(self, **kwargs):
                 kwargs['type'] = 'number'
                 return super(MyIntegerField, self).__call__(**kwargs)
+
         return MyIntegerField(**field_args)
         #return fields.IntegerField(**field_args)
 
@@ -401,7 +430,8 @@ class AdminModelConverter(ModelConverterBase):
 
     @converts('databases.mysql.MSYear')
     def conv_MSYear(self, field_args, **extra):
-        field_args['validators'].append(validators.NumberRange(min=1901, max=2155, message=_(u"this field must between 1901 and 2155")))
+        field_args['validators'].append(
+            validators.NumberRange(min=1901, max=2155, message=_(u"this field must between 1901 and 2155")))
         return fields.TextField(**field_args)
 
     @converts('databases.postgres.PGInet', 'dialects.postgresql.base.INET')
@@ -500,7 +530,8 @@ def get_form(model, converter,
         # Filter properties while maintaining property order in 'only' list
         properties = []
         for x in only:
-            if isinstance(x, InputColumnSpec) or (isinstance(x, PlaceHolderColumnSpec) and x.as_input):
+            if isinstance(x, InputColumnSpec) or isinstance(x, FileColumnSpec) or (
+                    isinstance(x, PlaceHolderColumnSpec) and x.as_input):
                 properties.append((x.col_name, find(x.col_name), x))
             else:
                 properties.append((x, find(x), None))
@@ -514,11 +545,12 @@ def get_form(model, converter,
             continue
         field = converter.convert(model, mapper, prop, field_args.get(name), hidden_pk, col_spec)
         if field is not None:
-            if col_spec and not isinstance(col_spec, PlaceHolderColumnSpec) and col_spec.read_only:
+            if col_spec and not isinstance(col_spec, PlaceHolderColumnSpec) and getattr(col_spec, "read_only", None):
                 field = make_disabled_field(field)
             field_dict[name] = field
 
     return type(model.__name__ + 'Form', (base_class, ), field_dict)
+
 
 class InlineModelConverterBase(object):
     def __init__(self, view):

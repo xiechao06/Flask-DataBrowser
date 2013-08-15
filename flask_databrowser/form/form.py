@@ -1,7 +1,7 @@
 import time
 import datetime
 
-from wtforms import fields, widgets
+from wtforms import fields, widgets, FileField
 from flask.globals import _request_ctx_stack
 from flask.ext import wtf
 from flask.ext.babel import gettext, ngettext
@@ -19,6 +19,21 @@ class BaseForm(wtf.Form):
             super(BaseForm, self).__init__(obj=obj, prefix=prefix, **kwargs)
 
         self._obj = obj
+
+    @property
+    def has_file_field(self):
+        for f in self:
+            if f.name.startswith("_"):
+                continue
+            if isinstance(f, FileField):
+                return True
+            else:
+                try:
+                    if f.form.has_file_field:
+                        return True
+                except AttributeError:
+                    continue
+            return False
 
 
 class TimeField(fields.Field):

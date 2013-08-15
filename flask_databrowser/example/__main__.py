@@ -4,11 +4,12 @@
 @version: $
 """
 
-from flask import redirect, Blueprint, request, abort
+from flask import redirect, Blueprint, request, abort, url_for, send_from_directory
 from flask.ext.login import LoginManager
 from flask.ext.principal import Permission, RoleNeed, PermissionDenied
 from flask.ext.databrowser import filters
 from collections import OrderedDict
+from flask.ext.databrowser.column_spec import FileColumnSpec
 
 admin_permission = Permission(RoleNeed("Admin"))
 
@@ -63,8 +64,16 @@ def main():
                     self.obj = obj
                     self.foo = 1
 
+                @property
+                def pic_url(self):
+                    if self.pic_path:
+                        return url_for("serv_pic", filename=self.pic_path)
+                    else:
+                        return ""
+
                 def __getattr__(self, attr):
                     return getattr(self.obj, attr)
+
             return _Proxy(obj)
 
         def repr_obj(self, obj):
@@ -105,6 +114,11 @@ def main():
             TableColumnSpec("dogs", css_class="table table-striped table-hover table-condensed table-bordered"),
             InputColumnSpec("car_list", css_class="alert alert-info", group_by=lambda x: x.model[0]),
             # "car_list"
+        ]
+
+        __form_columns__[u"头像"] = [
+            ImageColumnSpec("pic_url", label=u"头像"),
+            FileColumnSpec("pic_path", label=u"上传")
         ]
 
         __batch_form_columns__ = OrderedDict()
@@ -210,8 +224,14 @@ def main():
     @app.route("/")
     def index():
         return redirect(user_model_view.url_for_list())
+    
+    @app.route("/serv-pic/<filename>")
+    def serv_pic(filename):
+        return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
     app.config["SECRET_KEY"] = "JHdkj1;"
     app.config["CSRF_ENABLED"] = False
+    app.config["UPLOAD_FOLDER"] = r"e:\uploads"
     app.run(debug=True, port=5001, host="0.0.0.0")
 
 if __name__ == "__main__":

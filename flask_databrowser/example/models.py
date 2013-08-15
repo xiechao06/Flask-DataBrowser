@@ -2,6 +2,7 @@
 from datetime import datetime
 from basemain import db
 
+
 class User(db.Model):
     __tablename__ = "TB_USER"
 
@@ -14,6 +15,7 @@ class User(db.Model):
     roll_called = db.Column(db.Boolean, default=False)
     age = db.Column(db.Integer, default=24)
     birthday = db.Column(db.Date, default=datetime.today().date())
+    pic_path = db.Column(db.String(32))
 
     def __unicode__(self):
         return self.name
@@ -35,6 +37,7 @@ class User(db.Model):
     @property
     def dogs(self):
         from collections import namedtuple
+
         Dog = namedtuple("Dog", ["name", "color", "age"])
         a = Dog("a", "red", 1)
         b = Dog("b", "black", 2)
@@ -53,6 +56,7 @@ class Group(db.Model):
     def __repr__(self):
         return unicode(self).encode("utf-8")
 
+
 class Car(db.Model):
     __tablename__ = "TB_CAR"
 
@@ -64,8 +68,8 @@ class Car(db.Model):
     def __unicode__(self):
         return self.model
 
-class Log(db.Model):
 
+class Log(db.Model):
     __tablename__ = "TB_LOG"
 
     id = db.Column(db.Integer, primary_key=True)
