@@ -8,7 +8,7 @@ INPUT = 6   # this is a special column type, the actual input type is determined
             # by the column's type
 PLACE_HOLDER = 7
 SELECT = 8
-
+FILE = 9
 
 class ColumnSpec(object):
 
@@ -121,3 +121,9 @@ class SelectColumnSpec(ColumnSpec):
         self.read_only = read_only
         self.validators = validators or []
         self.choices = choices or []
+
+
+class FileColumnSpec(ColumnSpec):
+    def __init__(self, col_name, label, validators=None):
+        super(FileColumnSpec, self).__init__(col_name, genre=FILE, label=label)
+        self.validators = validators or []
