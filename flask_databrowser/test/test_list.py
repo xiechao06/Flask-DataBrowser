@@ -136,7 +136,7 @@ class TestList(BaseTest):
                 assert len(d("[type=checkbox]")) == 0
                 assert len(d("#batch-edit")) == 0
 
-    def test_unbatchabled(self):
+    def test_unbatchabled_2(self):
         class UserModelView(ModelView):
             can_batchly_edit = False
             __customized_actions__ = [action.DeleteAction()]
