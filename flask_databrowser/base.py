@@ -848,8 +848,7 @@ class ModelView(object):
         if form.is_submitted():
             # alas! something wrong
             resp = make_response(resp, 403)
-            # resp.headers["Warning"] = u"&".join([k + u"-" + u"; ".join(v) for k, v in form.errors.items()]).encode("utf-8")
-            print form.errors
+            resp.headers["Warning"] = u"&".join([k + u"-" + u"; ".join(v) for k, v in form.errors.items()]).encode("utf-8")
         return resp
 
     def get_create_help(self):
