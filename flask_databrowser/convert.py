@@ -65,7 +65,7 @@ class ValueConverter(object):
         elif col_spec.genre == column_spec.PLACE_HOLDER:
             options = []
             try:
-                col_def = operator.attrgetter(col_spec.col_name)(self.obj.__class__)
+                col_def = operator.attrgetter(col_spec.col_name)(self.model_view.model)
                 options = [o for o in col_spec.filter_(self.model_view.session.query(col_def.property.mapper.class_))]
             except AttributeError:
                 pass
