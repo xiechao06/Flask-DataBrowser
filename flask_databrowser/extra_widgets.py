@@ -159,8 +159,9 @@ class ListWidget(object):
             uuid_ = uuid.uuid1()
             if self.rows:
                 html = ['<div class="accordion">',
-                        '<a href="#" data-target="#%s" data-toggle="collapse">%d</a>' % (uuid_, len(self.rows)),
-                        '<i class="icon-chevron-down"></i>',
+                        '<a href="#" data-target="#%s" data-toggle="collapse">%d<i '
+                        'class="icon-chevron-down"></i></a>' % (
+                        uuid_, len(self.rows)),
                         '<div id="%s" class="collapse in" data-builtin="true">\n<div class="accordion-inner">' % uuid_]
                 #html += ['<a href="#" data-target="#%s" data-toggle="collapse">%d</a>' % (uuid_, len(self.rows))]
                 for row in self.rows:
