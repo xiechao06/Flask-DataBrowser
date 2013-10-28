@@ -40,7 +40,7 @@ form.search-form a.clear i {
 }
 
 .filter-row input {
-    margin-bottom: 0px;
+    margin-bottom: 0;
     width: 208px;
 }
 
@@ -77,20 +77,6 @@ ul.select2-choices {
     border-radius: 5px; /* css 3标准 */
     -moz-border-radius: 5px; /* mozilla */
     -webkit-border-radius: 5px; /* webkit */
-}
-
-.controls span.control-text {
-    float: left;
-    padding-top: 5px;
-}
-
-.controls a.control-text {
-    float: left;
-    padding-top: 5px;
-}
-
-legend {
-    margin-bottom: 0px;
 }
 
 [data-role="trivial-control-group"] {
@@ -133,7 +119,8 @@ table td .accordion-inner {
 }
 
 body {
-    padding-bottom: 30px;
+    padding-top: 10px;
+    padding-bottom: 70px;
 }
 
 /*#main-form .nav-stacked li {*/
@@ -149,23 +136,23 @@ body {
     min-width: 60%;
 }
 
-#list-table-body li a {
+#list-table-body a.list-group-item {
     font-size: 1.5em;
     text-decoration: none;
-    padding: 0px;
+    padding: 0;
 }
 
-#list-table-body li i {
+#list-table-body i {
     padding: 20px 20px;
     display: inline-block;
 }
 
 #footer-action-bar {
-    margin-left: 0px;
-    margin-right: 0px;
+    margin-left: 0;
+    margin-right: 0;
 }
 
-@media only screen and (max-width:400px) {
+@media only screen and (max-width: 400px) {
     #footer-action-bar {
         position: fixed;
     }
@@ -197,12 +184,16 @@ body {
     margin-bottom: 5px;
 }
 
-.controls .icon-check-empty {
-    color: #DCE4EC;
+
+.fa-square-o {
     cursor: pointer;
 }
 
-.icon-check {
-    color: #1abc9c;
+.fa-check-square-o {
     cursor: pointer;
+}
+
+.checkbox .disabled{
+    cursor: not-allowed;
+    color: #808080;
 }

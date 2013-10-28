@@ -1,514 +1,573 @@
 {% extends "__data_browser__/layout.html" %}
 
-{% block __data_browser__builtin_head_block %}
-<script>
-  $(function(){
-    {% if g.request_from_mobile %}
-    // tap to show tooltip 
-    $$("input[name=action]:disabled").tap(function (e) {
-      $($$(this)[0]).tooltip('toggle');
-    });
-    $$(".pagination .disabled a").tap(function (e) {
-      $($$(this)[0]).tooltip('toggle');
-    });
-    $$("body").swipeRight(function (e) {
-      var e = $(".pagination .previous a");
-      var target_url = e.attr('href');
-      if (target_url == "#") {
-        var msg = "{{ _('no previous page!') }}";
-        $.pnotify({
-          text: msg,
-          icon: false,
-          stack: false,
-          delay: 2,
-          history: false,
-          before_open: function(pnotify) {
-            // Position this notice in the center of the screen.
-            pnotify.css({
+{% macro mobile_javascript() %}
+  <script>
+    $(function () {
+      // tap to show tooltip
+      $$("input[name=action]:disabled").tap(function (e) {
+        $($$(this)[0]).tooltip('toggle');
+      });
+      $$(".pagination .disabled a").tap(function (e) {
+        $($$(this)[0]).tooltip('toggle');
+      });
+      $$("body").swipeRight(function (e) {
+        var e = $(".pagination .previous a");
+        var target_url = e.attr('href');
+        if (target_url == "#") {
+          var msg = "{{ _('no previous page!') }}";
+          $.pnotify({
+            text: msg,
+            icon: false,
+            stack: false,
+            delay: 2,
+            history: false,
+            before_open: function (pnotify) {
+              // Position this notice in the center of the screen.
+              pnotify.css({
                 "top": ($(window).height() / 2) - (pnotify.height() / 2),
                 "left": ($(window).width() / 2) - (pnotify.width() / 2)
-            });
-          }
-        });
-      } else {
-        window.location = $(".pagination .previous a").attr("href"); 
-      }
-    });
-    $$("body").swipeLeft(function (e) {
-      var e = $(".pagination .next a");
-      var target_url = e.attr('href');
-      if (target_url == "#") {
-        $.pnotify({
-          text: "{{ _('no more page!') }}",
-          icon: false,
-          stack: false,
-          delay: 2,
-          history: false,
-          before_open: function(pnotify) {
-            // Position this notice in the center of the screen.
-            pnotify.css({
+              });
+            }
+          });
+        } else {
+          window.location = $(".pagination .previous a").attr("href");
+        }
+      });
+      $$("body").swipeLeft(function (e) {
+        var e = $(".pagination .next a");
+        var target_url = e.attr('href');
+        if (target_url == "#") {
+          $.pnotify({
+            text: "{{ _('no more page!') }}",
+            icon: false,
+            stack: false,
+            delay: 2,
+            history: false,
+            before_open: function (pnotify) {
+              // Position this notice in the center of the screen.
+              pnotify.css({
                 "top": ($(window).height() / 2) - (pnotify.height() / 2),
                 "left": ($(window).width() / 2) - (pnotify.width() / 2)
-            });
-          }
-        });
-      } else {
-        window.location = $(".pagination .next a").attr("href"); 
-      }
-    });
+              });
+            }
+          });
+        } else {
+          window.location = $(".pagination .next a").attr("href");
+        }
+      });
       {% if model_view.can_batchly_edit %}
         $("#list-table-body input[type=checkbox]").hide();
       {% elif __actions__ %}
         $("#list-table-body input[type=radio]").hide();
       {% endif %}
-    // use bigger checkbox or radio
-    $("#list-table-body li a i").click(function (e) {
-      var e = $(this).next();
-      var checked = e[0].checked;
-      e.attr("checked", !checked);
-      if (e.attr("checked") == "checked") {
-        {% if model_view.can_batchly_edit %}
-          $(this).attr("class", "icon-check icon-large");
-        {% elif __actions__ %}
-          $(this).attr("class", "icon-circle icon-large");
-        {% endif %}
+      // use bigger checkbox or radio
+      $("#list-table-body a i").click(function (e) {
+        var e = $(this).next();
+        e.prop("checked", !e.prop("checked"));
+        if (e.prop("checked")) {
+        $(this).parent("a").addClass("active");
+          {% if model_view.can_batchly_edit %}
+            $(this).removeClass("fa-square-o").addClass("fa-check-square-o");
+          {% elif __actions__ %}
+            $(this).attr("class", "fa fa-circle-o fa-lg");
+          {% endif %}
         } else {
-        {% if model_view.can_batchly_edit %}
-          $(this).attr("class", "icon-check-empty icon-large");
-        {% elif __actions__ %}
-          $(this).attr("class", "icon-circle-blank icon-large");
-        {% endif %}
-      }
-      return false;
+          $(this).parent("a").removeClass("active");
+          {% if model_view.can_batchly_edit %}
+            $(this).removeClass("fa-check-square-o").addClass("fa-square-o");
+          {% elif __actions__ %}
+            $(this).attr("class", "icon-circle-blank icon-large");
+          {% endif %}
+        }
+        return false;
+      });
     });
-    {% endif %}
-    var e = $("#footer-action-bar");
-    if (e.find(".action-list").children().length == 0) {
-      e.hide();
-    }
-    $("select").select2();
-    $(".collapse[data-builtin=true]").collapse().on("show", function () {
-      $(this).prev().find("i").attr("class", "icon-chevron-up")
+  </script>
+{% endmacro %}
+{% block __data_browser__builtin_head_block %}
+  {% if g.request_from_mobile %}
+    {{ mobile_javascript() }}
+  {% endif %}
+  <script>
+    $(function () {
+      $(".collapse[data-builtin=true]").collapse().on("show",function () {
+        $(this).prev().find("i").attr("class", "fa fa-chevron-up")
       }).on("hide", function () {
-      $(this).prev().find("i").attr("class", "icon-chevron-down")
-    });
-    $('input[data-role="date"]').datetimepicker({format:"yyyy-mm-dd", minView:"month", autoclose:true, language:"zh-CN", pickerPosition:"bottom-left"});
-    $('input[data-role="datetime"]').datetimepicker({format:"yyyy-mm-dd hh:ii", autoclose:true, language:"zh-CN", minuteStep:1, pickerPosition:"bottom-left"});
-    $('#batch-edit').click(function () {
-      window.location = "{{__object_url__}}" + "/" + $.map($("#list-table-body input:checked"), function (e) { return $(e).val() }).join() + "?url=" + encodeURIComponent(window.location);
-      return false;
-    })
-    {% for filter in __filters__ %}
-    var filter_values = {% if filter.value is none %}null;{% else %}{{ filter.value|tojson|safe }};{%endif%}
-    {% if filter.multiple %}
-    $("[name='{{ filter.op.id }}']").val(filter_values).trigger("change");
-    {% else %}
-    $("[name='{{ filter.op.id }}']").each(function(idx, val) {
-      var val = filter_values
-      if ($.isArray(filter_values)){
-        val = filter_values[idx]
-      }
-      {% if filter.input_type[0] == 'checkbox' %}
-        {% if filter.value %}
-        $(this).prev().attr("checked", "true");
-        $(this).val(val).trigger("change");
+            $(this).prev().find("i").attr("class", "fa fa-chevron-down")
+          });
+      $('input[data-role="date"]').datetimepicker({format: "yyyy-mm-dd", minView: "month", autoclose: true, language: "zh-CN", pickerPosition: "bottom-left"});
+      $('input[data-role="datetime"]').datetimepicker({format: "yyyy-mm-dd hh:ii", autoclose: true, language: "zh-CN", minuteStep: 1, pickerPosition: "bottom-left"});
+      $('#batch-edit').click(function () {
+        var checked = $("#list-table-body input:checked");
+        if (checked.length < 1) {
+          alert("{{ _("please choose one item!") }}");
+          return false;
+        }
+        window.location = "{{__object_url__}}" + "/" + $.map(checked,function (e) {
+          return $(e).val()
+        }).join() + "?url=" + encodeURIComponent(window.location);
+        return false;
+      });
+      {% for filter in __filters__ %}
+        var filter_values = {% if filter.value is none %}null;{% else %}{{ filter.value|tojson|safe }};{%endif%}
+        {% if filter.multiple %}
+          $("[name='{{ filter.op.id }}']").val(filter_values).trigger("change");
+        {% else %}
+          $("[name='{{ filter.op.id }}']").each(function (idx, val) {
+            var val = filter_values
+            if ($.isArray(filter_values)) {
+              val = filter_values[idx]
+            }
+            {% if filter.input_type[0] == 'checkbox' %}
+              {% if filter.value %}
+                $(this).prev().attr("checked", "true");
+                $(this).val(val).trigger("change");
+              {% endif %}
+            {% else %}
+              $(this).val(val).trigger("change");
+            {% endif %}
+          });
         {% endif %}
-      {% else %}
-        $(this).val(val).trigger("change");
+      {% endfor %}
+      $("#filter input[type='checkbox']").change(function (e) {
+        var e = $($(this).attr("data-for"));
+        if ($(this).attr("checked") == "checked") {
+          e.val(1)
+        } else {
+          e.val(0)
+        }
+      });
+      $("input[name=rowtoggle]").click(function () {
+        $("#list-table-body input[type=checkbox]").prop("checked", this.checked);
+        $("input[name=rowtoggle]").prop("checked", this.checked);
+      });
+      $("#main-form [name=__action__]").click(function () {
+        var list_val = "";
+        $("#list-table-body :checked").each(function () {
+          list_val += $(this).val() + ",";
+        });
+        if (list_val == "") {
+          alert("{{ _("please choose one item!") }}");
+          return false;
+        }
+        if ($(this).val() == "{{ _('batch edit') }}") {
+          $("#main-form").attr("method", "GET").attr("action", "{{ __object_url__ }}/" + list_val);
+          return true;
+        }
+        if ($(this).attr("data-direct") == "True") {
+          return true;
+        }
+        var hint = sprintf("{{ _("Are you sure to %%s the selected item(s)?") }}", $(this).val());
+        var warn = $(this).attr("data-warn");
+        if (warn.length > 0) {
+          hint += "\n\n\n  - " + '{{ _("Attention!") }}' + ' ' + warn;
+        }
+        return confirm(hint);
+      });
+      $("#reset-button").click(function (evt) {
+        evt.preventDefault();
+        $("select").select2("val", "");
+        $(this).closest('form').get(0).reset();
+        $("#filter input[type='checkbox']").trigger("change");
+      });
+      {% if __rows_action_desc__ %}
+        var rows_action_desc = {{ __rows_action_desc__|tojson|safe }};
+        // row -> (name: row.name, actions: action_name-> forbidden_code)
+        var actions = {{ __action_2_forbidden_message_formats__ | tojson | safe }}; // action_name -> ()
+
+        function actions_status() {
+          var action_2_rows = {}; // action -> (forbidden_code -> [rows])
+          $("#list-table-body input:checked").each(function () {
+            var model_repr = rows_action_desc[$(this).val()].name;
+            var action_2_forbidden_code = rows_action_desc[$(this).val()].actions;
+            for (var action_name in action_2_forbidden_code) {
+              var forbidden_code = action_2_forbidden_code[action_name];
+              if (forbidden_code == 0) {
+                continue;
+              }
+              if (!(action_name in action_2_rows)) {
+                action_2_rows[action_name] = [];
+              }
+              if (!(forbidden_code in action_2_rows[action_name])) {
+                action_2_rows[action_name][forbidden_code] = [];
+              }
+              action_2_rows[action_name][forbidden_code].push(model_repr);
+            }
+          });
+          $("[name=__action__]").each(function () {
+            var tooltip = "";
+            if ($(this).val() in action_2_rows) {
+              $(this).attr("disabled", true);
+              var forbidden_code_2_rows = action_2_rows[$(this).val()];
+              for (var forbidden_code in forbidden_code_2_rows) {
+                var rows = forbidden_code_2_rows[forbidden_code];
+                var format = actions[$(this).val()][forbidden_code];
+                if (format == undefined) {
+                  format = actions[$(this).val()][-1];
+                }
+                tooltip += sprintf(format, rows.toString()) + '\n';
+              }
+              tooltip = tooltip.substr(0, tooltip.length - 1);
+            } else {
+              $(this).attr("disabled", false);
+            }
+            $(this).attr("title", tooltip);
+          });
+        }
+        $("#list-table-body input").click(actions_status);
+        actions_status();
       {% endif %}
     });
-    {% endif %}
-    {% endfor %}
-    $("#filter input[type='checkbox']").change(function (e) {
-      var e = $($(this).attr("data-for"));
-      if ($(this).attr("checked") == "checked") {
-        e.val(1) 
-      }else {
-        e.val(0)
-      }
-    });
-    $("input[name=rowtoggle]").click(function () {
-      $("#list-table-body input[type=checkbox]").attr("checked", this.checked);
-      $("input[name=rowtoggle]").attr("checked", this.checked);
-    });
-    $("#main-form .action-list [name=__action__]").click(function(){
-      var list_val = "";
-      $("#list-table-body input:checked").each(function(){
-        list_val += $(this).val() +",";
-      });
-      if (list_val == ""){
-        alert("{{ _("please choose one item!") }}");
-        return false;
-      }
-      if ($(this).val() == "{{ _('batch edit') }}"){
-        $("#main-form").attr("method", "GET").attr("action", "{{ __object_url__ }}/"+ list_val);
-        return true;
-      }
-      if ($(this).attr("data-direct") == "True"){
-        return true;
-      }
-      var hint = sprintf("{{ _("Are you sure to %%s the selected item(s)?") }}", $(this).val());
-      var warn = $(this).attr("data-warn");
-      if (warn.length > 0) {
-        hint += "\n\n\n  - "+ '{{ _("Attention!") }}' + ' ' + warn;
-      }
-      return confirm(hint);
-    });
-    $("#reset-button").click(function(evt){
-      evt.preventDefault();
-      $("select").select2("val","");
-      $(this).closest('form').get(0).reset();
-      $("#filter input[type='checkbox']").trigger("change");
-    });
-    {% if __rows_action_desc__ %}
-    var rows_action_desc = {{ __rows_action_desc__|tojson|safe }}; // row -> (name: row.name, actions: action_name-> forbidden_code)
-    var actions = {{ __action_2_forbidden_message_formats__ | tojson | safe }}; // action_name -> ()
-
-    function actions_status() {
-      var action_2_rows = {}; // action -> (forbidden_code -> [rows])
-      $("#list-table-body input:checked").each(function () {
-        var model_repr = rows_action_desc[$(this).val()].name;
-        var action_2_forbidden_code = rows_action_desc[$(this).val()].actions;
-        for (var action_name in action_2_forbidden_code) {
-          var forbidden_code = action_2_forbidden_code[action_name];
-          if (forbidden_code == 0) {
-            continue;
-          }
-          if (!(action_name in action_2_rows)) {
-            action_2_rows[action_name] = [];
-          }
-          if (!(forbidden_code in action_2_rows[action_name])) {
-            action_2_rows[action_name][forbidden_code] = [];
-          }
-          action_2_rows[action_name][forbidden_code].push(model_repr);
-        }
-      });
-      $("[name=__action__]").each(function () {
-        var tooltip = "";
-        if ($(this).val() in action_2_rows) {
-          $(this).attr("disabled", true);
-          var forbidden_code_2_rows = action_2_rows[$(this).val()];
-          for (var forbidden_code in forbidden_code_2_rows) {
-            var rows = forbidden_code_2_rows[forbidden_code];
-            var format = actions[$(this).val()][forbidden_code];
-            if (format == undefined) {
-              format = actions[$(this).val()][-1];
-            }
-            tooltip += sprintf(format, rows.toString()) + '\n';
-          }
-          tooltip = tooltip.substr(0, tooltip.length-1);
-          } else {
-          $(this).attr("disabled", false);
-        }
-        $(this).attr("title", tooltip);
-      });
-    }
-
-    $("#list-table-body input").click(actions_status);
-    actions_status();
-    {% endif %}
-  });
-</script>
+  </script>
 {% endblock __data_browser__builtin_head_block %}
 
 {% block body %}
-<div class="container-fluid">
-  <div class="row-fluid">
+  <div class="row">
     {% block lists %}
-    <form id="main-form" method="POST" class={% if __filters__ %}"span10"{% endif %}>
-      {% block header_action_bar %}
-      {{ render_header_action_bar() }}
-      {% endblock header_action_bar %} 
+      <form id="main-form" method="POST" class={% if __filters__ %}"col-md-10"{% endif %} role="form">
+        {% block header_action_bar %}
+          {{ render_header_action_bar() }}
+        {% endblock header_action_bar %}
 
-      {% block __data_browser__hint_block %}{% endblock %}
+        {% block __data_browser__hint_block %}{% endblock %}
 
-      {% if __data__ %}
-        {% if g.request_from_mobile %}
-          {{ render_list() }}
-        {% else %} {# not from mobile #}
-          {{ render_table() }}
+        {% if __data__ %}
+          {% if g.request_from_mobile %}
+            {{ render_list() }}
+          {% else %} {# not from mobile #}
+            {{ render_table() }}
+          {% endif %}
+          {% block actions %}
+            {{ render_footer_action_bar() }}
+          {% endblock actions %}
+          {% from "__data_browser__/macro.html" import render_pagination %}
+          {{ render_pagination(__pagination__, __count__, g.request_from_mobile) }}
+        {% else %}
+          <p class="text-error">{{ _("no results matched!") }}</p>
         {% endif %}
-        {% from "__data_browser__/macro.html" import render_pagination %}
-        {{ render_pagination(__pagination__, __count__, g.request_from_mobile) }}
-        {% block actions %}
-          {{ render_footer_action_bar() }}
-        {% endblock actions %}               
-      {% else %} 
-        <p class="text-error">{{ _("no results matched!") }}</p>
-      {% endif %}
-    </form>
+      </form>
     {% endblock lists %}
 
-    <div class="span2">
+    <div class="col-md-2">
       {% block filters %}
         {{ render_filter() }}
       {% endblock filters %}
     </div>
   </div>
-</div>
 {% endblock body %}
 
-{% macro render_header_action_bar() %}
-  {% if g.request_from_mobile %}
-    <div id="header-action-bar" class="navbar alert alert-info" >
-      {% if __can_create__ %}
-      <a class="btn btn-success btn-large" href="{{ "?url=".join([__object_url__, request.url|urlencode]) }}">
-        <span class="add-on icon-plus"></span>
-      </a>
-      {% endif %}                     
-      {% if help_message %}
-      {# TODO bootstrap has something wrong with modal on mobile device #}
-      <div class="pull-right visible-desktop">
-        <a href="#" data-toggle="modal" data-target="#help-modal" data-role="help-link">
-          <strong class="text-success">{{ _("help") }}</strong>
-          <i class="icon-question-sign"></i>
-        </a>
-      </div>
-      {% endif %} 
-      <a class="btn btn-info btn-large" href="#filter" role="button" data-toggle="modal">
-        <i class="icon-filter"></i>
-      </a>                     
-      <span class="muted">
-        <strong>{{ _("totally: %(count)d", count=__count__) }}</strong>
-      </span>
-    </div>
-  {% else %} {# not from mobile #}
-    {% if __can_create__ %}
-    <a id="create-btn" class="btn btn-success" href="{{ "?url=".join([__object_url__, request.url|urlencode]) }}" >
-      <span class="add-on icon-plus"></span>
-      {{ _("create") + ' ' + model_view.model_name }}
+{% macro display_help_message_link() %}
+  <div class="pull-right">
+    <a href="#help-modal" data-toggle="modal" class="success" data-role="help-link" data-target="#help-modal">
+      <i class="fa fa-question-circle"></i>
+      <strong>{{ _("help") }}</strong>
     </a>
-    {% endif %}
-    {% if help_message %}
-    <div class="pull-right">
-      <a href="#" data-toggle="modal" data-target="#help-modal" data-role="help-link">
-        <strong class="text-success">{{ _("help") }}</strong>
-        <i class="icon-question-sign"></i>
-      </a>
-    </div>
-    {% endif %}
-  {% endif %}
-  <div id="help-modal" class="modal hide fade" tabindex="-1">
-    <div class="modal-header">
-      <h3>{{ _("Help") }}</h3>
-    </div>
-    <div class="modal-body">
-      {{ help_message|safe }}
-    </div>
-    <div class="modal-footer">
-      <button class="btn" data-dismiss="modal" aria-hidden="true">{{ _("close") }}</button>
+  </div>
+  {% endmacro %}
+{% macro display_help_message_div() %}
+  <div id="help-modal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+          <h4 class="modal-title">{{ _("Help") }}</h4>
+        </div>
+        <div class="modal-body">
+          {{ help_message|safe }}
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-default" data-dismiss="modal" type="button">{{ _("close") }}</button>
+        </div>
+      </div>
     </div>
   </div>
 {% endmacro %}
 
+{% macro mobile_header_action_bar() %}
+  <div id="header-action-bar" class="navbar alert alert-info">
+    {% if __can_create__ %}
+      <a class="btn btn-success btn-large" href="{{ "?url=".join([__object_url__, request.url|urlencode]) }}">
+        <span class="add-on fa fa-plus"></span>
+      </a>
+    {% endif %}
+    {% if __filters__ %}
+      <a class="btn btn-info btn-large" href="#filter" role="button" data-toggle="modal">
+        <i class="fa fa-filter"></i>
+      </a>
+    {% endif %}
+    {% if help_message %}
+      {{ display_help_message_link() }}
+    {% endif %}
+    <strong class="text-muted">
+      {{ gettext("totally: %(count)d", count=__count__) }}
+    </strong>
+  </div>
+{% endmacro %}
+{% macro desktop_header_action_bar() %}
+  {% if __can_create__ %}
+      <a id="create-btn" class="btn btn-success" href="{{ "?url=".join([__object_url__, request.url|urlencode]) }}">
+        <span class="fa fa-plus"></span>
+        {{ _("create") + ' ' + model_view.model_name }}
+      </a>
+    {% endif %}
+    {% if help_message %}
+      {{ display_help_message_link() }}
+    {% endif %}
+{% endmacro %}
+
+{% macro render_header_action_bar() %}
+  {% if g.request_from_mobile %}
+    {{ mobile_header_action_bar() }}
+  {% else %} {# not from mobile #}
+    {{ desktop_header_action_bar() }}
+  {% endif %}
+  {% if help_message %}
+    {{ display_help_message_div() }}
+  {% endif %}
+{% endmacro %}
+
 {% macro render_list() %}
-<ul id="list-table-body" class="nav nav-tabs nav-stacked">
-  {% for row in __data__ %}
-  <li>
-    <a href="{{ model_view.url_for_object(row.obj, url=request.url, cdx=loop.index) }}">
-      {% if model_view.can_batchly_edit %}
-        <i class="icon-check-empty icon-large"></i>
-        <input type="checkbox" value="{{ row.pk }}" name="selected-ids" id="checkbox-{{ row.pk }}"/>
-      {% elif __actions__ %}
-        <i class="icon-circle-blank icon-large"></i>
-        <input type="radio" value="{{ row.pk }}" name="selected-ids" id="checkbox-{{ row.pk }}"/>
+  <ul id="list-table-body" class="list-group">
+    {% for row in __data__ %}
+      <a class="list-group-item" href="{{ model_view.url_for_object(row.obj, url=request.url, cdx=loop.index) }}">
+        {% if model_view.can_batchly_edit %}
+          <i class="fa fa-square-o fa-lg"></i>
+          <input type="checkbox" value="{{ row.pk }}" name="selected-ids" id="checkbox-{{ row.pk }}"/>
+        {% elif __actions__ %}
+          <i class="icon-circle-blank icon-large"></i>
+          <input type="radio" value="{{ row.pk }}" name="selected-ids" id="checkbox-{{ row.pk }}"/>
         {% else %}
-        <i class="icon-link icon-large hidden"></i>
-      {% endif %}
-      {{ row.repr_|safe }}
-    </a>
-  </li>
-  {% endfor %}
-</ul>
+          <i class="icon-link icon-large hidden"></i>
+        {% endif %}
+        {{ row.repr_|safe }}
+      </a>
+    {% endfor %}
+  </ul>
 {% endmacro %}
 
 {% macro render_table() %}
-<table id="list-table" class="{{ __css_classes__.list_table_class }}">
-  <thead>
+  <table id="list-table" class="{{ __css_classes__.list_table_class }}">
+    <thead>
     <tr>
       {% if model_view.can_batchly_edit %}
-        <th class="span1"><input type="checkbox" name="rowtoggle"/></th>
+        <th><input type="checkbox" name="rowtoggle"/></th>
       {% elif __actions__ %}
         <th></th>
       {% endif %}
       {% for c in __list_columns__ %}
-      <th title={% if c.doc %} {{c.doc}} {% endif %}>
-        {% if c.sort_url %}
-        <a href="{{ c.sort_url }}">
-          {{ c.label }}
-          {% if __order_by__(c.name) %}
-          {% if __desc__ %}
-          <i class="icon-chevron-down"></i>
+        <th title={% if c.doc %} {{ c.doc }} {% endif %}>
+          {% if c.sort_url %}
+            <a href="{{ c.sort_url }}">
+              {{ c.label }}
+              {% if __order_by__(c.name) %}
+                {% if __desc__ %}
+                  <i class="fa fa-chevron-down"></i>
+                {% else %}
+                  <i class="fa fa-chevron-up"></i>
+                {% endif %}
+              {% endif %}
+            </a>
           {% else %}
-          <i class="icon-chevron-up"></i>
+            {{ c.label }}
           {% endif %}
+          {% if c.doc %}
+            <i class="fa fa-info-circle"></i>
           {% endif %}
-        </a> 
-        {% else %}
-        {{ c.label }}
-        {% endif %}
-        {% if c.doc %}
-        <i class="icon-info-sign"></i>
-        {% endif %}
-      </th>
+        </th>
       {% endfor %}
     </tr>
-  </thead>
-  <tbody id="list-table-body">
+    </thead>
+    <tbody id="list-table-body">
     {% for row in __data__ %}
-    <tr {% if row.css %}class="{{row.css}}"{% endif %} {%if row.attrs %} {%for k,v in row.attrs.items() %}{{ k }}="{{ v }}"{% endfor %}{% endif %}>
-      {% if model_view.can_batchly_edit  %}
-        <td class="span1"><input type="checkbox" value="{{ row.pk }}" name="selected-ids"/></td>
+      <tr{% if row.css %} class="{{ row.css }}" {% endif %}
+      {% if row.attrs %} {% for k,v in row.attrs.items() %}{{ k }}="{{ v }}"{% endfor %}{% endif %}>
+      {% if model_view.can_batchly_edit %}
+        <td><input type="checkbox" value="{{ row.pk }}" name="selected-ids"/></td>
       {% elif __actions__ %}
-        <td class="span1"><input type="radio" value="{{ row.pk }}" name="selected-ids"/></td>
+        <td><input type="radio" value="{{ row.pk }}" name="selected-ids"/></td>
       {% endif %}
       {% for v in row.fields %}
-      {% if v.link %}
-      <td><a href="{{ v.link }}">{{ v.value }}</a></td>
-      {% else %}
-      <td>{{ v()|safe }}</td>
+        {% if v.link %}
+          <td><a href="{{ v.link }}">{{ v.value }}</a></td>
+        {% else %}
+          <td>{{ v()|safe }}</td>
+        {% endif %}
+      {% endfor %}
+      </tr>
+    {% endfor %}
+    </tbody>
+    <tfoot>
+    <tr>
+      {% if model_view.can_batchly_edit %}
+        <th><input type="checkbox" name="rowtoggle"/></th>
+      {% elif __actions__ %}
+        <th></th>
       {% endif %}
+      {% for c in __list_columns__ %}
+        <th>
+          {{ c.label }}
+        </th>
       {% endfor %}
     </tr>
-    {% endfor %}
-  </tbody>
-  <tfoot>
-  <tr>
-    {% if model_view.can_batchly_edit %}
-      <th class="span1"><input type="checkbox" name="rowtoggle"/></th>
-    {% elif __actions__ %}
-      <th></th>
+    </tfoot>
+  </table>
+{% endmacro %}
+
+{% macro mobile_footer_action_bar() %}
+  <div id="footer-action-bar" class="navbar navbar-default navbar-fixed-bottom navbar-inverse" role="navigation">
+    {% set displayed_action = 2 %}
+    <ul class="nav navbar-nav">
+      {% if model_view.can_batchly_edit %}
+        <input id="batch-edit" type="submit" class="btn btn-info btn-lg navbar-btn" value="{{ _('batch edit') }}"/>
+      {% endif %}
+      {% for action in __actions__[:displayed_action] %}
+        <input value="{{ action.name }}" type="submit" name="__action__" class="{{ action.css_class }} btn-lg navbar-btn" data-warn="{{ action.warn_msg }}" data-direct="{{ action.direct }}"/>
+      {% endfor %}
+    </ul>
+    {% if __actions__[displayed_action:] %}
+      <div class="btn-group dropup navbar-right">
+        <button class="btn dropdown-toggle navbar-btn" data-toggle="dropdown">
+          <i class="fa fa-reorder fa-2x"></i>
+        </button>
+        <ul class="dropdown-menu pull-right" role="menu" aria-labelledby="dropdownMenu1">
+          {% for action in __actions__[displayed_action:] %}
+            <li role="presentation">
+              <input value="{{ action.name }}" type="submit" name="__action__" class="{{ action.css_class }}" data-warn="{{ action.warn_msg }}" data-direct="{{ action.direct }}"/>
+            </li>
+          {% endfor %}
+          <!-- dropdown menu links -->
+        </ul>
+      </div>
     {% endif %}
-    {% for c in __list_columns__ %}
-      <th>
-        {{ c.label }}
-      </th>
-    {% endfor %}
-  </tr>
-  </tfoot>
-</table>
+  </div>
+{% endmacro %}
+
+{% macro desktop_footer_action_bar() %}
+  <div id="footer-action-bar" class="navbar panel panel-default">
+    <div class="panel-body action-list">
+      {% block action_list %}
+        {% if model_view.can_batchly_edit %}
+          <button id="batch-edit" type="submit" class="btn btn-info">{{ _('batch edit') }}</button>
+        {% endif %}
+        {% for action in __actions__ %}
+          <button type="submit" name="__action__" class="{{ action.css_class }}" data-warn="{{ action.warn_msg }}" data-direct="{{ action.direct }}" value="{{ action.name }}">
+            {% if action.data_icon %}
+              <i class="{{ action.data_icon }}"></i>&nbsp;
+            {% endif %}
+            {{ action.name }}
+          </button>
+        {% endfor %}
+      {% endblock %}
+    </div>
+  </div>
 {% endmacro %}
 
 {% macro render_footer_action_bar() %}
-{% if g.request_from_mobile %}
-<div id="footer-action-bar" class="navbar-fixed-bottom">
-  {% set displayed_action = 3 %}
   {% if model_view.can_batchly_edit or __actions__ %}
-  {% set displayed_action = displayed_action - 1 %}
-  {% endif %}
-  <div class="navbar navbar-inverse">
-    <div class="navbar-inner">
-      <ul class="nav btn-group action-list">
-        {% if model_view.can_batchly_edit %}
-        <li>
-        <input id="batch-edit" type="submit" class="btn btn-info btn-large" value="{{ _('batch edit') }}" />
-        </li>
-        {% endif %}
-        {% for action in __actions__[:displayed_action] %}
-        <li>
-        <input value="{{action.name}}" type="submit" name="__action__" class="{{action.css_class}} btn-large" data-warn="{{action.warn_msg}}" data-direct="{{action.direct}}"/>
-        </li>
-        {% endfor %}
-      </ul>
-      {% if __actions__[displayed_action:]%}
-      <div class="btn-group dropup">
-        <button class="btn dropdown-toggle" data-toggle="dropdown">
-          <i class="icon-reorder icon-2x"></i>
-        </button>
-        <ul class="dropdown-menu pull-right">
-          {% for action in __actions__[displayed_action:] %}
-          <li>
-            <input value="{{action.name}}" type="submit" name="__action__" class="{{action.css_class}}" data-warn="{{action.warn_msg}}" data-direct="{{action.direct}}" />
-          </li>
-          {% endfor %}
-         <!-- dropdown menu links -->
-        </ul>
-      </div>
-      {% endif %}
-      <a href="#top" class="btn btn-navbar"><i class="icon-arrow-up"></i></a>
-    </div>
-  </div>
-</div>         
-{% else %}
-<div id="footer-action-bar" class="alert alert-block">
-  {% block action_list %}
-  <span class="action-list">
-    {% if model_view.can_batchly_edit %}
-      <input id="batch-edit" type="submit" class="btn btn-info" value="{{ _('batch edit') }}" />
+    {% if g.request_from_mobile %}
+      {{ mobile_footer_action_bar() }}
+    {% else %}
+      {{ desktop_footer_action_bar() }}
     {% endif %}
-    {% for action in __actions__ %}
-      <button type="submit" name="__action__" class="{{ action.css_class }}" data-warn="{{ action.warn_msg }}" data-direct="{{ action.direct }}" value="{{ action.name }}">
-        {% if action.data_icon %}
-          <i class="{{ action.data_icon }}"></i>&nbsp;
-        {% endif %}
-        {{ action.name }}
-      </button>
-    {% endfor %}
-  </span>
-  {% endblock %}
-</div>
-{% endif %}
+  {% endif %}
 {% endmacro %}
 
-{% macro render_filter() %}
-{% if __filters__ %}
-<div id="filter" class="{{ __css_classes__.filters_class }} {% if g.request_from_mobile %}modal hide fade{% endif %}">
-  {% if g.request_from_mobile %}
-  <button class="btn pull-right" type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
-  {% endif %}
-  <h4>{{ _("refine search") }}</h4>
-  <hr />
-  <form class="form-inline">
-    <fieldset class="pagination-centered">
-      {% for filter in __filters__ %}
-      {% if not filter.hidden %}
-      <div class="control-group">
+{% macro display_filters() %}
+  {% for filter in __filters__ %}
+    {% if not filter.hidden %}
+      <div class="form-group">
         {% if filter.input_type[0] == "checkbox" %}
-        <label class="checkbox">
-          <input type="checkbox" data-for="#{{ filter.op.id }}" class="{{ __css_classes__[filter.input_class] }}"/>
-          <input type="hidden" name="{{ filter.op.id }}" id="{{ filter.op.id }}"/>
-          {{ filter.label }}
-        </label>
+          <div class="checkbox">
+            <label>
+              <input type="checkbox" data-for="#{{ filter.op.id }}" class="{{ __css_classes__[filter.input_class] }}"/>
+              <input type="hidden" name="{{ filter.op.id }}" id="{{ filter.op.id }}"/>
+              {{ filter.label }}
+            </label>
+          </div>
         {% else %}
-        <label class="control-label">
-          {{ filter.label }}
-          <i>&nbsp;{{ filter.op.name }}&nbsp;&nbsp;</i>
-        </label>
-        <div class="controls">
+          <label>
+            {{ filter.label }}
+            <i>&nbsp;{{ filter.op.name }}&nbsp;&nbsp;</i>
+          </label>
           {% if filter.options %}
-          <select name="{{ filter.op.id }}" class="input-medium" {% if filter.multiple %} multiple="multiple" {% endif %}>
-            {% for opt in filter.options %}
-            <option value="{{opt[0]}}">{{ opt[1] }}</option>{% endfor %}
-          </select>
+            <select name="{{ filter.op.id }}"
+                {% if filter.multiple %} multiple="multiple" {% endif %} class="form-control">
+              {% for opt in filter.options %}
+                <option value="{{ opt[0] }}">{{ opt[1] }}</option>
+              {% endfor %}
+            </select>
           {% else %}
-          {% for input_type in filter.input_type %}
-          {% if input_type == 'date' %}
-          <input type="text" data-role="date" name="{{ filter.op.id }}" class="{{ __css_classes__[filter.input_class] }}" min=0 placeholder="{{ _("input %(label)s here", label=filter.label) }}" />
-          {% elif input_type == "datetime" %}
-          <input type="text" data-role="datetime" name="{{ filter.op.id }}" class="{{ __css_classes__[filter.input_class] }}" min=0 placeholder="{{ _("input %(label)s here", label=filter.label) }}" />
-          {% else %}
-          <input type="{{ input_type }}" name="{{ filter.op.id }}" class="{{ __css_classes__[filter.input_class] }}" placeholder="{{ _("input %(label)s here", label=filter.label) }}" />{% endif %}
-          {% if not loop.last %}
-          <div>{{ filter.sep }}</div>
+            {% for input_type in filter.input_type %}
+              <input
+                  {% if input_type == 'date' %}
+                    type="text" data-role="date"
+                  {% elif input_type == "datetime" %}
+                    type=" text" data-role="datetime"
+                  {% else %}
+                    type="{{ input_type }}"
+                  {% endif %}
+                    name="{{ filter.op.id }}" class="form-control {{ __css_classes__[filter.input_class] }}"
+                    min=0 placeholder="{{ gettext("input %(label)s here", label=filter.label) }}"/>
+              {% if not loop.last %}
+                <div class="text-center">{{ filter.sep }}</div>
+              {% endif %}
+            {% endfor %}
           {% endif %}
-          {% endfor %}
-          {% endif %}
-        </div>
         {% endif %}
       </div>
-      {% else %}
+    {% else %}
       <input type="hidden" name="{{ filter.op.id }}"/>
-      {% endif %}
-      {% endfor %}
-    </fieldset>
-    <hr />
-    <div class="control-group pagination-centered">
-      <div class="controls">
-        <input class="btn btn-primary" type="submit" value={{ _("refresh") }} />
-        <input class="btn btn-danger" type="reset" value={{ _("reset") }} id="reset-button" />
+    {% endif %}
+  {% endfor %}
+{% endmacro %}
+
+{% macro render_mobile_filter() %}
+  <div id="filter" class="modal fade" role="dialog" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+          <h4 class="modal-title">{{ _("refine search") }}</h4>
+        </div>
+        <form role="form">
+          <div class="modal-body">
+            {{ display_filters() }}
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            <input class="btn btn-danger" type="reset" value="{{ _("reset") }}" id="reset-button"/>
+            <input class="btn btn-primary" type="submit" value="{{ _("refresh") }}"/>
+          </div>
+        </form>
       </div>
     </div>
-  </form>
-</div>
-{% endif %}
+  </div>
+{% endmacro %}
+
+{% macro render_desktop_filter() %}
+  <div id="filter" class="{{ __css_classes__.filters_class }}">
+    <h4>{{ _("refine search") }}</h4>
+    <hr/>
+    <form role="form">
+      <fieldset>
+        {{ display_filters() }}
+      </fieldset>
+      <hr/>
+      <div class="form-group text-center">
+        <input class="btn btn-primary" type="submit" value="{{ _("refresh") }}"/>
+        <input class="btn btn-danger" type="reset" value="{{ _("reset") }}" id="reset-button"/>
+      </div>
+    </form>
+  </div>
+{% endmacro %}
+
+
+{% macro render_filter() %}
+  {% if __filters__ %}
+    {% if g.request_from_mobile %}
+      {{ render_mobile_filter() }}
+    {% else %}
+      {{ render_desktop_filter() }}
+    {% endif %}
+  {% endif %}
 {% endmacro %}

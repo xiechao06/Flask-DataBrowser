@@ -8,9 +8,9 @@
         * {{ hint_message }}
         {% if help_message %}
           <div class="pull-right">
-            <a href="#" data-toggle="modal" data-target="#help-modal" data-role="help-link">
+            <a href="#help-modal" data-toggle="modal">
               <strong class="text-success">{{ _("help") }}</strong>
-              <i class="icon-question-sign"></i></a></div>
+              <i class="fa fa-question-circle"></i></a></div>
         {% endif %}
       </div>
     {% endif %}
@@ -18,19 +18,22 @@
   <div class="container">
     {{ lib.render_form(form, return_url, extra, last_step, next_step, previous_steps_info) }}
 
-    <div id="help-modal" class="modal hide fade">
-      <div class="modal-header">
-        <h3>{{ _("Help") }}</h3></div>
-      <div class="modal-body">
-        {{ help_message|safe }}</div>
-      <div class="modal-footer">
-        <button class="btn" data-dismiss="modal" aria-hidden="true">{{ _("close") }}</button>
+    <div id="help-modal" class="modal fade" role="dialog" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+            <h3 class="modal-title">{{ _("Help") }}</h3></div>
+          <div class="modal-body">
+            {{ help_message|safe }}</div>
+          <div class="modal-footer">
+            <button class="btn" data-dismiss="modal" aria-hidden="true">{{ _("close") }}</button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 {% endblock %}
-
-
 
 {% block __data_browser__builtin_head_block %}
   <script type="text/javascript">
@@ -58,7 +61,7 @@
           })(grouper_e, input_e))
         }{% endif %}
       $("input[name='__action__']").click(function (ui) {
-        if($(this).attr("data-direct") == "True"){
+        if ($(this).attr("data-direct") == "True") {
           return true;
         }
         {% if h.is_batch_edit() %}
@@ -80,62 +83,90 @@
         win.focus();
         return false;
       });
-      $("[data-role=fieldset-body]").on("shown",function () {
-        $("#" + $(this).attr("id") + "_notation").attr("class", "icon-chevron-down");
-      }).on("hidden", function () {
-            $("#" + $(this).attr("id") + "_notation").attr("class", "icon-chevron-up");
+      $("[data-role=fieldset-body]").on("shown.bs.collapse",function () {
+        $("#" + $(this).attr("id") + "_notation").attr("class", "fa fa-chevron-down");
+      }).on("hidden.bs.collapse", function () {
+            $("#" + $(this).attr("id") + "_notation").attr("class", "fa fa-chevron-up");
           });
-      $("[data-role=hold_value]").click(function () {
-        if (this.checked) {
-          $(this).parent("div").children("select").select2("disable");
-          $(this).parent("div").children().not($(this)).attr("disabled", true);
-        } else {
-          $(this).parent("div").children("select").select2("enable").attr("disabled", false);
-          $(this).parent("div").children().not($(this)).attr("disabled", false);
+      $("[data-role=hold_value]").change(function () {
+        var target = $(this).parent("div").children("input").not($(this));
+        if (target.length == 0) {
+          target = $(this).parent("div").children("select").not($(this));
+          if (target.length == 0) {
+            // this is a checkbox under div.checkbox
+            target = $(this).parent("div").children(".checkbox").children("[type='checkbox']");
+            if(this.checked){
+              target.parent("div").children("li").addClass("disabled");
+            }else{
+              target.parent("div").children("li").removeClass("disabled");
+            }
+          } else {
+            // this is a select
+            if (this.checked) {
+              $(this).parent("div").children("select").select2("disable");
+            } else {
+              $(this).parent("div").children("select").select2("enable").attr("disabled", false);
+            }
+          }
         }
+        target.attr("disabled", this.checked);
       });
       {% if g.request_from_mobile %}
-        $("input[type=checkbox]").each(function(){
-          if(this.checked){
-            $(this).before('<i class="icon-check icon-2x"></i>').hide();
-          }else{
-            $(this).before('<i class="icon-check-empty icon-2x"></i>').hide();
+        $("input[type=checkbox]").each(function () {
+          var e = $("<li></li>").addClass("fa fa-2x");
+          if (this.disabled) {
+            e.addClass("disabled");
           }
-        });
-        $("i.icon-check, i.icon-check-empty").click(function () {
-          var e = $(this).next("input");
-          e.attr("checked", !e[0].checked);
-          if (e[0].checked) {
-            $(this).removeClass("icon-check-empty").addClass("icon-check");
+          if (this.checked) {
+            e.addClass("fa-check-square-o");
           } else {
-            $(this).removeClass("icon-check").addClass("icon-check-empty");
+            e.addClass("fa-square-o");
           }
+          $(this).before(e).hide();
+        }).change(function () {
+              var tar = $(this).prev("li");
+              if(tar.length==0){
+                tar = tar.parent("div").children("li");
+              }
+              if ($(this).prop("checked")) {
+                tar.removeClass("fa-square-o").addClass("fa-check-square-o");
+              } else {
+                tar.removeClass("fa-check-square-o").addClass("fa-square-o");
+              }
+            });
+
+        $("li.fa-check-square-o, li.fa-square-o").click(function () {
+          if ($(this).hasClass("disabled")) {
+            return false;
+          }
+          var e = $(this).next("input");
+          e.prop("checked", !e.prop("checked")).trigger("change");
           return false;
         });
       {% endif %}
       var checkSubmitFlag = false;
-      $("form").submit(function(){
-          if (checkSubmitFlag){
-            return false;
-          }else{
-            checkSubmitFlag = true;
-            $(this).submit();
-          }
+      $("form").submit(function () {
+        if (checkSubmitFlag) {
+          return false;
+        } else {
+          checkSubmitFlag = true;
+          $(this).submit();
+        }
       });
       $('button[data-role="next-step"]').click(function () {
-          var target = new Url($(this).attr('data-target'));
-          var inputs = $("form .control-group").find('input,select');
-          for (var i=0; i < inputs.length; ++i) {
-             var e= inputs[i];
-            if($(e).attr("name")){
-              target.query[$(e).attr('name')] = $(e).val();
-            }
+        var target = new Url($(this).attr('data-target'));
+        var inputs = $("form .control-group").find('input,select');
+        for (var i = 0; i < inputs.length; ++i) {
+          var e = inputs[i];
+          if ($(e).attr("name")) {
+            target.query[$(e).attr('name')] = $(e).val();
           }
-          var form = $(this).parents('form');
-          if (form.get(0).checkValidity()) {
-            form.attr("action", target.toString());
-            form.submit();
-          }
+        }
+        var form = $(this).parents('form');
+        if (form.get(0).checkValidity()) {
+          form.attr("action", target.toString());
+          form.submit();
+        }
       });
     });
   </script>

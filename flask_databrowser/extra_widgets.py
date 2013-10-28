@@ -4,7 +4,7 @@ extra widgets beside wtform's widgets
 """
 import operator
 import uuid
-from wtforms.widgets import HTMLString, html_params,Select
+from wtforms.widgets import HTMLString, html_params, Select
 from wtforms.compat import text_type
 from flask.ext.databrowser.column_spec import ColumnSpec
 from flask.ext.databrowser.utils import get_primary_key
@@ -18,7 +18,7 @@ class Image(object):
     # field is used here to compatiple with wtform's widgets
     def __call__(self, field, **kwargs):
         return HTMLString(
-            '<a href="%s" class="fancybox control-text" rel="group" title="%s"><img %s /></a>' % (
+            '<a href="%s" class="fancybox control-text" rel="group" title="%s"><img style="max-width:100%%"  %s /></a>' % (
                 self.src, self.alt, html_params(src=self.src, alt=self.alt, **kwargs)))
 
 
@@ -47,11 +47,11 @@ class PlainText(object):
         for i in xrange(0, len(self.s), 24):
             content.append(self.s[i:i + 24])
         if not need_trunc:
-            return HTMLString('<span %s>%s</span>' % (html_params(**kwargs), s))
+            return HTMLString('<span %s style="display:inline-block">%s</span>' % (html_params(**kwargs), s))
         else:
             return HTMLString(
-                '<span data-toggle="tooltip" data-html="true" data-placement="bottom" title="%s" %s>%s'
-                '<a href="#" >...</a></span>' % (
+                '<span style="display:inline-block" data-toggle="tooltip" data-html="true" data-placement="bottom" '
+                'title="%s" %s>%s<a href="#" >...</a></span>' % (
                     "\n".join(content), html_params(**kwargs), s))
 
 
@@ -161,7 +161,7 @@ class ListWidget(object):
                 html = ['<div class="accordion">',
                         '<a href="#" data-target="#%s" data-toggle="collapse">%d<i '
                         'class="icon-chevron-down"></i></a>' % (
-                        uuid_, len(self.rows)),
+                            uuid_, len(self.rows)),
                         '<div id="%s" class="collapse in" data-builtin="true">\n<div class="accordion-inner">' % uuid_]
                 #html += ['<a href="#" data-target="#%s" data-toggle="collapse">%d</a>' % (uuid_, len(self.rows))]
                 for row in self.rows:
@@ -187,7 +187,7 @@ class PlaceHolder(object):
 
     def __call__(self, field, **kwargs):
         from flask import render_template
-        
+
         return render_template(self.template_fname,
                                field_value=self.field_value,
                                obj=self.obj,
