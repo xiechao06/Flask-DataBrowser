@@ -1,5 +1,5 @@
 {% macro render_pagination(pagination, __count__, mobile) %}
-  <div class="hidden-lg">
+  <div class="visible-sm visible-xs">
     <ul class="pager">
       {% if not pagination.has_prev %}
         <li class="disabled previous">
@@ -36,7 +36,7 @@
   </div>
 
 
-  <div class="visible-lg text-center">
+  <div class="visible-lg visible-md text-center">
     <ul class="pagination">
       {% if not pagination.has_prev %}
         <li class="disabled previous">
