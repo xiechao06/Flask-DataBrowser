@@ -62,7 +62,7 @@
             }
           })(grouper_e, input_e))
         }{% endif %}
-      $("input[name='__action__']").click(function (ui) {
+      $("button[name='__action__']").click(function (ui) {
         if ($(this).attr("data-direct") == "True") {
           return true;
         }
@@ -75,7 +75,7 @@
       setTimeout(function () {
         $("#flash").fadeOut("slow")
       }, 3000);
-      $("input[type=reset]").click(function () {
+      $("button[type=reset]").click(function () {
         $(this).parents('form')[0].reset();
         $("[data-role=hold_value]").trigger("change");
         $("select").trigger("change");

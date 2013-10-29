@@ -17,8 +17,12 @@ class Image(object):
 
     # field is used here to compatiple with wtform's widgets
     def __call__(self, field, **kwargs):
+        if "class" in kwargs:
+            kwargs["class"] = " ".join(["img-responsive", kwargs["class"]])
+        else:
+            kwargs["class"] = "img-responsive"
         return HTMLString(
-            '<a href="%s" class="fancybox control-text" rel="group" title="%s"><img style="max-width:100%%"  %s /></a>' % (
+            '<a href="%s" class="fancybox control-text" rel="group" title="%s"><img  %s /></a>' % (
                 self.src, self.alt, html_params(src=self.src, alt=self.alt, **kwargs)))
 
 

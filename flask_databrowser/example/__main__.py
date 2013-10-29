@@ -56,6 +56,7 @@ def main():
         edit_template = create_template = "accounts/form.html"
         can_create = True
         #can_batchly_edit = False
+        on_fly = False
 
         def preprocess(self, obj):
             class _Proxy(object):

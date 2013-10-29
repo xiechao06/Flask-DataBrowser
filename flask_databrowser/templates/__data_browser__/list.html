@@ -4,7 +4,7 @@
   <script>
     $(function () {
       // tap to show tooltip
-      $$("input[name=action]:disabled").tap(function (e) {
+      $$("[name=action]:disabled").tap(function (e) {
         $($$(this)[0]).tooltip('toggle');
       });
       $$(".pagination .disabled a").tap(function (e) {
@@ -179,7 +179,7 @@
             $(this).attr("title", tooltip);
           });
         }
-        $("#list-table-body input").click(actions_status);
+        $("#list-table-body input").bind("select change", actions_status);
         actions_status();
       {% endif %}
     });
@@ -381,10 +381,12 @@
     {% set displayed_action = 2 %}
     <ul class="nav navbar-nav">
       {% if model_view.can_batchly_edit %}
-        <input id="batch-edit" type="submit" class="btn btn-info btn-lg navbar-btn" value="{{ _('batch edit') }}"/>
+        <button id="batch-edit" type="submit" class="btn btn-info btn-lg navbar-btn">
+          {{ _('batch edit') }}
+        </button>
       {% endif %}
       {% for action in __actions__[:displayed_action] %}
-        <input value="{{ action.name }}" type="submit" name="__action__" class="{{ action.css_class }} btn-lg navbar-btn" data-warn="{{ action.warn_msg }}" data-direct="{{ action.direct }}"/>
+        <button type="submit" name="__action__" class="{{ action.css_class }} btn-lg navbar-btn" data-warn="{{ action.warn_msg }}" data-direct="{{ action.direct }}" value="{{ action.name }}">{{ action.name }}</button>
       {% endfor %}
     </ul>
     {% if __actions__[displayed_action:] %}
@@ -395,7 +397,7 @@
         <ul class="dropdown-menu pull-right" role="menu" aria-labelledby="dropdownMenu1">
           {% for action in __actions__[displayed_action:] %}
             <li role="presentation">
-              <input value="{{ action.name }}" type="submit" name="__action__" class="{{ action.css_class }}" data-warn="{{ action.warn_msg }}" data-direct="{{ action.direct }}"/>
+              <button type="submit" name="__action__" class="{{ action.css_class }}" data-warn="{{ action.warn_msg }}" data-direct="{{ action.direct }}" value="{{ action.name }}">{{ action.name }}</button>
             </li>
           {% endfor %}
           <!-- dropdown menu links -->
@@ -410,7 +412,7 @@
     <div class="panel-body action-list">
       {% block action_list %}
         {% if model_view.can_batchly_edit %}
-          <button id="batch-edit" type="submit" class="btn btn-info">{{ _('batch edit') }}</button>
+          <button id="batch-edit" type="submit" class="btn btn-info" value="{{ _('batch edit') }}">{{ _('batch edit') }}</button>
         {% endif %}
         {% for action in __actions__ %}
           <button type="submit" name="__action__" class="{{ action.css_class }}" data-warn="{{ action.warn_msg }}" data-direct="{{ action.direct }}" value="{{ action.name }}">
@@ -496,9 +498,9 @@
             {{ display_filters() }}
           </div>
           <div class="modal-footer">
+            <button class="btn btn-danger" type="reset" id="reset-button">{{ _('reset') }}</button>
             <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-            <input class="btn btn-danger" type="reset" value="{{ _("reset") }}" id="reset-button"/>
-            <input class="btn btn-primary" type="submit" value="{{ _("refresh") }}"/>
+            <button class="btn btn-primary" type="submit">{{ _('refresh') }}</button>
           </div>
         </form>
       </div>
@@ -516,8 +518,8 @@
       </fieldset>
       <hr/>
       <div class="form-group text-center">
-        <input class="btn btn-primary" type="submit" value="{{ _("refresh") }}"/>
-        <input class="btn btn-danger" type="reset" value="{{ _("reset") }}" id="reset-button"/>
+        <button class="btn btn-primary" type="submit">{{ _("refresh") }}</button>
+        <button class="btn btn-danger" type="reset" id="reset-button">{{ _('reset') }}</button>
       </div>
     </form>
   </div>

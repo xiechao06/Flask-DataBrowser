@@ -59,11 +59,16 @@ class FakeForm(object):
             def is_input_field(self):
                 return isinstance(self.field.widget, (wtforms.widgets.Input, wtforms.widgets.Select,
                                                       wtforms.widgets.TextArea)) \
-                    or (self.field.type != "ReadOnlyField" and self.field.type != "FileField")
+                    and self.field.type not in["ReadOnlyField", "FileField"]
 
             @property
             def form_width(self):
-                return "col-lg-3" if self.is_input_field else "col-lg-10"
+                if self.is_input_field:
+                    return "col-lg-3"
+                label = getattr(self.field, "label")
+                if getattr(label, "text") or label.get("text") :
+                    return "col-lg-10"
+                return "col-lg-12"
 
         self.model_form = model_form
         self.fields = [FakeField(field) for field in fields]
