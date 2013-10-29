@@ -3,14 +3,16 @@
 
 {% block body %}
   {% block __data_browser__hint_block %}
-    {% if hint_message or help_msg %}
+    {% if hint_message or help_message %}
       <div class="alert alert-info">
         * {{ hint_message }}
         {% if help_message %}
           <div class="pull-right">
             <a href="#help-modal" data-toggle="modal">
               <strong class="text-success">{{ _("help") }}</strong>
-              <i class="fa fa-question-circle"></i></a></div>
+              <i class="fa fa-question-circle"></i>
+            </a>
+          </div>
         {% endif %}
       </div>
     {% endif %}
@@ -75,6 +77,7 @@
       }, 3000);
       $("input[type=reset]").click(function () {
         $(this).parents('form')[0].reset();
+        $("[data-role=hold_value]").trigger("change");
         $("select").trigger("change");
         return false;
       });
@@ -88,60 +91,41 @@
       }).on("hidden.bs.collapse", function () {
             $("#" + $(this).attr("id") + "_notation").attr("class", "fa fa-chevron-up");
           });
-      $("[data-role=hold_value]").change(function () {
-        var target = $(this).parent("div").children("input").not($(this));
+      $("[data-role=hold_value]").bind("select change", function () {
+        var parent = $(this).parents(".checkbox").parent("div");
+        var target = parent.children("input").not($(this));
         if (target.length == 0) {
-          target = $(this).parent("div").children("select").not($(this));
+          target = parent.children("select").not($(this));
           if (target.length == 0) {
             // this is a checkbox under div.checkbox
-            target = $(this).parent("div").children(".checkbox").children("[type='checkbox']");
+            target = parent.children(".checkbox").children("[type='checkbox']");
             if(this.checked){
-              target.parent("div").children("li").addClass("disabled");
+              target.parent("div").children("i").addClass("disabled");
             }else{
-              target.parent("div").children("li").removeClass("disabled");
+              target.parent("div").children("i").removeClass("disabled");
             }
           } else {
             // this is a select
             if (this.checked) {
-              $(this).parent("div").children("select").select2("disable");
+              target.select2("disable");
             } else {
-              $(this).parent("div").children("select").select2("enable").attr("disabled", false);
+              target.select2("enable").attr("disabled", false);
             }
           }
         }
         target.attr("disabled", this.checked);
       });
       {% if g.request_from_mobile %}
-        $("input[type=checkbox]").each(function () {
-          var e = $("<li></li>").addClass("fa fa-2x");
-          if (this.disabled) {
-            e.addClass("disabled");
+        $("input[type=checkbox]").bind("select", function () {
+          var tar = $(this).prev("li");
+          if (tar.length == 0) {
+            tar = tar.parent("div").children("li");
           }
-          if (this.checked) {
-            e.addClass("fa-check-square-o");
+          if ($(this).is(":checked")) {
+            tar.removeClass("fa-square-o").addClass("fa-check-square-o");
           } else {
-            e.addClass("fa-square-o");
+            tar.removeClass("fa-check-square-o").addClass("fa-square-o");
           }
-          $(this).before(e).hide();
-        }).change(function () {
-              var tar = $(this).prev("li");
-              if(tar.length==0){
-                tar = tar.parent("div").children("li");
-              }
-              if ($(this).prop("checked")) {
-                tar.removeClass("fa-square-o").addClass("fa-check-square-o");
-              } else {
-                tar.removeClass("fa-check-square-o").addClass("fa-square-o");
-              }
-            });
-
-        $("li.fa-check-square-o, li.fa-square-o").click(function () {
-          if ($(this).hasClass("disabled")) {
-            return false;
-          }
-          var e = $(this).next("input");
-          e.prop("checked", !e.prop("checked")).trigger("change");
-          return false;
         });
       {% endif %}
       var checkSubmitFlag = false;

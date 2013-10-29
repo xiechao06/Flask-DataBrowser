@@ -70,8 +70,8 @@ class DirectAction(BaseAction):
 
 
 class DeleteAction(BaseAction):
-    
-    def __init__(self, name=_("remove"), permission=None, css_class="btn btn-danger", data_icon="icon-remove", warn_msg=""):
+    def __init__(self, name=_("remove"), permission=None,
+                 css_class="btn btn-danger", data_icon="fa fa-times", warn_msg=""):
         super(DeleteAction, self).__init__(name, css_class, data_icon, warn_msg)
         self.permission = permission
 

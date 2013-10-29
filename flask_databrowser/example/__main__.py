@@ -209,7 +209,7 @@ def main():
             def op_upon_list(self, model, model_view):
                 return redirect("http://www.u148.com")
 
-        __customized_actions__ = [MyDeleteAction(u"删除", None, data_icon="icon-remove"), RollCall(u"点名", warn_msg=u"点名后就是弱智！"), RollCall(u"点名", warn_msg=u"点名后就是弱智！"),RollCall(u"点名", warn_msg=u"点名后就是弱智！"),RollCall(u"点名", warn_msg=u"点名后就是弱智！"),RollCall(u"点名", warn_msg=u"点名后就是弱智！"),RollCall(u"点名", warn_msg=u"点名后就是弱智！"),RollCall(u"点名", warn_msg=u"点名后就是弱智！"),_ReadOnlyAction(u"打酱油的")]
+        __customized_actions__ = [MyDeleteAction(u"删除", None, data_icon="fa fa-times"), RollCall(u"点名", warn_msg=u"点名后就是弱智！"), RollCall(u"点名", warn_msg=u"点名后就是弱智！"),RollCall(u"点名", warn_msg=u"点名后就是弱智！"),RollCall(u"点名", warn_msg=u"点名后就是弱智！"),RollCall(u"点名", warn_msg=u"点名后就是弱智！"),RollCall(u"点名", warn_msg=u"点名后就是弱智！"),RollCall(u"点名", warn_msg=u"点名后就是弱智！"),_ReadOnlyAction(u"打酱油的")]
 
     user_model_view = UserModelView(User, u"用户")
     browser.register_model_view(user_model_view, accounts_bp, extra_params={"form_view": {"age_hint": "modify your age here"}, "create_view": {"age_hint": "input your age here"}})

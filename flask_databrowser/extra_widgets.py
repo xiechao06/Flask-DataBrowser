@@ -160,7 +160,7 @@ class ListWidget(object):
             if self.rows:
                 html = ['<div class="accordion">',
                         '<a href="#" data-target="#%s" data-toggle="collapse">%d<i '
-                        'class="icon-chevron-down"></i></a>' % (
+                        'class="fa fa-chevron-down fa-fw"></i></a>' % (
                             uuid_, len(self.rows)),
                         '<div id="%s" class="collapse in" data-builtin="true">\n<div class="accordion-inner">' % uuid_]
                 #html += ['<a href="#" data-target="#%s" data-toggle="collapse">%d</a>' % (uuid_, len(self.rows))]

@@ -55,32 +55,6 @@
           window.location = $(".pagination .next a").attr("href");
         }
       });
-      {% if model_view.can_batchly_edit %}
-        $("#list-table-body input[type=checkbox]").hide();
-      {% elif __actions__ %}
-        $("#list-table-body input[type=radio]").hide();
-      {% endif %}
-      // use bigger checkbox or radio
-      $("#list-table-body a i").click(function (e) {
-        var e = $(this).next();
-        e.prop("checked", !e.prop("checked"));
-        if (e.prop("checked")) {
-        $(this).parent("a").addClass("active");
-          {% if model_view.can_batchly_edit %}
-            $(this).removeClass("fa-square-o").addClass("fa-check-square-o");
-          {% elif __actions__ %}
-            $(this).attr("class", "fa fa-circle-o fa-lg");
-          {% endif %}
-        } else {
-          $(this).parent("a").removeClass("active");
-          {% if model_view.can_batchly_edit %}
-            $(this).removeClass("fa-check-square-o").addClass("fa-square-o");
-          {% elif __actions__ %}
-            $(this).attr("class", "icon-circle-blank icon-large");
-          {% endif %}
-        }
-        return false;
-      });
     });
   </script>
 {% endmacro %}
@@ -120,8 +94,7 @@
             }
             {% if filter.input_type[0] == 'checkbox' %}
               {% if filter.value %}
-                $(this).prev().attr("checked", "true");
-                $(this).val(val).trigger("change");
+                $(this).prop("checked", true).trigger("change");
               {% endif %}
             {% else %}
               $(this).val(val).trigger("change");
@@ -129,14 +102,6 @@
           });
         {% endif %}
       {% endfor %}
-      $("#filter input[type='checkbox']").change(function (e) {
-        var e = $($(this).attr("data-for"));
-        if ($(this).attr("checked") == "checked") {
-          e.val(1)
-        } else {
-          e.val(0)
-        }
-      });
       $("input[name=rowtoggle]").click(function () {
         $("#list-table-body input[type=checkbox]").prop("checked", this.checked);
         $("input[name=rowtoggle]").prop("checked", this.checked);
@@ -331,13 +296,11 @@
     {% for row in __data__ %}
       <a class="list-group-item" href="{{ model_view.url_for_object(row.obj, url=request.url, cdx=loop.index) }}">
         {% if model_view.can_batchly_edit %}
-          <i class="fa fa-square-o fa-lg"></i>
           <input type="checkbox" value="{{ row.pk }}" name="selected-ids" id="checkbox-{{ row.pk }}"/>
         {% elif __actions__ %}
-          <i class="icon-circle-blank icon-large"></i>
           <input type="radio" value="{{ row.pk }}" name="selected-ids" id="checkbox-{{ row.pk }}"/>
         {% else %}
-          <i class="icon-link icon-large hidden"></i>
+          <i class="fa fa-link fa-lg hidden"></i>
         {% endif %}
         {{ row.repr_|safe }}
       </a>
@@ -452,7 +415,7 @@
         {% for action in __actions__ %}
           <button type="submit" name="__action__" class="{{ action.css_class }}" data-warn="{{ action.warn_msg }}" data-direct="{{ action.direct }}" value="{{ action.name }}">
             {% if action.data_icon %}
-              <i class="{{ action.data_icon }}"></i>&nbsp;
+              <i class="{{ action.data_icon }} fa-fw"></i>
             {% endif %}
             {{ action.name }}
           </button>
@@ -479,8 +442,7 @@
         {% if filter.input_type[0] == "checkbox" %}
           <div class="checkbox">
             <label>
-              <input type="checkbox" data-for="#{{ filter.op.id }}" class="{{ __css_classes__[filter.input_class] }}"/>
-              <input type="hidden" name="{{ filter.op.id }}" id="{{ filter.op.id }}"/>
+              <input type="checkbox" class="{{ __css_classes__[filter.input_class] }}" name="{{ filter.op.id }}" id="{{ filter.op.id }}"/>
               {{ filter.label }}
             </label>
           </div>

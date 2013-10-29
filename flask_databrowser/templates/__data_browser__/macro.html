@@ -161,8 +161,12 @@
             {% endif %}
           {% endif %}
           {% if not __read_only__ and not h.is_unique_form_field(f) %}
-            <input type="checkbox" data-role="hold_value" name="hold-value-{{ f.name }}"
-                    checked="checked">{{ _("keep unchanged") }}
+            <div class="checkbox">
+              <label>
+                <input type="checkbox" data-role="hold_value" name="hold-value-{{ f.name }}" checked="checked">
+                {{ _("keep unchanged") }}
+              </label>
+            </div>
           {% endif %}
         {% else %}
           {% if __read_only__ %}

@@ -142,8 +142,8 @@ body {
     padding: 0;
 }
 
-#list-table-body i {
-    padding: 20px 20px;
+#list-table-body i.fa-lg {
+    padding: 20px;
     display: inline-block;
 }
 
