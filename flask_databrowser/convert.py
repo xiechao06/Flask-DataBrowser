@@ -76,7 +76,7 @@ class ValueConverter(object):
             w = extra_widgets.PlainText(unicode(v) if v is not None else "", trunc=col_spec.trunc)
 
         class FakeField(object):
-            def __init__(self, label, name, widget, css_class=None, description=None, id=None, read_only=True):
+            def __init__(self, label, name, widget, css_class=None, description=None, id=None, read_only=True, form_width_class=""):
                 self.label = label
                 self.name = name
                 self.id = id or name
@@ -84,6 +84,7 @@ class ValueConverter(object):
                 self.type = "ReadOnlyField" if read_only else "MyInputField"
                 self.css_class = css_class
                 self.description = description
+                self.form_width_class = form_width_class
 
             def __call__(self, **kwargs):
                 if self.css_class:
@@ -97,5 +98,6 @@ class ValueConverter(object):
         label = self.model_view.__column_labels__.get(col_spec.col_name, col_spec.col_name) if (
             col_spec.label is None) else col_spec.label
         return FakeField(dict(text=label), name=col_spec.col_name if col_spec else "", widget=w, css_class=css_class,
-                         description=description, read_only=getattr(col_spec, "read_only", True))
+                         description=description, read_only=getattr(col_spec, "read_only", True),
+                         form_width_class=getattr(col_spec, "form_width_class", ""))
 

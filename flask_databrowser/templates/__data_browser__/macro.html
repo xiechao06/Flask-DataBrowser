@@ -139,7 +139,7 @@
           &nbsp;
         {% endif %}
       {% endif %}
-      <div class="{{ f.form_width }}">
+      <div class="{{ f.form_width_class }}">
         {% if h.is_batch_edit() %}
           {% if h.is_required_form_field(f) %}
             {% if h.is_unique_form_field(f) %}
@@ -215,25 +215,27 @@
 {% endmacro %}
 
 {% macro render_form_buttons(cancel_url, extra=None, last_step=None, next_step=None) %}
-  <div class='row'>
-    <div class="col-md-6">
-      {% if last_step %}
-        <div class='pull-left'>
-          <a href="{{ last_step.url }}" class='btn btn-default'>
-            <i class="fa fa-step-backward"></i>&nbsp;{{ _('Last step') }}: {{ last_step.name }}
-          </a>
-        </div>
-      {% elif last_step is defined and last_step is not none or (next_step is defined and next_step is not none) %}
-        <a class="btn btn-default" href='{{ cancel_url }}'>{{ _('back') }}</a>
-      {% endif %}
-      {% if next_step %}
-        <div class='pull-right'>
-          <button data-target="{{ next_step.url }}" class='btn btn-default' data-role='next-step'>{{ _('Next step') }}: {{ next_step.name }}
-            <i class="fa fa-step-forward"></i></button>
-        </div>
-      {% endif %}
+  {% if last_step or next_step %}
+    <div class='row'>
+      <div class="col-md-6">
+        {% if last_step %}
+          <div class='pull-left'>
+            <a href="{{ last_step.url }}" class='btn btn-default'>
+              <i class="fa fa-step-backward"></i>&nbsp;{{ _('Last step') }}: {{ last_step.name }}
+            </a>
+          </div>
+        {% elif last_step is defined and last_step is not none or (next_step is defined and next_step is not none) %}
+          <a class="btn btn-default" href='{{ cancel_url }}'>{{ _('back') }}</a>
+        {% endif %}
+        {% if next_step %}
+          <div class='pull-right'>
+            <button data-target="{{ next_step.url }}" class='btn btn-default' data-role='next-step'>{{ _('Next step') }}: {{ next_step.name }}
+              <i class="fa fa-step-forward"></i></button>
+          </div>
+        {% endif %}
+      </div>
     </div>
-  </div>
+  {% endif %}
   <div class="navbar navbar-default navbar-fixed-bottom navbar-inverse" id="footer-action-bar" role="navigation">
     <div>
       {% if g.request_from_mobile and not next_step %}

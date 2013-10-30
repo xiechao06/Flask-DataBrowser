@@ -20,20 +20,22 @@
   <div class="container">
     {{ lib.render_form(form, return_url, extra, last_step, next_step, previous_steps_info) }}
 
-    <div id="help-modal" class="modal fade" role="dialog" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-            <h3 class="modal-title">{{ _("Help") }}</h3></div>
-          <div class="modal-body">
-            {{ help_message|safe }}</div>
-          <div class="modal-footer">
-            <button class="btn" data-dismiss="modal" aria-hidden="true">{{ _("close") }}</button>
+    {% if help_message %}
+      <div id="help-modal" class="modal fade" role="dialog" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+              <h3 class="modal-title">{{ _("Help") }}</h3></div>
+            <div class="modal-body">
+              {{ help_message|safe }}</div>
+            <div class="modal-footer">
+              <button class="btn" data-dismiss="modal" aria-hidden="true">{{ _("close") }}</button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    {% endif %}
   </div>
 {% endblock %}
 

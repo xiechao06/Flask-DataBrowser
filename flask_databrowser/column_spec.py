@@ -99,11 +99,12 @@ class ListColumnSpec(ColumnSpec):
 
 
 class PlaceHolderColumnSpec(ColumnSpec):
-
-    def __init__(self, col_name, template_fname, label=None, doc=None, as_input=False, validators=None, filter_=None):
+    def __init__(self, col_name, template_fname, label=None, doc=None, as_input=False, validators=None, filter_=None,
+                 form_width_class=None):
         super(PlaceHolderColumnSpec, self).__init__(col_name, genre=PLACE_HOLDER, label=label, doc=doc)
         self.template_fname = template_fname
         self.as_input = as_input
+        self.form_width_class = form_width_class
         if self.as_input: # fake InputColumnSpec
             self.group_by = None
             self.read_only = False

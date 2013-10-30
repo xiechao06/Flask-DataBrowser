@@ -62,11 +62,14 @@ class FakeForm(object):
                     and self.field.type not in["ReadOnlyField", "FileField"]
 
             @property
-            def form_width(self):
+            def form_width_class(self):
+                initial = getattr(self.field, "form_width_class", "")
+                if initial:
+                    return initial
                 if self.is_input_field:
                     return "col-lg-3"
                 label = getattr(self.field, "label")
-                if getattr(label, "text") or label.get("text") :
+                if getattr(label, "text", None) or label.get("text"):
                     return "col-lg-10"
                 return "col-lg-12"
 
