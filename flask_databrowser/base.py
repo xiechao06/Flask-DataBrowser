@@ -1057,7 +1057,10 @@ class ModelView(object):
         return ret
 
     def get_compound_batch_edit_form(self, obj, form):
-        ret = self._get_fake_form_columns(form, self.get_batch_form_columns(), obj)
+        batchly_form_columns = self.get_batch_form_columns()
+        if not batchly_form_columns:
+            return FakeForm(form, form._fields.values())
+        ret = self._get_fake_form_columns(form, batchly_form_columns, obj)
         return FakeForm(form, ret)
 
     def get_compound_edit_form(self, obj=None, form=None):

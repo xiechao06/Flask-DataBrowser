@@ -20,6 +20,7 @@ class BaseTest(object):
         LoginManager(self.app)
         self.app.config["SQLALCHEMY_DATABASE_URI"] = dbstr
         self.app.config["CSRF_ENABLED"] = False
+        self.app.config["WTF_CSRF_ENABLED"] = False
         self.app.config["SECRET_KEY"] = "D8123;d;"
         self.db = SQLAlchemy(self.app)
         self.setup_models()

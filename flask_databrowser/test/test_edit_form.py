@@ -120,7 +120,7 @@ class TestEdit(basetest.BaseTest):
                 assert len(d("#batch-edit")) == 1
                 rv = c.get("/foo1/user/1,2")
                 d = pq(rv.data)
-                assert len(d("[data-role=hold_value]")) == 3
+                assert len(d("[data-role=hold_value]")) == 1  # only group
                 rv = c.post("/foo1/user/1,2",
                             data={"__builtin_action__": "commit", "hold-value-group": "on", "hold-value-name": "on"})
                 assert 302 == rv.status_code
