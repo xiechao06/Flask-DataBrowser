@@ -88,11 +88,6 @@
         win.focus();
         return false;
       });
-      $("[data-role=fieldset-body]").on("shown.bs.collapse",function () {
-        $("#" + $(this).attr("id") + "_notation").attr("class", "fa fa-chevron-down");
-      }).on("hidden.bs.collapse", function () {
-            $("#" + $(this).attr("id") + "_notation").attr("class", "fa fa-chevron-up");
-          });
       $("[data-role=hold_value]").bind("select change", function () {
         var parent = $(this).parents(".checkbox").parent("div");
         var target = parent.children("input").not($(this));

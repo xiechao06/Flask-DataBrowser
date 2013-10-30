@@ -162,16 +162,18 @@ class ListWidget(object):
         else:
             uuid_ = uuid.uuid1()
             if self.rows:
-                html = ['<div class="accordion">',
+                html = ['<div class="panel-group">', '<div class="panel panel-default">',
+                        '<div class="panel-heading"><h4 class="panel-title">'
                         '<a href="#" data-target="#%s" data-toggle="collapse">%d<i '
-                        'class="fa fa-chevron-down fa-fw"></i></a>' % (
+                        'class="fa fa-chevron-up fa-fw"></i></a></h4></div>' % (
                             uuid_, len(self.rows)),
-                        '<div id="%s" class="collapse in" data-builtin="true">\n<div class="accordion-inner">' % uuid_]
-                #html += ['<a href="#" data-target="#%s" data-toggle="collapse">%d</a>' % (uuid_, len(self.rows))]
+                        '<div id="%s" class="panel-collapse collapse" data-builtin="true">\n<div class="panel-body">' % uuid_]
+                if self.rows:
+                    html.append("<ul class='nav nav-pills nav-stacked'>")
                 for row in self.rows:
                     converter = ValueConverter(row, self.model_view)
-                    html.append(" <div>%s</div>\n" % converter(row, self.item_col_spec)())
-                html.append('</div>\n</div>\n</div>')
+                    html.append(" <li>%s</li>\n" % converter(row, self.item_col_spec)())
+                html.append('</div>\n</div>\n<div>\n</div>')
             else:
                 html = ["0"]
         return HTMLString(''.join(html))

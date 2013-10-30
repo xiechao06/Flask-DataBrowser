@@ -39,10 +39,12 @@
           $(".flash").fadeOut("slow");
         }, 3000);
         $("[data-toggle=tooltip]").tooltip();
-        $(".accordion").on("shown",function (event) {
+        $(".panel-collapse").on('shown.bs.collapse',function (event) {
           event.stopPropagation();
-        }).on("hidden", function (event) {
-              event.stopPropagation()
+          $(this).prev().find("i").removeClass("fa-chevron-up").addClass("fa-chevron-down");
+        }).on('hidden.bs.collapse', function (event) {
+              event.stopPropagation();
+              $(this).prev().find("i").removeClass("fa-chevron-down").addClass("fa-chevron-up");
             });
         function my_matcher(term, text, option) {
           var bool = text.toUpperCase().indexOf(term.toUpperCase()) >= 0;
