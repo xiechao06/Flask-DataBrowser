@@ -1,5 +1,4 @@
 # -*- coding: UTF-8 -*-
-import types
 import functools
 import inspect
 import copy
@@ -11,8 +10,8 @@ from . import form
 from .validators import Unique
 from .fields import QuerySelectField, QuerySelectMultipleField
 from flask.ext.databrowser.column_spec import InputColumnSpec, PlaceHolderColumnSpec, FileColumnSpec
-from flask.ext.databrowser.utils import make_disabled_field, get_description, get_primary_key
-from flask.ext.babel import gettext as _
+from flask.ext.databrowser.utils import get_description, get_primary_key
+from flask.ext.babel import _
 
 try:
     # Field has better input parsing capabilities.
@@ -550,8 +549,6 @@ def get_form(model, converter,
             continue
         field = converter.convert(model, mapper, prop, field_args.get(name), hidden_pk, col_spec)
         if field is not None:
-            if col_spec and not isinstance(col_spec, PlaceHolderColumnSpec) and getattr(col_spec, "read_only", None):
-                field = make_disabled_field(field)
             field_dict[name] = field
 
     return type(model.__name__ + 'Form', (base_class, ), field_dict)

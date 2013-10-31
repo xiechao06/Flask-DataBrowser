@@ -3,7 +3,7 @@
 # TODO need refactoring
 
 from hashlib import md5
-from collections import namedtuple, Iterable
+from collections import namedtuple
 import operator
 from .utils import TemplateParam, raised_when, get_primary_key
 from flask.ext.babel import gettext as _

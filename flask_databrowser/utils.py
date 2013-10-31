@@ -85,25 +85,6 @@ def raised(E, test, *args, **kwargs):
         return False
 
 
-def make_disabled_field(field):
-    class FakeField(field.field_class):
-
-        def __call__(self, **kwargs):
-            kwargs["disabled"] = True
-            return super(FakeField, self).__call__(**kwargs)
-
-        def validate(self, form, extra_validators=()):
-            return True
-
-        # dirty trick
-        @property
-        def __read_only__(self):
-            return True
-
-    field.field_class = FakeField
-    return field
-
-
 def fslice(iterable, predict):
     a = []
     b = []
@@ -168,6 +149,7 @@ def request_from_mobile():
         return b or v
     return False
 
+
 class ErrorHandler(object):
 
     def __init__(self, data_browser):
@@ -181,7 +163,8 @@ class ErrorHandler(object):
             permissions = []
             for idx, need in enumerate(error.args[0].needs):
                 permissions.append(str(need))
-            err_msg = _(u'this operation needs the following permissions: %(permissions)s, contact administrator to grant them!', permissions=";".join(permissions))
+            err_msg = _(u'this operation needs the following permissions: %(permissions)s, contact administrator to grant them!',
+                        permissions=";".join(permissions))
         elif isinstance(error, ValidationError):
             err_msg = ",".join("%s: %s" % (k, v) for k, v in error.args[0].items())
         elif isinstance(error, NotFound):
@@ -197,7 +180,9 @@ class ErrorHandler(object):
             self.data_browser.app.logger.error(traceback.plaintext)
             err_msg = _(u'Internal error "%(err)s", please contact us!', err=str(error))
 
-        return render_template(template_fname, hint_message=err_msg, error=error, back_url=request.args.get("url", "/"), model_view={"request_from_mobile": g.request_from_mobile}) 
+        return render_template(template_fname, hint_message=err_msg, error=error,
+                               back_url=request.args.get("url", "/"),
+                               model_view={"request_from_mobile": g.request_from_mobile})
 
 
 def test_request_type():

@@ -122,9 +122,9 @@ def main():
             FileColumnSpec("pic_path", label=u"上传")
         ]
 
-        __batch_form_columns__ = OrderedDict()
-        __batch_form_columns__["primary"] = ["name", InputColumnSpec("group", read_only=True)]
-        __batch_form_columns__["secondary"] = ["age", "roll_called"]
+        #__batch_form_columns__ = OrderedDict()
+        #__batch_form_columns__["primary"] = ["name", InputColumnSpec("group", read_only=True)]
+        #__batch_form_columns__["secondary"] = ["age", "roll_called"]
 
         __column_formatters__ = {
             "create_time": lambda v, model: v.strftime("%Y-%m-%d %H") + u"点",

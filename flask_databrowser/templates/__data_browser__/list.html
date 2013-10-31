@@ -184,7 +184,7 @@
 {% block body %}
   <div class="row">
     {% block lists %}
-      <form id="main-form" method="POST" class={% if __filters__ %}"col-md-10"{% endif %} role="form">
+      <form id="main-form" method="POST" class={% if __filters__ %}"col-lg-10"{% endif %} role="form">
         {% block header_action_bar %}
           {{ render_header_action_bar() }}
         {% endblock header_action_bar %}
@@ -208,7 +208,7 @@
       </form>
     {% endblock lists %}
 
-    <div class="col-md-2">
+    <div class="col-lg-2">
       {% block filters %}
         {{ render_filter() }}
       {% endblock filters %}
@@ -287,7 +287,7 @@
 {% endmacro %}
 
 {% macro render_list() %}
-  <ul id="list-table-body" class="list-group">
+  <div id="list-table-body" class="list-group">
     {% for row in __data__ %}
       <a class="list-group-item" href="{{ model_view.url_for_object(row.obj, url=request.url, cdx=loop.index) }}">
         {% if model_view.can_batchly_edit %}
@@ -300,7 +300,7 @@
         {{ row.repr_|safe }}
       </a>
     {% endfor %}
-  </ul>
+  </div>
 {% endmacro %}
 
 {% macro render_table() %}

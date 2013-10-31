@@ -167,13 +167,11 @@ class ListWidget(object):
                         '<a href="#" data-target="#%s" data-toggle="collapse">%d<i '
                         'class="fa fa-chevron-up fa-fw"></i></a></h4></div>' % (
                             uuid_, len(self.rows)),
-                        '<div id="%s" class="panel-collapse collapse" data-builtin="true">\n<div class="panel-body">' % uuid_]
-                if self.rows:
-                    html.append("<ul class='nav nav-pills nav-stacked'>")
+                        '<div id="%s" class="panel-collapse collapse list-group" data-builtin="true">' % uuid_]
                 for row in self.rows:
                     converter = ValueConverter(row, self.model_view)
-                    html.append(" <li>%s</li>\n" % converter(row, self.item_col_spec)())
-                html.append('</div>\n</div>\n<div>\n</div>')
+                    html.append(converter(row, self.item_col_spec)(**{"class": "list-group-item"}))
+                html.append('</div>\n</div>\n</div>')
             else:
                 html = ["0"]
         return HTMLString(''.join(html))

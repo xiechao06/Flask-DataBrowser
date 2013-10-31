@@ -1,7 +1,7 @@
 # -*- coding: UTF-8 -*-
 from flask import redirect, request
-from flask.ext.babel import gettext as _
-from .utils import raised_when, raised
+from flask.ext.babel import _
+from .utils import raised_when
 
 _raised_when_model_view_unset = raised_when(lambda inst, *args, **kwargs: not inst.model_view, 
                                        RuntimeError(r'field "model view" unset, you should set it'))

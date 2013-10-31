@@ -76,7 +76,7 @@ body {
     min-width: 60%;
 }
 
-#list-table-body a.list-group-item {
+#list-table-body.list-group a.list-group-item {
     font-size: 1.5em;
     text-decoration: none;
     padding: 0;
