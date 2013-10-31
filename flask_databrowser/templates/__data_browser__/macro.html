@@ -189,7 +189,7 @@
           {% endif %}
         {% endif %}
         {% if f.errors %}
-          <span class="alert alert-error">{{ f.errors|join("; ") }}</span>
+          <span class="alert alert-danger">{{ f.errors|join("; ") }}</span>
         {% endif %}
 
         {% if f.description %}
