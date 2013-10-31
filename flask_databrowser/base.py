@@ -394,13 +394,8 @@ class ModelView(object):
                                       formatter=formatter,
                                       label=label, css_class="control-text")
         else:
-            formatter = self.__column_formatters__.get(col,
-                                                       lambda x, obj: unicode(
-                                                           x))
-            col_spec = ColumnSpec(col, doc=doc,
-                                  formatter=formatter,
-                                  label=label,
-                                  css_class="control-text")
+            formatter = self.__column_formatters__.get(col, lambda x, obj: unicode(x))
+            col_spec = ColumnSpec(col, doc=doc, formatter=formatter, label=label, css_class="control-text")
         return col_spec
 
     def generate_model_string(self, link):
