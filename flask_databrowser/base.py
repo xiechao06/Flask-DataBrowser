@@ -67,7 +67,7 @@ class FakeForm(object):
                 if initial:
                     return initial
                 if self.is_input_field:
-                    return "col-lg-33"
+                    return "col-lg-3"
                 label = getattr(self.field, "label")
                 if getattr(label, "text", None) or label.get("text"):
                     return "col-lg-10"
