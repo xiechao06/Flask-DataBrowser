@@ -30,7 +30,7 @@
             <div class="modal-body">
               {{ help_message|safe }}</div>
             <div class="modal-footer">
-              <button class="btn" data-dismiss="modal" aria-hidden="true">{{ _("close") }}</button>
+              <button class="btn btn-default" data-dismiss="modal" aria-hidden="true">{{ _("close") }}</button>
             </div>
           </div>
         </div>
@@ -96,9 +96,9 @@
           if (target.length == 0) {
             // this is a checkbox under div.checkbox
             target = parent.children(".checkbox").children("[type='checkbox']");
-            if(this.checked){
+            if (this.checked) {
               target.parent("div").children("i").addClass("disabled");
-            }else{
+            } else {
               target.parent("div").children("i").removeClass("disabled");
             }
           } else {
