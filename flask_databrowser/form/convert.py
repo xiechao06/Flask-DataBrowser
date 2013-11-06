@@ -381,7 +381,7 @@ class AdminModelConverter(ModelConverterBase):
                 if self._value() is None and column.default is not None:
                     kwargs['value'] = column.default.arg
                 if "read_only" in extra:
-                    kwargs["readonly"] = True
+                    kwargs["disabled"] = True
                 return super(MyTextField, self).__call__(**kwargs)
 
         return MyTextField(**field_args)
