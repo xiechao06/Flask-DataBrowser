@@ -492,6 +492,10 @@ class ModelView(object):
                             return False
                     try:
                         ret = action.op_upon_list(processed_objs, self)
+                        if isinstance(ret, tuple):
+                            flash(ret[-1], "error")
+                            return False
+
                         self.session.commit()
                         if isinstance(ret, werkzeug.wrappers.BaseResponse) and ret.status_code == 302:
                             if not action.direct:
@@ -503,7 +507,7 @@ class ModelView(object):
                     except Exception, ex:
                         flash(
                             _('Failed to update %(model_name)s %(objs)s due to %(error)s', model_name=self.model_name,
-                              objs=",".join(unicode(obj) for obj in processed_objs), error=str(ex)), 'error')
+                              objs=",".join(unicode(obj) for obj in processed_objs), error=unicode(ex)), 'error')
                         self.session.rollback()
                         raise
             raise ValidationError(
@@ -540,7 +544,7 @@ class ModelView(object):
             flash(
                 _('Failed to update %(model_name)s %(obj)s due to %(error)s',
                   model_name=self.model_name, obj=",".join([unicode(obj) for obj in objs]),
-                  error=str(ex)), 'error')
+                  error=unicode(ex)), 'error')
             self.session.rollback()
             return False
 
@@ -1378,7 +1382,7 @@ class ModelView(object):
                                 "reason": _('Failed to update %(model_name)s %(objs)s due to %(error)s',
                                             model_name=self.model_name, 
                                             objs=",".join(unicode(obj) for obj in processed_objs),
-                                            error=str(ex))
+                                            error=unicode(ex))
                             }), 403
 
 
@@ -1614,6 +1618,8 @@ class ModelView(object):
             filter.value = None
             if filter.default_value is not None:
                 filter.value = filter.default_value
+            if isinstance(filter, filters.Only) and request.args and not request.args.get(filter.col_name):
+                filter.value = False
         for k, v in request.args.lists():
             try:
                 op_id_2_filter[k].value = (v[0] if len(v) == 1 else v)

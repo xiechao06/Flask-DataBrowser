@@ -345,9 +345,11 @@ class AdminModelConverter(ModelConverterBase):
 
                 if converter is None:
                     return None
-
+                extra = {}
+                if getattr(col_spec, "read_only", False):
+                    extra["read_only"] = True
                 return converter(model=model, mapper=mapper, prop=prop,
-                                 column=column, field_args=kwargs)
+                                 column=column, field_args=kwargs, **extra)
 
         return None
 
@@ -378,6 +380,8 @@ class AdminModelConverter(ModelConverterBase):
                     kwargs["maxlength"] = column.type.length
                 if self._value() is None and column.default is not None:
                     kwargs['value'] = column.default.arg
+                if "read_only" in extra:
+                    kwargs["disabled"] = True
                 return super(MyTextField, self).__call__(**kwargs)
 
         return MyTextField(**field_args)

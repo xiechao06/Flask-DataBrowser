@@ -98,6 +98,12 @@ class TableWidget(object):
                     else:
                         col_specs[i] = ColumnSpec(col_specs[i], label=col_specs[i])
                         #col_specs = [ColumnSpec(col) if isinstance(col, basestring) else col for col in col_specs]
+                if isinstance(col_specs[i], ColumnSpec):
+                    if col_specs[i].col_name == pk:
+                        temp = self.model_view.data_browser.get_object_link_column_spec(self.rows[0].__class__, pk)
+                        if temp:
+                            col_specs[i] = temp
+
             html.append('  <thead>\n')
             if self.sum_fields:
                 html.append("    <th></th>")
@@ -156,8 +162,11 @@ class ListWidget(object):
             if self.rows:
                 for row in self.rows:
                     converter = ValueConverter(row, self.model_view)
-                    html.append(
-                        " <li class=\"%s\" >%s</li>\n" % (self.item_css_class, converter(row, self.item_col_spec)()))
+                    val = converter(row, self.item_col_spec)
+                    if isinstance(getattr(val, "widget", None), Link):
+                        html.append(val(**{"class": self.item_css_class}))
+                    else:
+                        html.append(" <li class=\"%s\" >%s</li>\n" % (self.item_css_class, val()))
             html.append("</%s>" % self.html_tag)
         else:
             uuid_ = uuid.uuid1()

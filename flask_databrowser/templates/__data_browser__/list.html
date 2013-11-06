@@ -1,67 +1,6 @@
 {% extends "__data_browser__/layout.html" %}
 
-{% macro mobile_javascript() %}
-  <script>
-    $(function () {
-      // tap to show tooltip
-      $$("[name=action]:disabled").tap(function (e) {
-        $($$(this)[0]).tooltip('toggle');
-      });
-      $$(".pagination .disabled a").tap(function (e) {
-        $($$(this)[0]).tooltip('toggle');
-      });
-      $$("body").swipeRight(function (e) {
-        var e = $(".pagination .previous a");
-        var target_url = e.attr('href');
-        if (target_url == "#") {
-          var msg = "{{ _('no previous page!') }}";
-          $.pnotify({
-            text: msg,
-            icon: false,
-            stack: false,
-            delay: 2,
-            history: false,
-            before_open: function (pnotify) {
-              // Position this notice in the center of the screen.
-              pnotify.css({
-                "top": ($(window).height() / 2) - (pnotify.height() / 2),
-                "left": ($(window).width() / 2) - (pnotify.width() / 2)
-              });
-            }
-          });
-        } else {
-          window.location = $(".pagination .previous a").attr("href");
-        }
-      });
-      $$("body").swipeLeft(function (e) {
-        var e = $(".pagination .next a");
-        var target_url = e.attr('href');
-        if (target_url == "#") {
-          $.pnotify({
-            text: "{{ _('no more page!') }}",
-            icon: false,
-            stack: false,
-            delay: 2,
-            history: false,
-            before_open: function (pnotify) {
-              // Position this notice in the center of the screen.
-              pnotify.css({
-                "top": ($(window).height() / 2) - (pnotify.height() / 2),
-                "left": ($(window).width() / 2) - (pnotify.width() / 2)
-              });
-            }
-          });
-        } else {
-          window.location = $(".pagination .next a").attr("href");
-        }
-      });
-    });
-  </script>
-{% endmacro %}
 {% block __data_browser__builtin_head_block %}
-  {% if g.request_from_mobile %}
-    {{ mobile_javascript() }}
-  {% endif %}
   <script>
     $(function () {
       $('input[data-role="date"]').datetimepicker({format: "yyyy-mm-dd", minView: "month", autoclose: true, language: "zh-CN", pickerPosition: "bottom-left"});
@@ -184,7 +123,7 @@
 {% block body %}
   <div class="row">
     {% block lists %}
-      <form id="main-form" method="POST" class={% if __filters__ %}"col-lg-10"{% endif %} role="form">
+      <form id="main-form" method="POST" class="{% if __filters__ %}col-lg-10{% else %}col-lg-12{% endif %}" role="form">
         {% block header_action_bar %}
           {{ render_header_action_bar() }}
         {% endblock header_action_bar %}
@@ -513,7 +452,7 @@
       </fieldset>
       <hr/>
       <div class="form-group text-center">
-        <button class="btn btn-primary" type="submit">{{ _("refresh") }}</button>
+        <button class="btn btn-primary" type="submit" name="__action__" value="filter">{{ _("refresh") }}</button>
         <button class="btn btn-danger" type="reset" id="reset-button">{{ _('reset') }}</button>
       </div>
     </form>

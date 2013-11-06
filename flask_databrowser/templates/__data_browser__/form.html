@@ -4,7 +4,7 @@
 {% block body %}
   {% block __data_browser__hint_block %}
     {% if hint_message or help_message %}
-      <div class="alert alert-info">
+      <div class="alert {{ 'alert-warning' if __read_only__ else 'alert-info' }}">
         * {{ hint_message }}
         {% if help_message %}
           <div class="pull-right">

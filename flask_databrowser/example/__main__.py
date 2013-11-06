@@ -107,7 +107,7 @@ def main():
 
 
         __form_columns__ = OrderedDict()
-        __form_columns__[u"主要的"] = ["id", "name", PlaceHolderColumnSpec("group", template_fname="/accounts/group-snippet.html", as_input=True), "password", 
+        __form_columns__[u"主要的"] = ["id", InputColumnSpec("name", read_only=True), PlaceHolderColumnSpec("group", template_fname="/accounts/group-snippet.html", as_input=True), "password",
                                          PlaceHolderColumnSpec("foo", template_fname="/accounts/foo-snippet.html")]
         __form_columns__[u"次要的"] = ["roll_called", "good", PlaceHolderColumnSpec("age", template_fname="/accounts/age-snippet.html", as_input=True), "create_time", ImageColumnSpec("avatar", alt=u"头像", 
                                             formatter=lambda v, model: "http://farm9.staticflickr.com/8522/8478415115_152c6f5e55_m.jpg", doc=u"头像， ^_^!")]
