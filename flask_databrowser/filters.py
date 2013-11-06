@@ -9,7 +9,7 @@ from .utils import TemplateParam, raised_when, get_primary_key
 from flask.ext.babel import gettext as _
 from werkzeug.utils import cached_property
 
-_raised_when_model_unset = raised_when(lambda inst, *args, **kwargs: not inst.model_view, 
+_raised_when_model_unset = raised_when(lambda inst, *args, **kwargs: not inst.model_view,
                                        RuntimeError(r'field "model view" unset, you should set it'))
 
 
@@ -47,6 +47,8 @@ class BaseFilter(TemplateParam):
     @property
     @_raised_when_model_unset
     def input_type(self):
+        """ 用tuple 是因为有可能返回 类似于(number, number)的双控件
+        """
         if self.options:
             return "select",
         else:
@@ -86,24 +88,28 @@ class BaseFilter(TemplateParam):
     @property
     def options(self):
         if self.__options:
-            return [(md5(",".join(str(o[0]) for o in self.__options)).hexdigest(), u'--%s--' % _(u"all"))] + self.__options
+            return [(md5(",".join(str(o[0]) for o in self.__options)).hexdigest(),
+                     u'--%s--' % _(u"all"))] + self.__options
         else:
             # if column is a relation, then we should find all of them, else return []
             ret = []
             if hasattr(self.attr, 'property') and hasattr(self.attr.property, 'direction'):
                 model = self.attr.property.mapper.class_
-                ret.extend((getattr(row, get_primary_key(model)), self.opt_formatter(row) if self.opt_formatter else row) 
-                        for row in model.query.all())
+                ret.extend(
+                    (getattr(row, get_primary_key(model)), self.opt_formatter(row) if self.opt_formatter else row)
+                    for row in model.query.all())
                 if not ret:
                     ret = [("", u'--%s--' % _(u"all"))]
                 elif not self.multiple:
-                    ret.insert(0, (md5((",".join(unicode(r[0]) for r in ret)).encode("utf-8")).hexdigest(), u'--%s--' % _(u"all")))
+                    ret.insert(0, (
+                    md5((",".join(unicode(r[0]) for r in ret)).encode("utf-8")).hexdigest(), u'--%s--' % _(u"all")))
             return ret
 
     @property
     def real_value(self):
         from flask import request
-        value = request.args.get(self.col_name+self.__notation__, "")
+
+        value = request.args.get(self.col_name + self.__notation__, "")
         return value if value != (self.options and self.options[0][0]) else None
 
     def unfiltered(self, arg):
@@ -113,8 +119,7 @@ class BaseFilter(TemplateParam):
         if isinstance(self.value, list) or isinstance(self.value, tuple):
             return any(val not in (None, "") for val in self.value)
         else:
-            return self.value not in (None, "") and self.value != (
-               self.options and self.options[0][0])
+            return self.value not in (None, "") and self.value != (self.options and self.options[0][0])
 
     def set_sa_criterion(self, q):
         """
@@ -131,7 +136,7 @@ class BaseFilter(TemplateParam):
 
     @property
     def sa_criterion(self):
-        
+
         attr = getattr(self.model, self.col_name)
         if hasattr(attr.property, 'direction'):
             # translate the relation
@@ -139,30 +144,36 @@ class BaseFilter(TemplateParam):
         else:
             return self.__operator__(attr, self.value)
 
+
 class EqualTo(BaseFilter):
     __notation__ = ""
     __operator__ = operator.eq
+
 
 class NotEqualTo(BaseFilter):
     __notation__ = "__ne"
     __operator__ = operator.ne
 
+
 class LessThan(BaseFilter):
     __notation__ = "__lt"
     __operator__ = operator.lt
+
 
 class BiggerThan(BaseFilter):
     __notation__ = "__gt"
     __operator__ = operator.gt
 
+
 class Contains(BaseFilter):
     __notation__ = "__contains"
     __operator__ = lambda self, attr, value: attr.like(value.join(["%", "%"]))
 
+
 class Between(BaseFilter):
-    
     def __init__(self, col_name, name="", sep="--", default_value=None, display_col_name=None):
-        super(Between, self).__init__(col_name=col_name, name=name, default_value=default_value, display_col_name=display_col_name)
+        super(Between, self).__init__(col_name=col_name, name=name, default_value=default_value,
+                                      display_col_name=display_col_name)
         self.sep = sep
 
     def __operator__(self, attr, value_list):
@@ -184,6 +195,7 @@ class Between(BaseFilter):
     def input_class(self):
         return 'numeric-filter'
 
+
 class In_(BaseFilter):
     __notation__ = "__in"
 
@@ -192,8 +204,8 @@ class In_(BaseFilter):
 
     multiple = True
 
-class Only(BaseFilter):
 
+class Only(BaseFilter):
     def __init__(self, col_name, display_col_name, test, notation, default_value=False):
         self.__notation__ = notation
         super(Only, self).__init__(col_name=col_name, default_value=default_value, display_col_name=display_col_name)
@@ -213,7 +225,6 @@ class Only(BaseFilter):
     @property
     def input_type(self):
         return "checkbox",
-
 
     @property
     def value(self):
