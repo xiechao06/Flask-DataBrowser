@@ -10,7 +10,7 @@ from . import form
 from .validators import Unique
 from .fields import QuerySelectField, QuerySelectMultipleField
 from flask.ext.databrowser.column_spec import InputColumnSpec, PlaceHolderColumnSpec, FileColumnSpec
-from flask.ext.databrowser.utils import get_description, get_primary_key
+from flask.ext.databrowser.utils import get_description, get_primary_key, make_disabled_field
 from flask.ext.babel import _
 
 try:
@@ -345,11 +345,8 @@ class AdminModelConverter(ModelConverterBase):
 
                 if converter is None:
                     return None
-                extra = {}
-                if getattr(col_spec, "read_only", False):
-                    extra["read_only"] = True
                 return converter(model=model, mapper=mapper, prop=prop,
-                                 column=column, field_args=kwargs, **extra)
+                                 column=column, field_args=kwargs)
 
         return None
 
@@ -380,8 +377,6 @@ class AdminModelConverter(ModelConverterBase):
                     kwargs["maxlength"] = column.type.length
                 if self._value() is None and column.default is not None:
                     kwargs['value'] = column.default.arg
-                if "read_only" in extra:
-                    kwargs["disabled"] = True
                 return super(MyTextField, self).__call__(**kwargs)
 
         return MyTextField(**field_args)
@@ -553,6 +548,8 @@ def get_form(model, converter,
             continue
         field = converter.convert(model, mapper, prop, field_args.get(name), hidden_pk, col_spec)
         if field is not None:
+            if col_spec and not isinstance(col_spec, PlaceHolderColumnSpec) and getattr(col_spec, "read_only", None):
+                field = make_disabled_field(field)
             field_dict[name] = field
 
     return type(model.__name__ + 'Form', (base_class, ), field_dict)

@@ -1,9 +1,28 @@
 # -*- coding: UTF-8 -*-
 import types
-from flask import request,url_for, render_template, flash, redirect, g
+from flask import request, url_for, render_template, g
 from flask.ext.principal import PermissionDenied
-from flask.ext.babel import ngettext, gettext as _
+from flask.ext.babel import gettext as _
 from flask.ext.databrowser.exceptions import ValidationError
+
+
+def make_disabled_field(field):
+    class FakeField(field.field_class):
+
+        def __call__(self, **kwargs):
+            kwargs["disabled"] = True
+            return super(FakeField, self).__call__(**kwargs)
+
+        def validate(self, form, extra_validators=()):
+            return True
+
+        # dirty trick
+        @property
+        def __read_only__(self):
+            return True
+
+    field.field_class = FakeField
+    return field
 
 
 def get_primary_key(model):
@@ -41,7 +60,7 @@ def url_for_other_page(page):
 
 class TemplateParam(object):
     """A class intends to be templates parameter should inherit this class"""
-   
+
     def as_dict(self, *fields):
         items = []
         for field in fields:
@@ -73,7 +92,7 @@ def raised_when(test, assertion):
                 raise assertion
             return f(*args, **kwargs)
         return f_
-    
+
     return decorator
 
 
