@@ -1,5 +1,7 @@
 # -*- coding: UTF-8 -*-
 import types
+
+from sqlalchemy.orm.properties import ColumnProperty
 from flask import request, url_for, render_template, g
 from flask.ext.principal import PermissionDenied
 from flask.ext.babel import gettext as _
@@ -41,10 +43,8 @@ def get_primary_key(model):
         props = model._sa_class_manager.mapper.iterate_properties
 
         for p in props:
-            if hasattr(p, 'columns'):
-                for c in p.columns:
-                    if c.primary_key:
-                        return p.key
+            if isinstance(p, ColumnProperty) and p.is_primary:
+                return p.key
 
     return None
 
@@ -167,7 +167,6 @@ def request_from_mobile():
         v = reg_v.search(user_agent[0:4])
         return b or v
     return False
-
 
 class ErrorHandler(object):
 
