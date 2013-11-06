@@ -8,28 +8,21 @@
   {% block __data_browser__head_block %}
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <link href="{{ url_for('__data_browser__.static', filename='bootstrap/css/bootstrap.css') }}" rel="stylesheet" media="screen"/>
-    <link href="{{ url_for('__data_browser__.static', filename='bootstrap/css/bootstrap-responsive.css') }}" rel="stylesheet" media="screen"/>
-    <link href="{{ url_for('__data_browser__.static', filename='select2/select2.css') }}" rel="stylesheet"/>
+    <link href="{{ url_for('__data_browser__.static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
+    <link href="{{ url_for('__data_browser__.static', filename='css/font-awesome.min.css') }}" rel="stylesheet">
+    <link href="{{ url_for('__data_browser__.static', filename='css/select2.css') }}" rel="stylesheet"/>
+    <link href="{{ url_for('__data_browser__.static', filename='css/select2-bootstrap.css') }}" rel="stylesheet"/>
     <link href="{{ url_for('__data_browser__.static', filename='css/admin.css') }}" rel="stylesheet"/>
-    <link href="{{ url_for('__data_browser__.static', filename='css/datetimepicker.css') }}" rel="stylesheet"/>
-    <link href="{{ url_for('__data_browser__.static', filename='css/responsive-nav.css') }}" rel="stylesheet"/>
-    <link href="{{ url_for('__data_browser__.static', filename='css/font-awesome.min.css') }}" rel="stylesheet"/>
-    <link href="{{ url_for('__data_browser__.static', filename='css/jquery.pnotify.default.css') }}" rel="stylesheet" />
-    <link href="{{ url_for('__data_browser__.static', filename='css/jquery.pnotify.default.icons.css') }}" rel="stylesheet" />
-    <script src="{{ url_for('__data_browser__.static', filename='js/jquery-1.8.2.min.js') }}"></script>
-    <script src="{{ url_for('__data_browser__.static', filename='select2/select2.js') }}"></script>
-    <script src="{{ url_for('__data_browser__.static', filename='bootstrap/js/bootstrap.min.js') }}"></script>
+    <link href="{{ url_for('__data_browser__.static', filename='css/bootstrap-datetimepicker.min.css') }}" rel="stylesheet"/>
+    <script src="{{ url_for('__data_browser__.static', filename='js/jquery-1.9.1.min.js') }}"></script>
+    <script src="{{ url_for('__data_browser__.static', filename='js/select2.min.js') }}"></script>
+    <script src="{{ url_for('__data_browser__.static', filename='js/bootstrap.min.js') }}"></script>
     <script src="{{ url_for('__data_browser__.static', filename='js/bootstrap-datetimepicker.min.js') }}"></script>
-    <script src="{{ url_for("__data_browser__.static", filename="js/locales/bootstrap-datetimepicker.zh-CN.js")  }}" charset="UTF-8"></script>
     <script src="{{ url_for('__data_browser__.static', filename='js/form.js') }}"></script>
     <script src="{{ url_for('__data_browser__.static', filename='js/sprintf-0.6.js') }}"></script>
-    <script src="{{ url_for('__data_browser__.static', filename='js/responsive-nav.min.js') }}"></script>
-    <script src="{{ url_for('__data_browser__.static', filename='js/jquery.pnotify.min.js') }}"></script>
     <script src="{{ url_for('__data_browser__.static', filename='js/url.min.js') }}"></script>
     {% if g.request_from_mobile %}
       <script src="{{ url_for('__data_browser__.static', filename='js/custom_checkbox_and_radio.js') }}"></script>
-      <script src="{{ url_for('__data_browser__.static', filename='js/custom_radio.js') }}"></script>
       <script src="{{ url_for('__data_browser__.static', filename='js/jquery.tagsinput.js') }}"></script>
       <script src="{{ url_for('__data_browser__.static', filename='js/jquery.placeholder.js') }}"></script>
       <script src="{{ url_for('__data_browser__.static', filename='js/quo.js') }}"></script>
@@ -40,10 +33,12 @@
           $(".flash").fadeOut("slow");
         }, 3000);
         $("[data-toggle=tooltip]").tooltip();
-        $(".accordion").on("shown",function (event) {
+        $(".panel-collapse").on('shown.bs.collapse',function (event) {
           event.stopPropagation();
-        }).on("hidden", function (event) {
-              event.stopPropagation()
+          $(this).prev().find("i").removeClass("fa-chevron-up").addClass("fa-chevron-down");
+        }).on('hidden.bs.collapse', function (event) {
+              event.stopPropagation();
+              $(this).prev().find("i").removeClass("fa-chevron-down").addClass("fa-chevron-up");
             });
         function my_matcher(term, text, option) {
           var bool = text.toUpperCase().indexOf(term.toUpperCase()) >= 0;
@@ -52,10 +47,12 @@
           }
           return bool;
         }
+
         $("select").select2({
-          matcher:my_matcher,
+          matcher: my_matcher,
           width: "resolve"
-        })
+        });
+        $("#fix-bottom-div").height($("#footer-action-bar").height() + 5);
       })
     </script>
     {% block __data_browser__builtin_head_block %}
@@ -64,33 +61,30 @@
     {% endblock %}
   {% endblock %}
 </head>
-<body cz-shortcut-listen="true">
-<a name="top"></a>
+<body>
 {% block __data_browser__nav_bar_block %}
 {% endblock %}
 {% block page_body %}
-    <div class="page-body">
-      {% with messages = get_flashed_messages(with_categories=True) %}
-        {% if messages %}
-          <div class="flash">
-            {% for category, m in messages %}
-              {% if category == 'error' %}
-                <div class="alert alert-error">
-                  <a href="#" class="close" data-dismiss="alert">x</a>
-                  {{ m }}</div>
-              {% else %}
-                <div class="alert alert-success">
-                  <a href="#" class="close" data-dismiss="alert">x</a>
-                  {{ m }}
-                </div>
-              {% endif %}
-            {% endfor %}
-          </div>
-        {% endif %}
-      {% endwith %}
-      {% block body %}
-      {% endblock %}
-    </div>
+  {% with messages = get_flashed_messages(with_categories=True) %}
+    {% if messages %}
+      <div class="flash">
+        {% for category, m in messages %}
+          {% if category == 'error' %}
+            <div class="alert alert-danger">
+              <a href="#" class="close" data-dismiss="alert">x</a>
+              {{ m }}</div>
+          {% else %}
+            <div class="alert alert-success">
+              <a href="#" class="close" data-dismiss="alert">x</a>
+              {{ m }}
+            </div>
+          {% endif %}
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+  {% block body %}
+  {% endblock %}
 {% endblock %}
 {% block __data_browser__footer_block %}
 {% endblock %}
@@ -98,5 +92,6 @@
 {% endblock %}
 {% block __data_browser__custom_external_block %}
 {% endblock %}
+<div id="fix-bottom-div"></div>
 </body>
 </html>

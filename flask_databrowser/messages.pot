@@ -8,14 +8,14 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2013-08-07 17:41+0800\n"
+"POT-Creation-Date: 2013-11-06 10:14+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 0.9.6\n"
+"Generated-By: Babel 1.3\n"
 
 #: action.py:41
 #, python-format
@@ -34,79 +34,76 @@ msgstr ""
 msgid "%(action)s can't apply upon %(model_name)s [%%s]"
 msgstr ""
 
-#: action.py:74
+#: action.py:73
 msgid "remove"
 msgstr ""
 
-#: base.py:425 base.py:1335
+#: base.py:490 base.py:1369
 #, python-format
 msgid "can't apply %(action)s due to %(reason)s"
 msgstr ""
 
-#: base.py:441 base.py:1347
+#: base.py:506 base.py:1381
 #, python-format
 msgid "Failed to update %(model_name)s %(objs)s due to %(error)s"
 msgstr ""
 
-#: base.py:445 base.py:1143 base.py:1351
+#: base.py:510 base.py:1177 base.py:1385
 #, python-format
 msgid "invalid action %(action)s"
 msgstr ""
 
-#: base.py:455
+#: base.py:533
 msgid "update"
 msgstr ""
 
-#: base.py:457
+#: base.py:535
 #, python-format
 msgid "%(model_name)s %(obj)s was updated and saved"
 msgstr ""
 
-#: base.py:465
+#: base.py:543
 #, python-format
 msgid "Failed to update %(model_name)s %(obj)s due to %(error)s"
 msgstr ""
 
-#: base.py:507 base.py:624
+#: base.py:585 base.py:701
 #, python-format
 msgid "%(model_name)s %(model)s was created successfully"
 msgstr ""
 
-#: base.py:508 templates/__data_browser__/form_mob.html:82
-#: templates/__data_browser__/macro.html:206
+#: base.py:586 templates/__data_browser__/macro.html:214
 msgid "add another"
 msgstr ""
 
-#: base.py:609
+#: base.py:686
 #, python-format
 msgid "%(user)s performed %(action)s"
 msgstr ""
 
-#: base.py:626 templates/__data_browser__/form_mob.html:48
-#: templates/__data_browser__/list.html:278
-#: templates/__data_browser__/list_mob.html:97
-#: templates/__data_browser__/macro.html:180
+#: base.py:703 templates/__data_browser__/list.html:270
+#: templates/__data_browser__/macro.html:200
 msgid "create"
 msgstr ""
 
-#: base.py:634 base.py:645
+#: base.py:711 base.py:722
 #, python-format
 msgid ""
 "you are viewing %(model_name)s-%(obj)s, since you have only read "
 "permission"
 msgstr ""
 
-#: base.py:638
+#: base.py:715
 #, python-format
 msgid "edit %(model_name)s-%(objs)s"
 msgstr ""
 
-#: base.py:649
+#: base.py:726
 #, python-format
 msgid "edit %(model_name)s-%(obj)s"
 msgstr ""
 
-#: base.py:652
+#: base.py:729
 #, python-format
 msgid "create %(model_name)s"
 msgstr ""
@@ -115,24 +112,24 @@ msgstr ""
 msgid "all"
 msgstr ""
 
-#: utils.py:184
+#: utils.py:167
 #, python-format
 msgid ""
 "this operation needs the following permissions: %(permissions)s, contact "
 "administrator to grant them!"
 msgstr ""
 
-#: utils.py:188
+#: utils.py:171
 msgid "Sorry, object doesn't exist!"
 msgstr ""
 
-#: utils.py:198
+#: utils.py:181
 #, python-format
 msgid "Internal error \"%(err)s\", please contact us!"
 msgstr ""
 
 #: convert_utils/sa.py:61 convert_utils/sa.py:182 convert_utils/sa.py:189
-#: form/convert.py:281 form/convert.py:288 form/validators.py:33
+#: form/convert.py:295 form/convert.py:304 form/validators.py:33
 msgid "This field must be unique, but it already exists!"
 msgstr ""
 
@@ -188,43 +185,43 @@ msgstr ""
 msgid "Invalid email address."
 msgstr ""
 
-#: convert_utils/sa.py:176 convert_utils/sa.py:225 form/convert.py:187
-#: form/convert.py:291
+#: convert_utils/sa.py:176 convert_utils/sa.py:225 form/convert.py:191
+#: form/convert.py:307
 msgid "this field can't be empty"
 msgstr ""
 
-#: convert_utils/sa.py:193 form/convert.py:344
+#: convert_utils/sa.py:193 form/convert.py:367
 #, python-format
 msgid "value of this field must be %(values)s"
 msgstr ""
 
-#: convert_utils/sa.py:194 form/convert.py:345
+#: convert_utils/sa.py:194 form/convert.py:368
 #, python-format
 msgid " or %(last_value)s"
 msgstr ""
 
-#: convert_utils/sa.py:202 form/convert.py:387
+#: convert_utils/sa.py:202 form/convert.py:418
 msgid "this field must bigger than 0"
 msgstr ""
 
-#: form/convert.py:338
+#: form/convert.py:358
 #, python-format
 msgid "length exceeds %(max_length)%d"
 msgstr ""
 
-#: form/convert.py:404
+#: form/convert.py:438
 msgid "this field must between 1901 and 2155"
 msgstr ""
 
-#: form/convert.py:410
+#: form/convert.py:444
 msgid "this field must be a valid IP address"
 msgstr ""
 
-#: form/convert.py:416
+#: form/convert.py:450
 msgid "this field must be a valid MAC address"
 msgstr ""
 
-#: form/convert.py:422
+#: form/convert.py:456
 msgid "this field must be a valid UUID"
 msgstr ""
 
@@ -232,7 +229,7 @@ msgstr ""
 msgid "Not a valid choice"
 msgstr ""
 
-#: form/form.py:70
+#: form/form.py:85
 msgid "Invalid time format"
 msgstr ""
 
@@ -240,162 +237,95 @@ msgstr ""
 msgid "点击返回"
 msgstr ""
 
-#: templates/__data_browser__/error_mob.html:12
-msgid "Error"
-msgstr ""
-
-#: templates/__data_browser__/error_mob.html:16
-#: templates/__data_browser__/form_mob.html:37
-#: templates/__data_browser__/macro.html:217
-#: templates/__data_browser__/macro.html:239
-#: templates/__data_browser__/macro.html:266
-msgid "back"
-msgstr ""
-
 #: templates/__data_browser__/form.html:12
-#: templates/__data_browser__/list.html:262
-#: templates/__data_browser__/list.html:284
+#: templates/__data_browser__/list.html:223
 msgid "help"
 msgstr ""
 
-#: templates/__data_browser__/form.html:23
-#: templates/__data_browser__/list.html:292
+#: templates/__data_browser__/form.html:29
+#: templates/__data_browser__/list.html:233
 msgid "Help"
 msgstr ""
 
-#: templates/__data_browser__/form.html:27
-#: templates/__data_browser__/list.html:298
+#: templates/__data_browser__/form.html:33
+#: templates/__data_browser__/list.html:239
+#: templates/__data_browser__/list.html:497
 msgid "close"
 msgstr ""
 
-#: templates/__data_browser__/form.html:65
+#: templates/__data_browser__/form.html:72
 #, python-format
 msgid "Are you sure to %%s these items?"
 msgstr ""
 
-#: templates/__data_browser__/form.html:67
+#: templates/__data_browser__/form.html:74
 #, python-format
 msgid "Are you sure to %%s this item?"
 msgstr ""
 
-#: templates/__data_browser__/form_mob.html:79
-#: templates/__data_browser__/macro.html:232
-#: templates/__data_browser__/macro.html:262
-msgid "commit"
-msgstr ""
-
-#: templates/__data_browser__/form_mob.html:80
-#: templates/__data_browser__/list.html:508
-#: templates/__data_browser__/macro.html:235
-#: templates/__data_browser__/macro.html:263
-msgid "reset"
-msgstr ""
-
-#: templates/__data_browser__/form_mob.html:92
-msgid "no previous item"
-msgstr ""
-
-#: templates/__data_browser__/form_mob.html:95
-msgid "no next item"
-msgstr ""
-
-#: templates/__data_browser__/list.html:18
+#: templates/__data_browser__/list.html:17
 #: templates/__data_browser__/macro.html:6
 #: templates/__data_browser__/macro.html:43
 msgid "no previous page!"
 msgstr ""
 
-#: templates/__data_browser__/list.html:42
+#: templates/__data_browser__/list.html:41
 msgid "no more page!"
 msgstr ""
 
-#: templates/__data_browser__/list.html:139
+#: templates/__data_browser__/list.html:72
+#: templates/__data_browser__/list.html:110
 msgid "please choose one item!"
 msgstr ""
 
-#: templates/__data_browser__/list.html:142
-#: templates/__data_browser__/list.html:404
-#: templates/__data_browser__/list.html:437
+#: templates/__data_browser__/list.html:113
+#: templates/__data_browser__/list.html:380
+#: templates/__data_browser__/list.html:410
 msgid "batch edit"
 msgstr ""
 
-#: templates/__data_browser__/list.html:149
+#: templates/__data_browser__/list.html:120
 #, python-format
 msgid "Are you sure to %%s the selected item(s)?"
 msgstr ""
 
-#: templates/__data_browser__/list.html:152
+#: templates/__data_browser__/list.html:123
 msgid "Attention!"
 msgstr ""
 
-#: templates/__data_browser__/list.html:236
+#: templates/__data_browser__/list.html:206
 msgid "no results matched!"
 msgstr ""
 
-#: templates/__data_browser__/list.html:271
+#: templates/__data_browser__/list.html:262
 #, python-format
 msgid "totally: %(count)d"
 msgstr ""
 
-#: templates/__data_browser__/list.html:459
-msgid "refine search"
-msgstr ""
-
-#: templates/__data_browser__/list.html:486
-#: templates/__data_browser__/list.html:488
-#: templates/__data_browser__/list.html:490
+#: templates/__data_browser__/list.html:469
 #, python-format
 msgid "input %(label)s here"
 msgstr ""
 
-#: templates/__data_browser__/list.html:507
+#: templates/__data_browser__/list.html:489
+#: templates/__data_browser__/list.html:508
+msgid "refine search"
+msgstr ""
+
+#: templates/__data_browser__/list.html:496
+#: templates/__data_browser__/list.html:517
+#: templates/__data_browser__/macro.html:244
+#: templates/__data_browser__/macro.html:268
+msgid "reset"
+msgstr ""
+
+#: templates/__data_browser__/list.html:498
+#: templates/__data_browser__/list.html:516
 msgid "refresh"
 msgstr ""
 
-#: templates/__data_browser__/list_mob.html:37
-#, python-format
-msgid "Are you sure to %%s %%s?"
-msgstr ""
-
-#: templates/__data_browser__/list_mob.html:57
-msgid "loading.."
-msgstr ""
-
-#: templates/__data_browser__/list_mob.html:95
-msgid "list"
-msgstr ""
-
-#: templates/__data_browser__/list_mob.html:111
-msgid "click to load more"
-msgstr ""
-
-#: templates/__data_browser__/list_mob.html:115
-msgid "sorry, no data available!"
-msgstr ""
-
-#: templates/__data_browser__/list_mob.html:131
-msgid "Warning"
-msgstr ""
-
-#: templates/__data_browser__/list_mob.html:135
-msgid "Cancel"
-msgstr ""
-
-#: templates/__data_browser__/list_mob.html:136
-msgid "OK"
-msgstr ""
-
-#: templates/__data_browser__/list_mob.html:141
-msgid "loading error"
-msgstr ""
-
-#: templates/__data_browser__/list_mob.html:146
-#, python-format
-msgid "total number of items: %(count)d"
-msgstr ""
-
 #: templates/__data_browser__/macro.html:23
-#: templates/__data_browser__/macro.html:64
+#: templates/__data_browser__/macro.html:75
 msgid "no more pages!"
 msgstr ""
 
@@ -404,39 +334,50 @@ msgstr ""
 msgid "prev"
 msgstr ""
 
-#: templates/__data_browser__/macro.html:66
-#: templates/__data_browser__/macro.html:72
-msgid "next"
-msgstr ""
-
-#: templates/__data_browser__/macro.html:78
+#: templates/__data_browser__/macro.html:71
 #, python-format
 msgid "totally matched records: %(count)d"
 msgstr ""
 
-#: templates/__data_browser__/macro.html:90
+#: templates/__data_browser__/macro.html:77
+#: templates/__data_browser__/macro.html:83
+msgid "next"
+msgstr ""
+
+#: templates/__data_browser__/macro.html:96
 #, python-format
 msgid "Step %(step)d"
 msgstr ""
 
-#: templates/__data_browser__/macro.html:140
-#: templates/__data_browser__/macro.html:149
+#: templates/__data_browser__/macro.html:146
+#: templates/__data_browser__/macro.html:155
 msgid "unique field, can't be modified"
 msgstr ""
 
-#: templates/__data_browser__/macro.html:159
+#: templates/__data_browser__/macro.html:167
 msgid "keep unchanged"
 msgstr ""
 
-#: templates/__data_browser__/macro.html:214
+#: templates/__data_browser__/macro.html:224
 msgid "Last step"
 msgstr ""
 
-#: templates/__data_browser__/macro.html:221
+#: templates/__data_browser__/macro.html:228
+#: templates/__data_browser__/macro.html:246
+#: templates/__data_browser__/macro.html:271
+msgid "back"
+msgstr ""
+
+#: templates/__data_browser__/macro.html:232
 msgid "Next step"
 msgstr ""
 
-#: templates/__data_browser__/macro.html:288
+#: templates/__data_browser__/macro.html:243
+#: templates/__data_browser__/macro.html:267
+msgid "commit"
+msgstr ""
+
+#: templates/__data_browser__/macro.html:293
 msgid "Fields already filled"
 msgstr ""
 

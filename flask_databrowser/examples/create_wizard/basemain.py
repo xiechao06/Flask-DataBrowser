@@ -36,6 +36,7 @@ from flask.ext.databrowser.column_spec import PlaceHolderColumnSpec
 class UserModelView(databrowser.ModelView):
 
     can_create = True
+    create_in_steps = True
     __customized_actions__ = [DeleteAction()]
     __create_columns__ = OrderedDict()
     __create_columns__[u'设置群组'] = ["group"]

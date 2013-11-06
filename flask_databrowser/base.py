@@ -13,9 +13,10 @@ import werkzeug
 from werkzeug.utils import secure_filename
 import yaml
 from werkzeug.datastructures import MultiDict
+import wtforms
 
 from flask import (render_template, flash, request, url_for, redirect, Flask, make_response, jsonify)
-from flask.ext.babel import gettext as _
+from flask.ext.babel import _
 from flask.ext.databrowser.utils import (get_primary_key, get_doc_from_table_def, test_request_type)
 from flask.ext.principal import PermissionDenied
 from flask.ext.sqlalchemy import Pagination
@@ -23,15 +24,81 @@ from flask.ext.sqlalchemy import Pagination
 from flask.ext.databrowser.column_spec import (LinkColumnSpec, ColumnSpec, InputColumnSpec, PlaceHolderColumnSpec,
                                                FileColumnSpec)
 from flask.ext.databrowser.convert import ValueConverter
-from flask.ext.databrowser import sa_utils
-from flask.ext.databrowser import filters
+from flask.ext.databrowser import sa_utils, helpers, filters
 from flask.ext.databrowser.exceptions import ValidationError
 from flask.ext.databrowser.extra_widgets import PlaceHolder
 from flask.ext.databrowser.form import form
-from flask.ext.databrowser.convert_utils import convert_column, get_dict_converter, extract_validators
+from flask.ext.databrowser.convert_utils import convert_column, get_dict_converter
 
 WEB_PAGE = 1
 WEB_SERVICE = 2
+
+# I fake a form since I won't compose my fields and get the
+# hidden_tag (used to generate csrf) from model's form
+class FakeForm(object):
+    def __init__(self, model_form, fields):
+        class FakeField(object):
+            def __init__(self, field):
+                self.field = field
+
+            def __getattr__(self, item):
+                return getattr(self.field, item)
+
+            def __call__(self, *args, **kwargs):
+                if self.field.type == 'BooleanField':
+                    form_control_div = "<div class='checkbox'>%s</div>"
+                    return form_control_div % self.field(**kwargs)
+                else:
+                    def _add_class(kwargs, _class):
+                        kwargs["class"] = " ".join((kwargs["class"], _class)) if kwargs.get("class") else _class
+
+                    _add_class(kwargs, "form-control" if self.is_input_field else "form-control-static")
+                    return self.field(**kwargs)
+
+            @property
+            def is_input_field(self):
+                return isinstance(self.field.widget, (wtforms.widgets.Input, wtforms.widgets.Select,
+                                                      wtforms.widgets.TextArea)) \
+                    and self.field.type not in["ReadOnlyField", "FileField"]
+
+            @property
+            def form_width_class(self):
+                initial = getattr(self.field, "form_width_class", "")
+                if initial:
+                    return initial
+                if self.is_input_field:
+                    return "col-lg-3"
+                label = getattr(self.field, "label")
+                if getattr(label, "text", None) or label.get("text"):
+                    return "col-lg-10"
+                return "col-lg-12"
+
+        self.model_form = model_form
+        self.fields = [FakeField(field) for field in fields]
+        self.field_map = {}
+        for field in self.fields:
+            self.field_map[field.name] = field
+
+    def __iter__(self):
+        return iter(self.fields)
+
+    def __getitem__(self, name):
+        return self.field_map[name]
+
+    def hidden_tag(self):
+        return self.model_form.hidden_tag()
+
+    def is_submitted(self):
+        return self.model_form.is_submitted()
+
+    @property
+    def errors(self):
+        return self.model_form.errors
+
+    @property
+    def has_file_field(self):
+        return self.model_form.has_file_field
+
 
 class ModelView(object):
     __column_formatters__ = {}
@@ -327,13 +394,8 @@ class ModelView(object):
                                       formatter=formatter,
                                       label=label, css_class="control-text")
         else:
-            formatter = self.__column_formatters__.get(col,
-                                                       lambda x, obj: unicode(
-                                                           x))
-            col_spec = ColumnSpec(col, doc=doc,
-                                  formatter=formatter,
-                                  label=label,
-                                  css_class="control-text")
+            formatter = self.__column_formatters__.get(col, lambda x, obj: unicode(x))
+            col_spec = ColumnSpec(col, doc=doc, formatter=formatter, label=label, css_class="control-text")
         return col_spec
 
     def generate_model_string(self, link):
@@ -430,6 +492,10 @@ class ModelView(object):
                             return False
                     try:
                         ret = action.op_upon_list(processed_objs, self)
+                        if isinstance(ret, tuple):
+                            flash(ret[-1], "error")
+                            return False
+
                         self.session.commit()
                         if isinstance(ret, werkzeug.wrappers.BaseResponse) and ret.status_code == 302:
                             if not action.direct:
@@ -441,7 +507,7 @@ class ModelView(object):
                     except Exception, ex:
                         flash(
                             _('Failed to update %(model_name)s %(objs)s due to %(error)s', model_name=self.model_name,
-                              objs=",".join(unicode(obj) for obj in processed_objs), error=str(ex)), 'error')
+                              objs=",".join(unicode(obj) for obj in processed_objs), error=unicode(ex)), 'error')
                         self.session.rollback()
                         raise
             raise ValidationError(
@@ -465,7 +531,7 @@ class ModelView(object):
                             file_.save(os.path.join(self.data_browser.app.config.get("UPLOAD_FOLDER", ""), filename))
                             setattr(obj, field.name, filename)
                         continue
-                    if name not in holded_fields and field.data is not None:
+                    if name not in holded_fields and not helpers.is_unique_form_field(field) and field.data is not None:
                         field.populate_obj(obj, name)
 
                 self.do_update_log(obj, _("update"))
@@ -478,7 +544,7 @@ class ModelView(object):
             flash(
                 _('Failed to update %(model_name)s %(obj)s due to %(error)s',
                   model_name=self.model_name, obj=",".join([unicode(obj) for obj in objs]),
-                  error=str(ex)), 'error')
+                  error=unicode(ex)), 'error')
             self.session.rollback()
             return False
 
@@ -541,28 +607,24 @@ class ModelView(object):
                 create_url = self.data_browser.get_create_url(remote_side, col_name)
                 if create_url:
                     create_url_map[col] = create_url
-        kwargs = {}
-        form_kwargs = self.get_extra_params().get("create_view", {})
-        for k, v in form_kwargs.items():
-            if isinstance(v, types.FunctionType):
-                v = v(self)
-            kwargs[k] = v
 
         compound_form = self.get_create_compound_form(form, create_columns)
         form = compound_form or form
 
-        kwargs = {}
+        placeholder_kwargs = {}
         form_kwargs = self.get_extra_params().get("create_view", {})
         for k, v in form_kwargs.items():
             if isinstance(v, types.FunctionType):
                 v = v(self)
-            kwargs[k] = v
+            placeholder_kwargs[k] = v
 
         for f in form:
             if isinstance(f.widget, PlaceHolder):
-                f.widget.set_args(**kwargs)
+                f.widget.set_args(**placeholder_kwargs)
 
         fieldset_list = []
+
+
         if isinstance(create_columns, types.DictType):
             for fieldset, cols in create_columns.items():
                 fieldset_list.append((fieldset, [form[col.col_name if isinstance(col, ColumnSpec) else col] for col in cols]))
@@ -592,7 +654,7 @@ class ModelView(object):
                             col_def = operator.attrgetter(k)(self.model)
                             if hasattr(col_def.property, 'direction'): # is a relation ship
                                 v = unicode(sa_utils.remote_side(col_def).query.get(v))
-                            kwargs.setdefault('previous_steps_info',[]).append((previous_columns[k], v[0] if len(v) == 1 else v))
+                            placeholder_kwargs.setdefault('previous_steps_info',[]).append((previous_columns[k], v[0] if len(v) == 1 else v))
 
             if current_step < len(self.create_columns) - 1:
                 args = request.args.to_dict()
@@ -603,8 +665,8 @@ class ModelView(object):
                 }
         else:
             create_template = self.create_template
-        kwargs['last_step'] = last_step
-        kwargs['next_step'] = next_step
+        placeholder_kwargs['last_step'] = last_step
+        placeholder_kwargs['next_step'] = next_step
         resp = self.render(create_template, form=form,
                            fieldset_list=fieldset_list,
                            create_url_map=create_url_map,
@@ -612,7 +674,7 @@ class ModelView(object):
                            help_message=self.get_create_help(),
                            hint_message=self.create_hint_message(),
                            model_view=self,
-                           **kwargs)
+                           **placeholder_kwargs)
         if form.is_submitted():
             # alas! something wrong
             resp = make_response(resp, 403)
@@ -757,18 +819,17 @@ class ModelView(object):
             except PermissionDenied:
                 read_only = True
 
-            if model:
-                form = self.get_batch_edit_form(model, model_list, read_only)
-            else:
-                form = self.get_batch_edit_form(request.form, model_list, read_only)
+            fake_obj = model if model else request.form
+            form = self.get_batch_edit_form(fake_obj, read_only)
             # we must validate batch edit as well
-            if form.is_submitted(): # ON POST
+            if form.is_submitted():  # ON POST
                 ret = self.update_objs(form, model_list)
                 if ret:
                     if isinstance(ret, werkzeug.wrappers.BaseResponse) and ret.status_code == 302:
                         return ret
                     else:
                         return redirect(request.url)
+            compound_form = self.get_compound_batch_edit_form(fake_obj, form)
 
             # ON GET
             hint_message = self.batch_edit_hint_message(preprocessed_objs, read_only)
@@ -936,32 +997,6 @@ class ModelView(object):
 
     def get_create_compound_form(self, form, create_columns):
 
-        # I fake a form since I won't compose my fields and get the
-        # hidden_tag (used to generate csrf) from model's form
-        class FakeForm(object):
-            def __init__(self, model_form, fields):
-                self.model_form = model_form
-                self.fields = fields
-                self.field_map = {}
-                for field in self.fields:
-                    self.field_map[field.name] = field
-
-            def __iter__(self):
-                return iter(self.fields)
-
-            def __getitem__(self, name):
-                return self.field_map[name]
-
-            def hidden_tag(self):
-                return self.model_form.hidden_tag()
-
-            def is_submitted(self):
-                return self.model_form.is_submitted()
-            
-            @property
-            def errors(self):
-                return self.model_form.errors
-
         if isinstance(create_columns, types.DictType):
             create_columns = list(itertools.chain(*create_columns.values()))
 
@@ -991,52 +1026,13 @@ class ModelView(object):
         ret = self.__edit_form__(obj=obj)
         return ret
 
-    def get_compound_edit_form(self, obj=None, form=None):
-        if not form:
-            form = self.get_edit_form(obj=obj)
-
-        form_columns = self.get_form_columns(obj)
-        if not form_columns:
-            return form
-
-        r = self.preprocess(obj)
-        value_converter = ValueConverter(r, self)
-
-        # I fake a form since I won't compose my fields and get the
-        # hidden_tag (used to generate csrf) from model's form
-        class FakeForm(object):
-            def __init__(self, model_form, fields):
-                self.model_form = model_form
-                self.fields = fields
-                self.field_map = {}
-                for field in self.fields:
-                    self.field_map[field.name] = field
-
-            def __iter__(self):
-                return iter(self.fields)
-
-            def __getitem__(self, name):
-                return self.field_map[name]
-
-            def hidden_tag(self):
-                return self.model_form.hidden_tag()
-
-            def is_submitted(self):
-                return self.model_form.is_submitted()
-            
-            @property
-            def errors(self):
-                return self.model_form.errors
-
-            @property
-            def has_file_field(self):
-                return self.model_form.has_file_field
+    def _get_fake_form_columns(self, form, form_columns, original_obj):
+        processed_obj = self.preprocess(original_obj)
+        value_converter = ValueConverter(processed_obj, self)
 
         ret = []
-        
         if isinstance(form_columns, types.DictType):
             form_columns = list(itertools.chain(*form_columns.values()))
-
         for col in form_columns:
             if isinstance(col, InputColumnSpec) or isinstance(col, FileColumnSpec):
                 ret.append(form[col.col_name])
@@ -1046,21 +1042,38 @@ class ModelView(object):
                     ret.append(form[col])
                 except KeyError:
                     col_spec = self._col_spec_from_str(col)
-                    widget = value_converter(operator.attrgetter(col)(r),
+                    widget = value_converter(operator.attrgetter(col)(processed_obj),
                                              col_spec)
                     ret.append(widget)
             else:
-                field = value_converter(operator.attrgetter(col.col_name)(r), col)
-                # we force the field's name is the column's name (when the column is a 
-                # the relationship, field name may be the pk, see convert.py), 
+                field = value_converter(operator.attrgetter(col.col_name)(processed_obj), col)
+                # we force the field's name is the column's name (when the column is a
+                # the relationship, field name may be the pk, see convert.py),
                 # else, the form can't be grouped by fieldset, since we can't
                 # figure out which field it is exactly. see function edit_view
                 field.name = col.col_name
                 ret.append(field)
+        return ret
+
+    def get_compound_batch_edit_form(self, obj, form):
+        batchly_form_columns = self.get_batch_form_columns()
+        if not batchly_form_columns:
+            return FakeForm(form, form._fields.values())
+        ret = self._get_fake_form_columns(form, batchly_form_columns, obj)
         return FakeForm(form, ret)
 
-    def get_batch_edit_form(self, fake_obj, objs, read_only):
+    def get_compound_edit_form(self, obj=None, form=None):
+        if not form:
+            form = self.get_edit_form(obj=obj)
 
+        form_columns = self.get_form_columns(obj)
+        if not form_columns:
+            return form
+
+        ret = self._get_fake_form_columns(form, form_columns, obj)
+        return FakeForm(form, ret)
+
+    def get_batch_edit_form(self, fake_obj, read_only):
         if self.__batch_edit_form__ is None:
             batch_form_columns = self.get_batch_form_columns()
             if isinstance(batch_form_columns, types.DictType):
@@ -1369,7 +1382,7 @@ class ModelView(object):
                                 "reason": _('Failed to update %(model_name)s %(objs)s due to %(error)s',
                                             model_name=self.model_name, 
                                             objs=",".join(unicode(obj) for obj in processed_objs),
-                                            error=str(ex))
+                                            error=unicode(ex))
                             }), 403
 
 
@@ -1605,6 +1618,8 @@ class ModelView(object):
             filter.value = None
             if filter.default_value is not None:
                 filter.value = filter.default_value
+            if isinstance(filter, filters.Only) and request.args and not request.args.get(filter.col_name):
+                filter.value = False
         for k, v in request.args.lists():
             try:
                 op_id_2_filter[k].value = (v[0] if len(v) == 1 else v)

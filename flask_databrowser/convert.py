@@ -20,10 +20,8 @@ class ValueConverter(object):
 
     def __call__(self, v, col_spec=None):
         old_v = v
-        css_class = None
         if not col_spec:
             col_spec = column_spec.ColumnSpec("")
-        convert_to_link = False
         obj = self.obj
         # convert relationshipt to link
         if self.model_view and hasattr(v, "__mapper__"):
@@ -78,23 +76,28 @@ class ValueConverter(object):
             w = extra_widgets.PlainText(unicode(v) if v is not None else "", trunc=col_spec.trunc)
 
         class FakeField(object):
-            def __init__(self, label, name, widget, css_class=None, description=None, id=None):
+            def __init__(self, label, name, widget, css_class=None, description=None, id=None, read_only=True, form_width_class=""):
                 self.label = label
                 self.name = name
                 self.id = id or name
                 self.widget = widget
-                self.type = "ReadOnlyField"
+                self.type = "ReadOnlyField" if read_only else "MyInputField"
                 self.css_class = css_class
                 self.description = description
+                self.form_width_class = form_width_class
 
             def __call__(self, **kwargs):
                 if self.css_class:
-                    kwargs["class"] = self.css_class
+                    if "class" in kwargs:
+                        kwargs["class"] = " ".join([kwargs["class"], self.css_class])
+                    else:
+                        kwargs["class"] = self.css_class
                 return self.widget(self, **kwargs)
 
         description = get_description(self.model_view, col_spec.col_name, self.obj, col_spec)
         label = self.model_view.__column_labels__.get(col_spec.col_name, col_spec.col_name) if (
             col_spec.label is None) else col_spec.label
         return FakeField(dict(text=label), name=col_spec.col_name if col_spec else "", widget=w, css_class=css_class,
-                         description=description)
+                         description=description, read_only=getattr(col_spec, "read_only", True),
+                         form_width_class=getattr(col_spec, "form_width_class", ""))
 

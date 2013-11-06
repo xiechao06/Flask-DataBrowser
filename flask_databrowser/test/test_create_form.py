@@ -84,9 +84,9 @@ class TestCreate(basetest.BaseTest):
                 from pyquery import PyQuery as pq
 
                 d = pq(rv.data)
-                controls = [i for i in d(".control-group").items()]
+                controls = [i for i in d(".form-group").items()]
                 assert len(controls) == 3
-                labels = [i("strong").text() for i in controls]
+                labels = [i("label").text() for i in controls]
                 assert "Group" in labels
                 assert "Name *" in labels
                 assert "Id *" in labels
@@ -121,7 +121,7 @@ class TestCreate(basetest.BaseTest):
                 from pyquery import PyQuery as pq
 
                 d = pq(rv.data)
-                fieldsets = [i for i in d("fieldset").items()]
+                fieldsets = [i for i in d("[data-role=fieldset-body]").items()]
                 assert len(fieldsets) == 2
 
     def test_create_in_steps(self):
@@ -153,8 +153,8 @@ class TestCreate(basetest.BaseTest):
                 d = pq(rv.data)
                 group = d("[data-role=trivial-control-group]")
                 assert len(group) == 1
-                assert len(group("[type=submit]")) == 1
-                assert len(group("[type=reset]")) == 1
+                assert len(group("#submit-btn")) == 1
+                assert len(group("#reset-btn")) == 1
                 #TODO actions
 
     def test_create_on_fly(self):

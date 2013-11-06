@@ -56,6 +56,7 @@ def main():
         edit_template = create_template = "accounts/form.html"
         can_create = True
         #can_batchly_edit = False
+        on_fly = False
 
         def preprocess(self, obj):
             class _Proxy(object):
@@ -106,13 +107,13 @@ def main():
 
 
         __form_columns__ = OrderedDict()
-        __form_columns__[u"主要的"] = ["id", "name", PlaceHolderColumnSpec("group", template_fname="/accounts/group-snippet.html", as_input=True), "password", 
+        __form_columns__[u"主要的"] = ["id", InputColumnSpec("name", read_only=True), PlaceHolderColumnSpec("group", template_fname="/accounts/group-snippet.html", as_input=True), "password",
                                          PlaceHolderColumnSpec("foo", template_fname="/accounts/foo-snippet.html")]
         __form_columns__[u"次要的"] = ["roll_called", "good", PlaceHolderColumnSpec("age", template_fname="/accounts/age-snippet.html", as_input=True), "create_time", ImageColumnSpec("avatar", alt=u"头像", 
                                             formatter=lambda v, model: "http://farm9.staticflickr.com/8522/8478415115_152c6f5e55_m.jpg", doc=u"头像， ^_^!")]
         __form_columns__[u"额外的"] = [
             TableColumnSpec("dogs", css_class="table table-striped table-hover table-condensed table-bordered"),
-            InputColumnSpec("car_list", css_class="alert alert-info", group_by=lambda x: x.model[0]),
+            InputColumnSpec("car_list", css_class="alert alert-info", group_by=lambda x: x.model[0], read_only=True),
             # "car_list"
         ]
 
@@ -121,9 +122,9 @@ def main():
             FileColumnSpec("pic_path", label=u"上传")
         ]
 
-        __batch_form_columns__ = OrderedDict()
-        __batch_form_columns__["primary"] = ["name", InputColumnSpec("group", read_only=True)]
-        __batch_form_columns__["secondary"] = ["age", "roll_called"]
+        #__batch_form_columns__ = OrderedDict()
+        #__batch_form_columns__["primary"] = ["name", InputColumnSpec("group", read_only=True)]
+        #__batch_form_columns__["secondary"] = ["age", "roll_called"]
 
         __column_formatters__ = {
             "create_time": lambda v, model: v.strftime("%Y-%m-%d %H") + u"点",
@@ -209,7 +210,7 @@ def main():
             def op_upon_list(self, model, model_view):
                 return redirect("http://www.u148.com")
 
-        __customized_actions__ = [MyDeleteAction(u"删除", None, data_icon="icon-remove"), RollCall(u"点名", warn_msg=u"点名后就是弱智！"), RollCall(u"点名", warn_msg=u"点名后就是弱智！"),RollCall(u"点名", warn_msg=u"点名后就是弱智！"),RollCall(u"点名", warn_msg=u"点名后就是弱智！"),RollCall(u"点名", warn_msg=u"点名后就是弱智！"),RollCall(u"点名", warn_msg=u"点名后就是弱智！"),RollCall(u"点名", warn_msg=u"点名后就是弱智！"),_ReadOnlyAction(u"打酱油的")]
+        __customized_actions__ = [MyDeleteAction(u"删除", None, data_icon="fa fa-times"), RollCall(u"点名", warn_msg=u"点名后就是弱智！"), RollCall(u"点名", warn_msg=u"点名后就是弱智！"),RollCall(u"点名", warn_msg=u"点名后就是弱智！"),RollCall(u"点名", warn_msg=u"点名后就是弱智！"),RollCall(u"点名", warn_msg=u"点名后就是弱智！"),RollCall(u"点名", warn_msg=u"点名后就是弱智！"),RollCall(u"点名", warn_msg=u"点名后就是弱智！"),_ReadOnlyAction(u"打酱油的")]
 
     user_model_view = UserModelView(User, u"用户")
     browser.register_model_view(user_model_view, accounts_bp, extra_params={"form_view": {"age_hint": "modify your age here"}, "create_view": {"age_hint": "input your age here"}})

@@ -15,7 +15,7 @@ def is_required_form_field(field):
     return False
 
 
-def is_disabled_form_field(field):
+def is_unique_form_field(field):
     if hasattr(field, "validators") and is_batch_edit():
         for validator in field.validators:
             if isinstance(validator, Unique):

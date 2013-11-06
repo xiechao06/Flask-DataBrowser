@@ -71,7 +71,7 @@ $(function () {
     };
 
     // Add live event handler
-    $('.fa-remove-field').live('click', function(e) {
+    $(document).on('click','.fa-remove-field', function(e) {
         e.preventDefault();
 
         var form = $(this).closest('.fa-inline-field');

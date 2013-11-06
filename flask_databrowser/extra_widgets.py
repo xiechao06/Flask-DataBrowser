@@ -4,7 +4,7 @@ extra widgets beside wtform's widgets
 """
 import operator
 import uuid
-from wtforms.widgets import HTMLString, html_params,Select
+from wtforms.widgets import HTMLString, html_params, Select
 from wtforms.compat import text_type
 from flask.ext.databrowser.column_spec import ColumnSpec
 from flask.ext.databrowser.utils import get_primary_key
@@ -17,8 +17,12 @@ class Image(object):
 
     # field is used here to compatiple with wtform's widgets
     def __call__(self, field, **kwargs):
+        if "class" in kwargs:
+            kwargs["class"] = " ".join(["img-responsive", kwargs["class"]])
+        else:
+            kwargs["class"] = "img-responsive"
         return HTMLString(
-            '<a href="%s" class="fancybox control-text" rel="group" title="%s"><img %s /></a>' % (
+            '<a href="%s" class="fancybox control-text" rel="group" title="%s"><img  %s /></a>' % (
                 self.src, self.alt, html_params(src=self.src, alt=self.alt, **kwargs)))
 
 
@@ -47,11 +51,11 @@ class PlainText(object):
         for i in xrange(0, len(self.s), 24):
             content.append(self.s[i:i + 24])
         if not need_trunc:
-            return HTMLString('<span %s>%s</span>' % (html_params(**kwargs), s))
+            return HTMLString('<span %s style="display:inline-block">%s</span>' % (html_params(**kwargs), s))
         else:
             return HTMLString(
-                '<span data-toggle="tooltip" data-html="true" data-placement="bottom" title="%s" %s>%s'
-                '<a href="#" >...</a></span>' % (
+                '<span style="display:inline-block" data-toggle="tooltip" data-html="true" data-placement="bottom" '
+                'title="%s" %s>%s<a href="#" >...</a></span>' % (
                     "\n".join(content), html_params(**kwargs), s))
 
 
@@ -94,6 +98,12 @@ class TableWidget(object):
                     else:
                         col_specs[i] = ColumnSpec(col_specs[i], label=col_specs[i])
                         #col_specs = [ColumnSpec(col) if isinstance(col, basestring) else col for col in col_specs]
+                if isinstance(col_specs[i], ColumnSpec):
+                    if col_specs[i].col_name == pk:
+                        temp = self.model_view.data_browser.get_object_link_column_spec(self.rows[0].__class__, pk)
+                        if temp:
+                            col_specs[i] = temp
+
             html.append('  <thead>\n')
             if self.sum_fields:
                 html.append("    <th></th>")
@@ -152,21 +162,24 @@ class ListWidget(object):
             if self.rows:
                 for row in self.rows:
                     converter = ValueConverter(row, self.model_view)
-                    html.append(
-                        " <li class=\"%s\" >%s</li>\n" % (self.item_css_class, converter(row, self.item_col_spec)()))
+                    val = converter(row, self.item_col_spec)
+                    if isinstance(getattr(val, "widget", None), Link):
+                        html.append(val(**{"class": self.item_css_class}))
+                    else:
+                        html.append(" <li class=\"%s\" >%s</li>\n" % (self.item_css_class, val()))
             html.append("</%s>" % self.html_tag)
         else:
             uuid_ = uuid.uuid1()
             if self.rows:
-                html = ['<div class="accordion">',
+                html = ['<div class="panel-group">', '<div class="panel panel-default">',
+                        '<div class="panel-heading"><h4 class="panel-title">'
                         '<a href="#" data-target="#%s" data-toggle="collapse">%d<i '
-                        'class="icon-chevron-down"></i></a>' % (
-                        uuid_, len(self.rows)),
-                        '<div id="%s" class="collapse in" data-builtin="true">\n<div class="accordion-inner">' % uuid_]
-                #html += ['<a href="#" data-target="#%s" data-toggle="collapse">%d</a>' % (uuid_, len(self.rows))]
+                        'class="fa fa-chevron-up fa-fw"></i></a></h4></div>' % (
+                            uuid_, len(self.rows)),
+                        '<div id="%s" class="panel-collapse collapse list-group" data-builtin="true">' % uuid_]
                 for row in self.rows:
                     converter = ValueConverter(row, self.model_view)
-                    html.append(" <div>%s</div>\n" % converter(row, self.item_col_spec)())
+                    html.append(converter(row, self.item_col_spec)(**{"class": "list-group-item"}))
                 html.append('</div>\n</div>\n</div>')
             else:
                 html = ["0"]
@@ -187,7 +200,7 @@ class PlaceHolder(object):
 
     def __call__(self, field, **kwargs):
         from flask import render_template
-        
+
         return render_template(self.template_fname,
                                field_value=self.field_value,
                                obj=self.obj,

@@ -1,7 +1,7 @@
 # -*- coding: UTF-8 -*-
 from flask import redirect, request
-from flask.ext.babel import gettext as _
-from .utils import raised_when, raised
+from flask.ext.babel import _
+from .utils import raised_when
 
 _raised_when_model_view_unset = raised_when(lambda inst, *args, **kwargs: not inst.model_view, 
                                        RuntimeError(r'field "model view" unset, you should set it'))
@@ -70,8 +70,8 @@ class DirectAction(BaseAction):
 
 
 class DeleteAction(BaseAction):
-    
-    def __init__(self, name=_("remove"), permission=None, css_class="btn btn-danger", data_icon="icon-remove", warn_msg=""):
+    def __init__(self, name=_("remove"), permission=None,
+                 css_class="btn btn-danger", data_icon="fa fa-times", warn_msg=""):
         super(DeleteAction, self).__init__(name, css_class, data_icon, warn_msg)
         self.permission = permission
 
