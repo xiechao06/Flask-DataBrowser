@@ -68,7 +68,7 @@
         if ($(this).attr("data-direct") == "True") {
           return true;
         }
-        {% if h.is_batch_edit() %}
+        {% if h.in_batch_mode() %}
           return confirm(sprintf("{{ _('Are you sure to %%s these items?') }}", $(this).attr("value")));
         {% else %}
           return confirm(sprintf("{{ _('Are you sure to %%s this item?') }}", $(this).attr("value")));

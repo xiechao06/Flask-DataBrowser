@@ -140,7 +140,7 @@
         {% endif %}
       {% endif %}
       <div class="{{ f.form_width_class }}">
-        {% if h.is_batch_edit() %}
+        {% if h.in_batch_mode() %}
           {% if h.is_required_form_field(f) %}
             {% if h.is_unique_form_field(f) %}
               {{ f(disabled=True, value=_("unique field, can't be modified"))|safe }}

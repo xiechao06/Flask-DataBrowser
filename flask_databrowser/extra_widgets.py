@@ -6,8 +6,7 @@ import operator
 import uuid
 from wtforms.widgets import HTMLString, html_params, Select
 from wtforms.compat import text_type
-from flask.ext.databrowser.column_spec import ColumnSpec
-from flask.ext.databrowser.utils import get_primary_key
+from flask.ext.databrowser.sa_utils import get_primary_key
 
 
 class Image(object):

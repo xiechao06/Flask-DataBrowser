@@ -1,4 +1,4 @@
 # -*- coding: UTF-8 -*-
+from data_browser import DataBrowser
 
-
-from base import DataBrowser, ModelView
+from model_view import ModelView

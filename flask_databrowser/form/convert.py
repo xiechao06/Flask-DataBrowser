@@ -5,13 +5,15 @@ import copy
 
 from wtforms import fields, validators
 from sqlalchemy import Boolean, Column
+from flask.ext.babel import _
 
 from . import form
 from .validators import Unique
 from .fields import QuerySelectField, QuerySelectMultipleField
 from flask.ext.databrowser.column_spec import InputColumnSpec, PlaceHolderColumnSpec, FileColumnSpec
-from flask.ext.databrowser.utils import get_description, get_primary_key, make_disabled_field
-from flask.ext.babel import _
+from flask.ext.databrowser.utils import get_description, make_disabled_field
+from flask.ext.databrowser.sa_utils import get_primary_key
+
 
 try:
     # Field has better input parsing capabilities.
