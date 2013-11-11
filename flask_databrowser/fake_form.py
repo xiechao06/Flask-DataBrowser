@@ -46,9 +46,7 @@ class FakeForm(object):
 
         self.model_form = model_form
         self.fields = [FakeField(field) for field in fields]
-        self.field_map = {}
-        for field in self.fields:
-            self.field_map[field.name] = field
+        self.field_map = {field.name: field for field in self.fields}
 
     def __iter__(self):
         return iter(self.fields)
