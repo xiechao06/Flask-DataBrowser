@@ -150,3 +150,15 @@ class TestList(BaseTest):
                 assert len(d("[type=checkbox]")) == 0
                 assert len(d("[type=radio]")) == 2
                 assert len(d("#batch-edit")) == 0
+
+    def test_columns(self):
+        #TODO
+        pass
+
+    def test_sort(self):
+        #TODO
+        pass
+
+    def test_default_filter(self):
+        #TODO
+        pass
