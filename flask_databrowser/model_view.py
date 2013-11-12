@@ -530,7 +530,7 @@ class ModelView(object):
                 flash(_(u'%(model_name)s %(model)s was created successfully',
                         model_name=self.model_name, model=unicode(model)))
                 if request.form.get("__builtin_action__") == _("add another"):
-                    return redirect(self.url_for_object(None, url=return_url))
+                    return redirect(self.url_for_object(url=return_url))
                 else:
                     if on_fly:
                         return render_template("__data_browser__/on_fly_result.html",
@@ -1045,15 +1045,17 @@ class ModelView(object):
         return self.__batch_edit_form__(obj=fake_obj)
 
     def url_for_list(self, *args, **kwargs):
-        blueprint_name = "" if isinstance(self.blueprint, Flask) else self.blueprint.name
-        return url_for(".".join([blueprint_name, self.list_view_endpoint]), *args, **kwargs)
+        if isinstance(self.blueprint, Flask):
+            return url_for(self.list_view_endpoint, *args, **kwargs)
+        else:
+            return url_for(".".join([self.blueprint.name, self.list_view_endpoint]), *args, **kwargs)
 
     def url_for_list_json(self, *args, **kwargs):
         blueprint_name = "" if isinstance(self.blueprint,
                                           Flask) else self.blueprint.name
         return url_for(".".join([blueprint_name, self.list_view_endpoint + "_json"]), *args, **kwargs)
 
-    def url_for_object(self, model, **kwargs):
+    def url_for_object(self, model=None, **kwargs):
         blueprint_name = "" if isinstance(self.blueprint,
                                           Flask) else self.blueprint.name
         if model:
@@ -1076,13 +1078,16 @@ class ModelView(object):
             page, order_by, desc = self._parse_args()
             column_filters = self.parse_filters()
             kwargs = {}
+            #TODO 通过配置template的css文件实现
             with self.data_browser.blueprint.open_resource(
                     "static/css_classes/list.yaml") as f:
                 kwargs["__css_classes__"] = yaml.load(f.read())
-            kwargs["__list_columns__"] = self.scaffold_list_columns(order_by,
-                                                                    desc)
+
+            kwargs["__list_columns__"] = self.scaffold_list_columns(order_by, desc)
             kwargs["__filters__"] = column_filters
+            #TODO 直接使用action对象
             kwargs["__actions__"] = self.scaffold_actions()
+
             kwargs["__action_2_forbidden_message_formats__"] = dict(
                 (action["name"], action["forbidden_msg_formats"]) for action in
                 kwargs["__actions__"])
@@ -1091,7 +1096,7 @@ class ModelView(object):
             kwargs["__rows_action_desc__"] = self.get_rows_action_desc(data)
             kwargs["__count__"] = count
             kwargs["__data__"] = self.scaffold_list(data)
-            kwargs["__object_url__"] = self.url_for_object(None)
+            kwargs["__object_url__"] = self.url_for_object()
             kwargs["__order_by__"] = lambda col_name: col_name == order_by
             try:
                 self.try_create()
@@ -1111,34 +1116,35 @@ class ModelView(object):
                 if isinstance(v, types.FunctionType):
                     v = v(self)
                 kwargs[k] = v
-            template_fname = self.list_template
-            return self.render(template_fname, **kwargs)
+            return self.render(self.list_template, **kwargs)
         else:  # POST
             action_name = request.form.get("__action__")
+
+            #TODO 移动到backend
             models = self.model.query.filter(
                 getattr(self.model, sa_utils.get_primary_key(self.model)).in_(
                     request.form.getlist('selected-ids'))).all()
+
             for action in self._get_customized_actions():
                 if action.name == action_name:
-                    break
+                    processed_objs = [self.preprocess(obj) for obj in models]
+                    action.try_(processed_objs)
+                    try:
+                        ret = action.op_upon_list(processed_objs, self)
+                        if isinstance(ret, werkzeug.wrappers.BaseResponse) and ret.status_code == 302:
+                            if not action.direct:
+                                flash(action.success_message(processed_objs), 'success')
+                            return ret
+                        self.session.commit()
+                        if not action.direct:
+                            flash(action.success_message(processed_objs), 'success')
+                    except Exception, ex:
+                        self.session.rollback()
+                        raise
+                    return redirect(request.url)
             else:
                 raise ValidationError(
                     _('invalid action %(action)s', action=action_name))
-            processed_objs = [self.preprocess(obj) for obj in models]
-            action.try_(processed_objs)
-            try:
-                ret = action.op_upon_list(processed_objs, self)
-                if isinstance(ret, werkzeug.wrappers.BaseResponse) and ret.status_code == 302:
-                    if not action.direct:
-                        flash(action.success_message(processed_objs), 'success')
-                    return ret
-                self.session.commit()
-                if not action.direct:
-                    flash(action.success_message(processed_objs), 'success')
-            except Exception, ex:
-                self.session.rollback()
-                raise
-            return redirect(request.url)
 
     def list_api(self):
 
@@ -1431,16 +1437,18 @@ class ModelView(object):
         """
         collect columns displayed in table
         """
-        from flask import request, url_for
+        sortable_columns = self.__sortable_columns__
+        if not sortable_columns:
+            primary_key = sa_utils.get_primary_key(self.model)
+            if primary_key:
+                sortable_columns = [primary_key]
 
         def _(order_by, desc):
-            sortable_columns = self.__sortable_columns__ or sa_utils.get_primary_key(self.model)
-
             for c in self.list_column_specs:
                 if c.col_name in sortable_columns:
                     args = request.args.copy()
                     args["order_by"] = c.col_name
-                    if order_by == c.col_name: # the table is sorted by c, so revert the order
+                    if order_by == c.col_name:  # the table is sorted by c, so revert the order
                         if not desc:
                             args["desc"] = 1
                         else:
@@ -1448,13 +1456,10 @@ class ModelView(object):
                                 args.pop("desc")
                             except KeyError:
                                 pass
-                    sort_url = url_for(
-                        ".".join([self.blueprint.name, self.list_view_endpoint]),
-                        **args)
+                    sort_url = self.url_for_list(**args)
                 else:
                     sort_url = ""
-                yield dict(name=c.col_name, label=c.label, doc=c.doc,
-                           sort_url=sort_url)
+                yield dict(name=c.col_name, label=c.label, doc=c.doc, sort_url=sort_url)
 
         return list(_(order_by=order_by, desc=desc))
 
@@ -1554,8 +1559,6 @@ class ModelView(object):
         """
         set filter's value using args
         """
-        from flask import request
-
         shadow_column_filters = copy.copy(self._get_column_filters())
         #如果不用copy的话，会修改原来的filter
 

@@ -1,6 +1,7 @@
 # -*- coding: UTF-8 -*-
 import operator
 from sqlalchemy.orm import ColumnProperty
+from sqlalchemy.schema import Table
 
 
 def is_relationship(model, col_name):
@@ -18,8 +19,6 @@ def get_primary_key(model):
         :param model:
             Model class
     """
-    from sqlalchemy.schema import Table
-
     if isinstance(model, Table):
         for idx, c in enumerate(model.columns):
             if c.primary_key:
