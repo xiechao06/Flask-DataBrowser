@@ -6,6 +6,7 @@ from flask import request, url_for, render_template, g
 from jinja2 import Markup
 from flask.ext.principal import PermissionDenied
 from flask.ext.babel import gettext as _
+from flask.ext.databrowser.backends import get_doc_from_table_def
 from flask.ext.databrowser.exceptions import ValidationError
 
 
@@ -108,29 +109,6 @@ def get_description(view, col_name, obj, col_spec=None):
         return get_doc_from_table_def(obj.__class__, col_name)
     return ""
 
-
-def get_doc_from_table_def(model, col_name):
-    doc = ""
-    attr_name_list = col_name.split('.')
-    last_model = model
-    for attr_name in attr_name_list[:-1]:
-        if hasattr(last_model, attr_name):
-            attr = getattr(last_model, attr_name)
-            if hasattr(attr, "property"):
-                last_model = attr.property.mapper.class_
-            else:
-                break
-        else:
-            break
-    else:
-        if hasattr(last_model, attr_name_list[-1]):
-            from operator import attrgetter
-
-            try:
-                doc = attrgetter(attr_name_list[-1] + ".property.doc")(last_model)
-            except AttributeError:
-                pass
-    return doc
 
 
 import re

@@ -23,7 +23,6 @@ from flask.ext.databrowser import sa_utils, helpers, filters, fake_form
 from flask.ext.databrowser.column_spec import (LinkColumnSpec, ColumnSpec, InputColumnSpec, PlaceHolderColumnSpec,
                                                FileColumnSpec)
 from flask.ext.databrowser.convert import ValueConverter
-from flask.ext.databrowser.utils import get_doc_from_table_def
 from flask.ext.databrowser.exceptions import ValidationError
 from flask.ext.databrowser.extra_widgets import PlaceHolder
 from flask.ext.databrowser.form import form
@@ -32,9 +31,11 @@ from flask.ext.databrowser.constants import WEB_SERVICE, WEB_PAGE
 
 
 class ModelView(object):
+    """
+    changelog v2: remove params: __create_columns__, __sortable_columns__
+    """
     __column_formatters__ = {}
     __list_columns__ = {}
-    __sortable_columns__ = []
     __column_labels__ = {}
     __column_docs__ = {}
     __column_filters__ = []
@@ -42,7 +43,6 @@ class ModelView(object):
     __batch_form_columns__ = []
     __form_columns__ = []
     __customized_actions__ = []
-    __create_columns__ = []
     __max_col_len__ = 255
     __model_list__ = []
     __extra_fields__ = {}
@@ -60,40 +60,50 @@ class ModelView(object):
     create_in_steps = False
     step_create_templates = []
 
-    def __init__(self, model, model_name=""):
+    def __init__(self, backend, model):
+        self.backend = backend
         self.model = model
         self.blueprint = None
         self.data_browser = None
         self.extra_params = {}
-        self.__model_name = model_name
         self.__list_column_specs = []
         self.__normalized_create_columns = []
         self.__normalized_form_columns = []
 
+    #TODO should be property
     def get_extra_params(self):
         if self.extra_params and hasattr(self.extra_params, "__call__"):
             return self.extra_params()
         else:
             return self.extra_params
 
+    def _get_extra_params(self, view_name):
+        kwargs = self.get_extra_params().get(view_name, {})
+        for k, v in kwargs.items():
+            if isinstance(v, types.FunctionType):
+                kwargs[k] = v(self)
+        return kwargs
 
     @property
     def model_name(self):
-        return self.__model_name or self.model.__name__
+        return self.backend.model_name
 
     @property
     def create_columns(self):
+        return []
+
+    def _get_create_columns(self):
         """
         get all the *NORMALIZED* create columns for model view. which means,
         if you override this method, you should guarantee that return value are
-        normalized. see ModelView.normalize_create_columns 
+        normalized. see ModelView.normalize_create_columns
         """
-        # only for backward compatiple, feel comfortable to ignore it
-        if hasattr(self, 'get_create_columns') and isinstance(self.get_create_columns, types.MethodType):
-            return self.normalize_create_columns(self.get_create_columns())
-
         if not self.__normalized_create_columns:
-            self.__normalized_create_columns = self.normalize_create_columns(self.__create_columns__)
+            # 只接受form的字段或者InputColumnSpec或者PlaceholderColumnSpec
+            columns = [col for col in self.create_columns if
+                       isinstance(col, (basestring, InputColumnSpec, PlaceHolderColumnSpec) and col.as_input)]
+
+            self.__normalized_create_columns = self._normalize_columns(columns)
         return self.__normalized_create_columns
 
     @property
@@ -105,9 +115,9 @@ class ModelView(object):
         """
         # only for backward compatiple, feel comfortable to ignore it
         if hasattr(self, 'get_form_columns') and isinstance(self.get_form_columns, types.MethodType):
-            return self._normalize_form_columns(self.get_form_columns())
+            return self._normalize_columns(self.get_form_columns())
         if not self.__normalized_form_columns:
-            self.__normalized_form_columns = self._normalize_form_columns(self.__form_columns__)
+            self.__normalized_form_columns = self._normalize_columns(self.__form_columns__)
         return self.__normalized_form_columns
 
     def get_step_create_template(self, step):
@@ -116,26 +126,10 @@ class ModelView(object):
         except IndexError:
             return '__data_browser__/form.html'
 
-    def normalize_create_columns(self, columns):
-        """
-        this utility function handle the following matters:
+    def _get_column_doc(self, column):
+        return self.__column_docs__.get(column) or self.backend.get_column_doc(column)
 
-            * if columns not defined in fieldsets, add them to one fieldset whose name is empty string
-            * if __create_columns__ undefined, fill the create_columns from model
-            * convert all the column of 'basestring' to InputColumn
-            * purge the create columns, only columns defined in model, and is of 
-                type "basestring", "InputColumnSpec" or "PlaceHolderColumnSpec"(as_input) 
-                and no foreign key could be displayed in create form
-            * fill the label and doc of each column
-
-        :return: an OrderedDict whose keys are fieldsets
-        """
-        return self._normalize_columns(columns,
-                                       lambda col: isinstance(col, basestring) or isinstance(col, InputColumnSpec) or (
-                                       isinstance(col, PlaceHolderColumnSpec) and col.as_input))
-
-
-    def _normalize_columns(self, columns, test):
+    def _normalize_columns(self, columns):
         """
         this utility function handle the following matters:
 
@@ -146,12 +140,11 @@ class ModelView(object):
             and pass the test
             * fill the label and doc of each column
         """
-        ret = OrderedDict()
+
 
         def _input_column_spec_from_prop(prop):
             return InputColumnSpec(prop.key,
-                                   doc=self.__column_docs__.get(prop.key) or get_doc_from_table_def(self.model,
-                                                                                                    prop.key),
+                                   doc=self._get_column_doc(prop.key),
                                    label=self.__column_labels__.get(prop.key),
                                    property_=prop)
 
@@ -164,15 +157,14 @@ class ModelView(object):
                 return not prop.columns[0].foreign_keys
 
         if not columns:
-            ret[""] = [_input_column_spec_from_prop(prop) for prop in self.model.__mapper__.iterate_properties
-                       if _test(prop)]
-            return ret
+            return {"": [_input_column_spec_from_prop(prop) for prop in self.model.__mapper__.iterate_properties if _test(prop)]}
 
+        ret = OrderedDict()
         col_name_2_prop = dict((prop.key, prop) for prop in self.model.__mapper__.iterate_properties if _test(prop))
-        if isinstance(columns, types.ListType) or isinstance(columns, types.TupleType):
-            fieldsets = {"": [c for c in columns if test(c)]}
+        if isinstance(columns, types.DictType):
+            fieldsets = columns
         else:
-            fieldsets = OrderedDict((k, [c for c in v if test(c)]) for k, v in columns.items())
+            fieldsets = {"": columns}
 
         for fieldset_name, columns in fieldsets.items():
             ret[fieldset_name] = []
@@ -185,14 +177,10 @@ class ModelView(object):
                     if col.label is None:
                         col.label = self.__column_labels__.get(col.col_name)
                     if col.doc is None:
-                        col.doc = self.__column_docs__.get(col.col_name) or get_doc_from_table_def(self.model,
-                                                                                                   col.col_name)
+                        col.doc = self._get_column_doc(col.col_name)
                     ret[fieldset_name].append(col)
 
         return ret
-
-    def _normalize_form_columns(self, columns):
-        return self._normalize_columns(columns, lambda col: True)
 
     @property
     def session(self):
@@ -255,8 +243,7 @@ class ModelView(object):
 
         list_columns = self.get_list_columns()
         if not list_columns:
-            list_columns = [col.name for k, col in
-                            enumerate(self.model.__table__.c)]
+            list_columns = [col.name for col in self.backend.columns]
         if list_columns:
             for col in list_columns:
                 if isinstance(col, basestring):
@@ -323,11 +310,10 @@ class ModelView(object):
         # we get document from sqlalchemy models
         doc = self.__column_docs__.get(col, "")
         if not doc:
-            doc = get_doc_from_table_def(self.model, col)
+            doc = self.backend.get_column_doc(col)
         label = self.__column_labels__.get(col, col)
-        if sa_utils.get_primary_key(self.model) == col:
-            formatter = lambda x, obj: self.url_for_object(obj,
-                                                           url=request.url)
+        if self.backend.primary_key == col:
+            formatter = lambda x, obj: self.url_for_object(obj, url=request.url)
             col_spec = LinkColumnSpec(col, doc=doc, anchor=lambda x: x,
                                       formatter=formatter,
                                       label=label, css_class="control-text")
@@ -509,6 +495,71 @@ class ModelView(object):
     def try_edit(self, processed_objs=None):
         pass
 
+    def create_view_2(self):
+        #TODO
+        self.try_create()
+
+        return_url = request.args.get('url') or url_for('.' + self.list_view_endpoint)
+        on_fly = int(request.args.get("on_fly", 0))
+        current_step = int(request.args.get('__step__', 0)) if self.create_in_steps else None
+        create_columns = self._get_create_columns()
+        form = self._get_create_form(create_columns, current_step)
+        if form.validate_on_submit():
+            model = self.create_model(form)
+            if model:
+                self.do_create_log(model)
+                flash(_(u'%(model_name)s %(model)s was created successfully',
+                model_name=self.model_name, model=unicode(model)))
+                if request.form.get("__builtin_action__") == _("add another"):
+                    return redirect(self.url_for_object(url=return_url))
+                else:
+                    if on_fly:
+                        return render_template("__data_browser__/on_fly_result.html",
+                                               model_cls=self.model_name,
+                                               obj=unicode(model),
+                                               obj_pk=self.backend.get_pk_value(model),
+                                               target=request.args.get("target"))
+                    else:
+                        return redirect(return_url)
+        #get or validate error
+        kwargs = self._get_extra_params("create_view")
+        if self.create_in_steps:
+            create_template = self.get_step_create_template(current_step)
+            kwargs["last_step"], kwargs["next_step"] = self._get_arround_steps(current_step, create_columns.keys())
+        else:
+            create_template = self.create_template
+        resp = self.render(create_template, form=form, return_url=return_url, **kwargs)
+
+        if form.is_submitted():
+            # alas! something wrong
+            resp = make_response(resp, 403)
+            resp.headers["Warning"] = u"&".join([k + u"-" + u"; ".join(v) for k, v in form.errors.items()]).encode(
+                "utf-8")
+        return resp
+
+    def _get_arround_steps(self, current_step, step_names):
+        last_step = None
+        next_step = None
+        if current_step > 0:
+            args = request.args.to_dict()
+            args['__step__'] = current_step - 1
+            last_step = {
+                'name': step_names[current_step - 1],
+                'url': urlparse.urlunparse(
+                    ('', '', request.path, '', '&'.join(k + '=' + unicode(v) for k, v in args.items()), ''))
+            }
+        if current_step < len(step_names) - 1:
+            args = request.args.to_dict()
+            args['__step__'] = current_step + 1
+            next_step = {
+                'name': self._get_create_columns().keys()[current_step + 1],
+                'url': urlparse.urlunparse(
+                    ('', '', request.path, '', '&'.join(k + '=' + unicode(v) for k, v in args.items()), ''))
+            }
+        return last_step, next_step
+
+
+
     def create_view(self):
         self.try_create()
 
@@ -518,9 +569,9 @@ class ModelView(object):
 
         if self.create_in_steps:
             current_step = int(request.args.get('__step__', 0))
-            create_columns = dict([self.create_columns.items()[current_step]])
+            create_columns = dict([self._get_create_columns().items()[current_step]])
         else:
-            create_columns = self.create_columns
+            create_columns = self._get_create_columns()
         form = self.get_create_form()
         # if submit and validated, go, else re-display the create page and show the errors
         if form.validate_on_submit():
@@ -536,7 +587,7 @@ class ModelView(object):
                         return render_template("__data_browser__/on_fly_result.html",
                                                model_cls=self.model_name,
                                                obj=unicode(model),
-                                               obj_pk=self.scaffold_pk(model),
+                                               obj_pk=self.backend.get_pk_value(model),
                                                target=request.args.get("target"))
                     else:
                         return redirect(return_url)
@@ -581,14 +632,14 @@ class ModelView(object):
                 args = request.args.to_dict()
                 args['__step__'] = current_step - 1
                 last_step = {
-                    'name': self.create_columns.keys()[current_step - 1],
+                    'name': self._get_create_columns().keys()[current_step - 1],
                     'url': urlparse.urlunparse(
                         ('', '', request.path, '', '&'.join(k + '=' + unicode(v) for k, v in args.items()), ''))
                 }
 
                 previous_columns = {}
                 for i in xrange(0, current_step):
-                    for c in self.create_columns.values()[i]:
+                    for c in self._get_create_columns().values()[i]:
                         previous_columns[c.col_name] = c.label or c.col_name
 
                 if previous_columns:
@@ -600,11 +651,11 @@ class ModelView(object):
                             placeholder_kwargs.setdefault('previous_steps_info', []).append(
                                 (previous_columns[k], v[0] if len(v) == 1 else v))
 
-            if current_step < len(self.create_columns) - 1:
+            if current_step < len(self._get_create_columns()) - 1:
                 args = request.args.to_dict()
                 args['__step__'] = current_step + 1
                 next_step = {
-                    'name': self.create_columns.keys()[current_step + 1],
+                    'name': self._get_create_columns().keys()[current_step + 1],
                     'url': urlparse.urlunparse(
                         ('', '', request.path, '', '&'.join(k + '=' + unicode(v) for k, v in args.items()), ''))
                 }
@@ -633,7 +684,7 @@ class ModelView(object):
         def _log(obj_):
             self.data_browser.logger.debug(
                 _("%(user)s performed %(action)s", user=unicode(current_user), action=action),
-                extra={"obj": obj_, "obj_pk": self.scaffold_pk(obj_),
+                extra={"obj": obj_, "obj_pk": self.backend.get_pk_value(obj_),
                        "action": action, "actor": current_user})
 
         if isinstance(obj, list) or isinstance(obj, tuple):
@@ -648,7 +699,7 @@ class ModelView(object):
         self.data_browser.logger.debug(
             _('%(model_name)s %(model)s was created successfully',
               model_name=self.model_name, model=unicode(obj)),
-            extra={"obj": obj, "obj_pk": self.scaffold_pk(obj),
+            extra={"obj": obj, "obj_pk": self.backend.get_pk_value(obj),
                    "action": _(u"create"), "actor": current_user})
 
     def batch_edit_hint_message(self, objs, read_only=False):
@@ -914,7 +965,7 @@ class ModelView(object):
         return ret
 
     def get_create_form(self):
-        create_columns = self.create_columns
+        create_columns = self._get_create_columns()
         if self.__create_form__ is None:
             if isinstance(create_columns, types.DictType):
                 create_columns = list(itertools.chain(*create_columns.values()))
@@ -1051,28 +1102,24 @@ class ModelView(object):
             return url_for(".".join([self.blueprint.name, self.list_view_endpoint]), *args, **kwargs)
 
     def url_for_list_json(self, *args, **kwargs):
+        #TODO 重构
         blueprint_name = "" if isinstance(self.blueprint,
                                           Flask) else self.blueprint.name
         return url_for(".".join([blueprint_name, self.list_view_endpoint + "_json"]), *args, **kwargs)
 
     def url_for_object(self, model=None, **kwargs):
+        #TODO 重构
         blueprint_name = "" if isinstance(self.blueprint,
                                           Flask) else self.blueprint.name
         if model:
-            return url_for(
-                ".".join([blueprint_name, self.object_view_endpoint]),
-                id_=self.scaffold_pk(model),
-                **kwargs)
+            return url_for(".".join([blueprint_name, self.object_view_endpoint]), id_=self.backend.get_pk_value(model), **kwargs)
         else:
-            return url_for(
-                ".".join([blueprint_name, self.object_view_endpoint]),
-                **kwargs)
+            return url_for(".".join([blueprint_name, self.object_view_endpoint]), **kwargs)
 
     def list_view(self):
         """
         the view function of list of models
         """
-
         if request.method == "GET":
             self.try_view()
             page, order_by, desc = self._parse_args()
@@ -1091,8 +1138,10 @@ class ModelView(object):
             kwargs["__action_2_forbidden_message_formats__"] = dict(
                 (action["name"], action["forbidden_msg_formats"]) for action in
                 kwargs["__actions__"])
-            count, data = self.query_data(order_by, desc, column_filters, (page - 1) * self.data_browser.page_size,
-                                          self.data_browser.page_size)
+            count, data = self.backend.get_list(order_by, desc, column_filters,
+                                                (page - 1) * self.data_browser.page_size,
+                                                self.data_browser.page_size)
+            #TODO 重构：判断action是否可以执行
             kwargs["__rows_action_desc__"] = self.get_rows_action_desc(data)
             kwargs["__count__"] = count
             kwargs["__data__"] = self.scaffold_list(data)
@@ -1120,10 +1169,7 @@ class ModelView(object):
         else:  # POST
             action_name = request.form.get("__action__")
 
-            #TODO 移动到backend
-            models = self.model.query.filter(
-                getattr(self.model, sa_utils.get_primary_key(self.model)).in_(
-                    request.form.getlist('selected-ids'))).all()
+            models = self.backend.get_items(request.form.getlist('selected-ids'))
 
             for action in self._get_customized_actions():
                 if action.name == action_name:
@@ -1135,11 +1181,11 @@ class ModelView(object):
                             if not action.direct:
                                 flash(action.success_message(processed_objs), 'success')
                             return ret
-                        self.session.commit()
+                        self.backend.commit()
                         if not action.direct:
                             flash(action.success_message(processed_objs), 'success')
                     except Exception, ex:
-                        self.session.rollback()
+                        self.backend.rollback()
                         raise
                     return redirect(request.url)
             else:
@@ -1243,7 +1289,7 @@ class ModelView(object):
                 return self.__default_order__[1] if c == self.__default_order__[0] else None
             return None
 
-        return jsonify({"sort_columns": [(c, calc_order(c)) for c in self.__sortable_columns__]})
+        return jsonify({"sort_columns": [(c, calc_order(c)) for c in self.sortable_columns]})
 
     def list_view_json(self):
         """
@@ -1380,10 +1426,10 @@ class ModelView(object):
                 "fieldsets": [(fieldset_name,
                                [convert_column(col, get_dict_converter(), self) for col in col_specs if
                                 (not self.hidden_pk or _not_pk(col))])
-                              for fieldset_name, col_specs in self.create_columns.items()]
+                              for fieldset_name, col_specs in self._get_create_columns().items()]
             })
         else:
-            columns = itertools.chain(*self.create_columns.values())
+            columns = itertools.chain(*self._get_create_columns().values())
             columns = dict((col.col_name, col) for col in columns)
             formdata = MultiDict()
             create_form = self.get_create_form()
@@ -1396,7 +1442,7 @@ class ModelView(object):
             self.session.add(obj)
             self.session.commit()
             return jsonify({
-                'id': self.scaffold_pk(obj),
+                'id': self.backend.get_pk_value(obj),
                 'repr': self.repr_obj(obj)
             })
 
@@ -1433,19 +1479,17 @@ class ModelView(object):
                 order_by = self.__default_order__[0]
         return offset, limit, order_by, desc
 
+    @property
+    def sortable_columns(self):
+        return [self.backend.primary_key] if self.backend.primary_key else []
+
     def scaffold_list_columns(self, order_by, desc):
         """
         collect columns displayed in table
         """
-        sortable_columns = self.__sortable_columns__
-        if not sortable_columns:
-            primary_key = sa_utils.get_primary_key(self.model)
-            if primary_key:
-                sortable_columns = [primary_key]
-
         def _(order_by, desc):
             for c in self.list_column_specs:
-                if c.col_name in sortable_columns:
+                if c.col_name in self.sortable_columns:
                     args = request.args.copy()
                     args["order_by"] = c.col_name
                     if order_by == c.col_name:  # the table is sorted by c, so revert the order
@@ -1524,7 +1568,7 @@ class ModelView(object):
             for idx, r in enumerate(models):
                 r = self.preprocess(r)
                 converter = ValueConverter(r, self)
-                pk = self.scaffold_pk(r)
+                pk = self.backend.get_pk_value(r)
                 fields = []
                 for c in self.list_column_specs:
                     raw_value = operator.attrgetter(c.col_name)(r)
@@ -1551,9 +1595,6 @@ class ModelView(object):
         override to provide your representation. HTML supported
         """
         return unicode(obj)
-
-    def scaffold_pk(self, entry):
-        return getattr(entry, sa_utils.get_primary_key(self.model))
 
     def parse_filters(self):
         """
@@ -1605,7 +1646,7 @@ class ModelView(object):
         customized_actions = self._get_customized_actions()
         if customized_actions:
             for model in models:
-                id = self.scaffold_pk(model)
+                id = self.backend.get_pk_value(model)
                 preprocessed_model = self.preprocess(model)
                 d = {"name": unicode(model), "actions": {}}
                 for action in customized_actions:

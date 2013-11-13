@@ -31,3 +31,14 @@ def get_primary_key(model):
                 return p.key
 
     return None
+
+
+def get_joined_tables(model, col_name):
+    result = []
+    attrs = col_name.split(".")
+    last_join_model = model
+    for rel in attrs[:-1]:
+        last_join_model = getattr(last_join_model, rel).property.mapper.class_
+        result.append(last_join_model)
+    return result
+

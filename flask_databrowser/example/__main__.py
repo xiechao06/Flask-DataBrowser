@@ -137,7 +137,7 @@ def main():
             "roll_called": u"点名过",
         }
 
-        __sortable_columns__ = ["id", "name", "group"]
+        #__sortable_columns__ = ["id", "name", "group"]
 
         __column_labels__ = {
             "age": u"年龄",

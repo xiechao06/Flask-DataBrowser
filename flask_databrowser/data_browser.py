@@ -43,6 +43,8 @@ class DataBrowser(object):
 
         blueprint.before_request(model_view.before_request_hook)
         blueprint.after_request(model_view.after_request_hook)
+
+        #TODO 取消与tablename的关联（可以考虑用python的路径+类名标识）
         self.__registered_view_map[model_view.model.__tablename__] = model_view
 
     def get_object_link_column_spec(self, model, label=None):
@@ -51,9 +53,8 @@ class DataBrowser(object):
 
             #TODO 移动到model_view中
             model_view.try_view(model)
-            pk = get_primary_key(model)
 
-            return LinkColumnSpec(col_name=pk,
+            return LinkColumnSpec(col_name=model_view.backend.primary_key,
                                   formatter=lambda v, obj: model_view.url_for_object(obj, label=label,
                                                                                      url=request.url),
                                   anchor=lambda v: unicode(v), label=label)

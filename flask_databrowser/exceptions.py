@@ -6,3 +6,6 @@ class ValidationError(Exception):
         #super(ValidationError, self).__init__(message)
         #self.args = args
 
+
+class InvalidArgumentError(Exception):
+    pass
