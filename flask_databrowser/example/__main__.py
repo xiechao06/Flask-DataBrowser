@@ -10,12 +10,14 @@ from flask.ext.principal import Permission, RoleNeed, PermissionDenied
 from flask.ext.databrowser import filters
 from collections import OrderedDict
 from flask.ext.databrowser.column_spec import FileColumnSpec
+from flask.ext.databrowser.sa import SABackend
 
 admin_permission = Permission(RoleNeed("Admin"))
 
 from collections import namedtuple
 
 roll_call_perm = Permission(namedtuple("foo", ["method"])('roll_call'))
+
 
 def main():
     from basemain import app, db
@@ -39,11 +41,13 @@ def main():
     from flask.ext.databrowser.action import DeleteAction, DirectAction
 
     from models import User, Car
-    accounts_bp = Blueprint("accounts", __name__, static_folder="static", 
+
+    accounts_bp = Blueprint("accounts", __name__, static_folder="static",
                             template_folder="templates")
     browser = databrowser.DataBrowser(app, db, page_size=4)
 
     from flask.ext.databrowser.utils import ErrorHandler
+
     error_handler = ErrorHandler(browser)
     if not app.config["DEBUG"]:
         app.errorhandler(Exception)(error_handler)
@@ -84,33 +88,46 @@ def main():
             if row.roll_called == 1:
                 return "box warning"
 
-        #def try_edit(self, objs):
-            #raise PermissionDenied()
+                #def try_edit(self, objs):
+                #raise PermissionDenied()
 
-        from flask.ext.databrowser.column_spec import ImageColumnSpec, TableColumnSpec, PlaceHolderColumnSpec, InputColumnSpec
         def get_create_help(self):
             return "<h3>this is create view</h3>"
-        
+
         def get_edit_help(self, objs):
             return "<h3>this is edit view</h3>"
 
         def get_list_help(self):
             return "<h3>this is list view</h3>"
 
-        from flask.ext.databrowser.column_spec import ImageColumnSpec, TableColumnSpec, PlaceHolderColumnSpec, ListColumnSpec, ColumnSpec
-        __list_columns__ = ["id", "name", "group", "password", "roll_called", "group.name", "create_time", ImageColumnSpec("avatar", alt=u"头像", 
-            formatter=lambda v, model: "http://farm9.staticflickr.com/8522/8478415115_152c6f5e55_m.jpg", doc=u"头像，^_^！"), "good"]
+        from flask.ext.databrowser.column_spec import ImageColumnSpec, TableColumnSpec, PlaceHolderColumnSpec, \
+            ListColumnSpec, ColumnSpec, InputColumnSpec
+
+        __list_columns__ = ["id", "name", "group", "password", "roll_called", "group.name", "create_time",
+                            ImageColumnSpec("avatar", alt=u"头像",
+                                            formatter=lambda v,
+                                                             model: "http://farm9.staticflickr"
+                                                                    ".com/8522/8478415115_152c6f5e55_m.jpg",
+                                            doc=u"头像，^_^！"), "good"]
         __create_columns__ = OrderedDict()
         __create_columns__["primary"] = ["name", "group", "password"]
-        __create_columns__["secondary"] = [PlaceHolderColumnSpec("age", template_fname="/accounts/age-snippet.html", as_input=True), 
-                                           "roll_called", "birthday", "create_time", "car_list"]
-
+        __create_columns__["secondary"] = [
+            PlaceHolderColumnSpec("age", template_fname="/accounts/age-snippet.html", as_input=True),
+            "roll_called", "birthday", "create_time", "car_list"]
 
         __form_columns__ = OrderedDict()
-        __form_columns__[u"主要的"] = ["id", InputColumnSpec("name", read_only=True), PlaceHolderColumnSpec("group", template_fname="/accounts/group-snippet.html", as_input=True), "password",
-                                         PlaceHolderColumnSpec("foo", template_fname="/accounts/foo-snippet.html")]
-        __form_columns__[u"次要的"] = ["roll_called", "good", PlaceHolderColumnSpec("age", template_fname="/accounts/age-snippet.html", as_input=True), "create_time", ImageColumnSpec("avatar", alt=u"头像", 
-                                            formatter=lambda v, model: "http://farm9.staticflickr.com/8522/8478415115_152c6f5e55_m.jpg", doc=u"头像， ^_^!")]
+        __form_columns__[u"主要的"] = ["id", InputColumnSpec("name", read_only=True),
+                                    PlaceHolderColumnSpec("group", template_fname="/accounts/group-snippet.html",
+                                                          as_input=True), "password",
+                                    PlaceHolderColumnSpec("foo", template_fname="/accounts/foo-snippet.html")]
+        __form_columns__[u"次要的"] = ["roll_called", "good",
+                                    PlaceHolderColumnSpec("age", template_fname="/accounts/age-snippet.html",
+                                                          as_input=True), "create_time",
+                                    ImageColumnSpec("avatar", alt=u"头像",
+                                                    formatter=lambda v,
+                                                                     model: "http://farm9.staticflickr"
+                                                                            ".com/8522/8478415115_152c6f5e55_m.jpg",
+                                                    doc=u"头像， ^_^!")]
         __form_columns__[u"额外的"] = [
             TableColumnSpec("dogs", css_class="table table-striped table-hover table-condensed table-bordered"),
             InputColumnSpec("car_list", css_class="alert alert-info", group_by=lambda x: x.model[0], read_only=True),
@@ -142,35 +159,35 @@ def main():
         __column_labels__ = {
             "age": u"年龄",
             "name": u"姓名",
-            "create_time": u"创建于", 
+            "create_time": u"创建于",
             "group": u"用户组",
-            "roll_called": u"点名过", 
+            "roll_called": u"点名过",
             "group.name": u"用户组名称",
         }
 
         __default_order__ = ("name", "desc")
 
-
         from datetime import datetime, timedelta
+
         today = datetime.today()
         yesterday = today.date()
         week_ago = (today - timedelta(days=7)).date()
         _30days_ago = (today - timedelta(days=30)).date()
 
-
         __column_filters__ = [filters.In_("group", name=u"是", opt_formatter=lambda opt: opt.name),
-                              filters.BiggerThan("create_time", name=u"在", 
+                              filters.BiggerThan("create_time", name=u"在",
                                                  options=[(yesterday, u'一天内'),
-                                                          (week_ago, u'一周内'), 
-                                                          (_30days_ago, u'30天内')], default_value=str(_30days_ago)), 
+                                                          (week_ago, u'一周内'),
+                                                          (_30days_ago, u'30天内')], default_value=str(_30days_ago)),
                               filters.EqualTo("name", name=u"是"),
                               filters.Contains("name", name=u"包含"),
-                              filters.Only("roll_called", display_col_name=u"仅展示点名", test=lambda col: col==True, notation="__roll_called", default_value=False),
+                              filters.Only("roll_called", display_col_name=u"仅展示点名", test=lambda col: col == True,
+                                           notation="__roll_called", default_value=False),
                               filters.Between("create_time")
-                             ]
+        ]
 
         #def __list_filters__(self):
-            #return [filters.NotEqualTo("name", value=u"Type")]
+        #return [filters.NotEqualTo("name", value=u"Type")]
 
 
         from flask.ext.databrowser.action import BaseAction
@@ -185,7 +202,7 @@ def main():
                     return -1
                 return 0
 
-            #def try_(self):
+                #def try_(self):
                 #roll_call_perm.test()
 
         class MyDeleteAction(DeleteAction):
@@ -195,10 +212,10 @@ def main():
                     return -3
                 elif model.name == "Tyde":
                     return -2
-                return 0 
+                return 0
 
             def get_forbidden_msg_formats(self):
-                return {-3: "[%s]是我的偶像, 不要删除他们", 
+                return {-3: "[%s]是我的偶像, 不要删除他们",
                         -2: "[%s]是好狗，不要伤害他们"}
 
         def patch_row_attr(self, idx, row):
@@ -210,22 +227,29 @@ def main():
             def op_upon_list(self, model, model_view):
                 return redirect("http://www.u148.com")
 
-        __customized_actions__ = [MyDeleteAction(u"删除", None, data_icon="fa fa-times"), RollCall(u"点名", warn_msg=u"点名后就是弱智！"), RollCall(u"点名", warn_msg=u"点名后就是弱智！"),RollCall(u"点名", warn_msg=u"点名后就是弱智！"),RollCall(u"点名", warn_msg=u"点名后就是弱智！"),RollCall(u"点名", warn_msg=u"点名后就是弱智！"),RollCall(u"点名", warn_msg=u"点名后就是弱智！"),RollCall(u"点名", warn_msg=u"点名后就是弱智！"),_ReadOnlyAction(u"打酱油的")]
+        __customized_actions__ = [MyDeleteAction(u"删除", None, data_icon="fa fa-times"),
+                                  RollCall(u"点名", warn_msg=u"点名后就是弱智！"), RollCall(u"点名", warn_msg=u"点名后就是弱智！"),
+                                  RollCall(u"点名", warn_msg=u"点名后就是弱智！"), RollCall(u"点名", warn_msg=u"点名后就是弱智！"),
+                                  RollCall(u"点名", warn_msg=u"点名后就是弱智！"), RollCall(u"点名", warn_msg=u"点名后就是弱智！"),
+                                  RollCall(u"点名", warn_msg=u"点名后就是弱智！"), _ReadOnlyAction(u"打酱油的")]
 
-    user_model_view = UserModelView(User, u"用户")
-    browser.register_model_view(user_model_view, accounts_bp, extra_params={"form_view": {"age_hint": "modify your age here"}, "create_view": {"age_hint": "input your age here"}})
+    user_model_view = UserModelView(SABackend(User, db, u"用户"))
+    browser.register_model_view(user_model_view, accounts_bp,
+                                extra_params={"form_view": {"age_hint": "modify your age here"},
+                                              "create_view": {"age_hint": "input your age here"}})
 
     class CarModelView(databrowser.ModelView):
 
         __form_columns__ = ["id", "model"]
 
-    browser.register_model_view(CarModelView(Car, u"汽车"), accounts_bp, extra_params={"form_view": {"company": "xc"}})
+    browser.register_model_view(CarModelView(SABackend(Car, db, u"汽车")), accounts_bp,
+                                extra_params={"form_view": {"company": "xc"}})
     app.register_blueprint(accounts_bp, url_prefix="/accounts")
 
     @app.route("/")
     def index():
         return redirect(user_model_view.url_for_list())
-    
+
     @app.route("/serv-pic/<filename>")
     def serv_pic(filename):
         return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
@@ -234,6 +258,7 @@ def main():
     app.config["CSRF_ENABLED"] = False
     app.config["UPLOAD_FOLDER"] = r"e:\uploads"
     app.run(debug=True, port=5001, host="0.0.0.0")
+
 
 if __name__ == "__main__":
     main()

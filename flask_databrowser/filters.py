@@ -137,6 +137,19 @@ class BaseFilter(TemplateParam):
         q = q.filter(filter_criterion)
         return q
 
+    def __call__(self, q, **kwargs):
+        """
+        set the query filter/join criterions
+        """
+        # NOTE! we don't join table here
+        if hasattr(self.attr.property, 'direction'):
+            # translate the relation
+            filter_criterion = self.__operator__(self.attr.property.local_remote_pairs[0][0], self.value)
+        else:
+            filter_criterion = self.__operator__(self.attr, self.value)
+        q = q.filter(filter_criterion)
+        return q
+
     @property
     def sa_criterion(self):
 
@@ -216,6 +229,16 @@ class Only(BaseFilter):
         self._value = None
 
     def set_sa_criterion(self, q):
+        """
+        set the query filter/join criterions
+        """
+        # NOTE! we don't join table here
+        if self.value:
+            filter_criterion = self.test(self.attr)
+            q = q.filter(filter_criterion)
+        return q
+
+    def __call__(self, q, **kwargs):
         """
         set the query filter/join criterions
         """

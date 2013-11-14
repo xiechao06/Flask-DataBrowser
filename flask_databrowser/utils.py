@@ -6,7 +6,6 @@ from flask import request, url_for, render_template, g
 from jinja2 import Markup
 from flask.ext.principal import PermissionDenied
 from flask.ext.babel import gettext as _
-from flask.ext.databrowser.backends import get_doc_from_table_def
 from flask.ext.databrowser.exceptions import ValidationError
 
 
@@ -106,7 +105,7 @@ def get_description(view, col_name, obj, col_spec=None):
             return ret
             # if this model is actually a model
     if obj and hasattr(obj.__class__, "_sa_class_manager"):
-        return get_doc_from_table_def(obj.__class__, col_name)
+        return view.backend.get_column_doc(col_name)
     return ""
 
 

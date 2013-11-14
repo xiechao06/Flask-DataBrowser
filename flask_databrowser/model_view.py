@@ -60,15 +60,16 @@ class ModelView(object):
     create_in_steps = False
     step_create_templates = []
 
-    def __init__(self, backend, model):
+    def __init__(self, backend):
         self.backend = backend
-        self.model = model
+        self.model = self.backend.model
         self.blueprint = None
         self.data_browser = None
         self.extra_params = {}
         self.__list_column_specs = []
         self.__normalized_create_columns = []
         self.__normalized_form_columns = []
+        self._default_list_filters = []
 
     #TODO should be property
     def get_extra_params(self):
@@ -140,27 +141,18 @@ class ModelView(object):
             and pass the test
             * fill the label and doc of each column
         """
-
-
-        def _input_column_spec_from_prop(prop):
-            return InputColumnSpec(prop.key,
-                                   doc=self._get_column_doc(prop.key),
-                                   label=self.__column_labels__.get(prop.key),
-                                   property_=prop)
-
-        def _test(prop):
-            if hasattr(prop, 'direction'):
-                local_column = prop.local_remote_pairs[0][0]
-                not_back_ref = bool(local_column.foreign_keys)
-                return not self.column_hide_backrefs or not_back_ref
-            else:
-                return not prop.columns[0].foreign_keys
+        def _input_column_spec_from_kolumne(k):
+            return InputColumnSpec(k.key,
+                                   doc=self._get_column_doc(k.key),
+                                   label=self.__column_labels__.get(k.key),
+                                   property_=k)
 
         if not columns:
-            return {"": [_input_column_spec_from_prop(prop) for prop in self.model.__mapper__.iterate_properties if _test(prop)]}
+            return {"": [_input_column_spec_from_kolumne(k) for k in self.backend.kolumnes]}
 
         ret = OrderedDict()
-        col_name_2_prop = dict((prop.key, prop) for prop in self.model.__mapper__.iterate_properties if _test(prop))
+        col_name_2_prop = dict((k.key, k) for k in self.backend.kolumnes)
+
         if isinstance(columns, types.DictType):
             fieldsets = columns
         else:
@@ -171,7 +163,7 @@ class ModelView(object):
             for col in columns:
                 if isinstance(col, basestring):
                     if col in col_name_2_prop:
-                        ret[fieldset_name].append(_input_column_spec_from_prop(col_name_2_prop[col]))
+                        ret[fieldset_name].append(_input_column_spec_from_kolumne(col_name_2_prop[col]))
                 elif col.col_name in col_name_2_prop:
                     col.property_ = col_name_2_prop[col.col_name]
                     if col.label is None:
@@ -283,6 +275,14 @@ class ModelView(object):
     def __list_filters__(self):
         return []
 
+    def _get_default_list_filters(self):
+        if not self._default_list_filters:
+            for filter_ in self.__list_filters__():
+                if not filter_.model_view:
+                    filter_.model_view = self
+                self._default_list_filters.append(filter_)
+        return self._default_list_filters
+
     def preprocess(self, obj):
         return obj
 
@@ -375,7 +375,8 @@ class ModelView(object):
     def _get_column_filters(self):
         ret = []
         for fltr in self.get_column_filters():
-            fltr.model_view = self
+            if not fltr.model_view:
+                fltr.model_view = self
             ret.append(fltr)
         return ret
 
@@ -496,7 +497,7 @@ class ModelView(object):
         pass
 
     def create_view_2(self):
-        #TODO
+        #TODO 重写
         self.try_create()
 
         return_url = request.args.get('url') or url_for('.' + self.list_view_endpoint)
@@ -509,7 +510,7 @@ class ModelView(object):
             if model:
                 self.do_create_log(model)
                 flash(_(u'%(model_name)s %(model)s was created successfully',
-                model_name=self.model_name, model=unicode(model)))
+                        model_name=self.model_name, model=unicode(model)))
                 if request.form.get("__builtin_action__") == _("add another"):
                     return redirect(self.url_for_object(url=return_url))
                 else:
@@ -557,8 +558,6 @@ class ModelView(object):
                     ('', '', request.path, '', '&'.join(k + '=' + unicode(v) for k, v in args.items()), ''))
             }
         return last_step, next_step
-
-
 
     def create_view(self):
         self.try_create()
@@ -942,8 +941,9 @@ class ModelView(object):
         form_columns = self.get_form_columns(obj)
         if not form_columns:
             # if no form columns given, use the model's attribute
-            mapper = self.model._sa_class_manager.mapper
-            form_columns = [p.key for p in mapper.iterate_properties]
+            #mapper = self.model._sa_class_manager.mapper
+            #form_columns = [p.key for p in mapper.iterate_properties]
+            form_columns = self.backend.kolumnes
 
         if isinstance(form_columns, types.DictType):
             form_columns = list(itertools.chain(*form_columns.values()))
@@ -1138,7 +1138,7 @@ class ModelView(object):
             kwargs["__action_2_forbidden_message_formats__"] = dict(
                 (action["name"], action["forbidden_msg_formats"]) for action in
                 kwargs["__actions__"])
-            count, data = self.backend.get_list(order_by, desc, column_filters,
+            count, data = self.backend.get_list(order_by, desc, column_filters + self._get_default_list_filters(),
                                                 (page - 1) * self.data_browser.page_size,
                                                 self.data_browser.page_size)
             #TODO 重构：判断action是否可以执行

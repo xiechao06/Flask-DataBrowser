@@ -1,7 +1,6 @@
 #-*- coding:utf-8 -*-
 class Backend(object):
-    def __init__(self, model_view, model_name=""):
-        self.model_view = model_view
+    def __init__(self, model_name=""):
         self.model_name = model_name
 
     @property
@@ -18,15 +17,13 @@ class Backend(object):
         raise NotImplementedError
 
     def scaffold_query(self, current_filters, order_by):
+        #只做join_table的工作， 如果需要的话
         return self.query
 
     def get_list(self, order_by, desc, filters, offset, limit):
+        #filters 包括默认的filters及当前运行的filters
 
         q = self.scaffold_query(filters, order_by)
-        for filter_ in self.model_view.default_list_filters:
-            if not filter_.model_view:
-                filter_.model_view = self.model_view
-            q = filter_(q)
 
         for filter_ in filters:
             if filter_.has_value():
@@ -34,6 +31,7 @@ class Backend(object):
 
         if order_by:
             q = self.order_by(q, order_by, desc)
+
         total_cnt = q.count()
         if offset is not None:
             q = q.offset(offset)
@@ -68,6 +66,14 @@ class Backend(object):
     def get_items(self, pks):
         raise NotImplementedError
 
+    @property
+    def kolumnes(self):
+        raise NotImplementedError
+
 
 class Kolumne(object):
-    pass
+    def is_relationship(self):
+        return False
+
+    def local_column(self):
+        raise AttributeError
