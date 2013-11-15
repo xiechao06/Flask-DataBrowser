@@ -11,6 +11,9 @@ class Backend(object):
             * offset(<int>)
             * limit(<int>)
             * all()
+            * first()
+            * get(<int>)
+            * one()
             refer to `flask.ext.databrowser.Backend.get_list`_
 
         """
@@ -43,15 +46,12 @@ class Backend(object):
     def order_by(self, query, order_by, desc):
         raise NotImplementedError
 
+    #TODO should be elminated, using get_kolumne(col_name).doc instead
     def get_column_doc(self, col_name):
         raise NotImplementedError
 
     @property
     def primary_key(self):
-        raise NotImplementedError
-
-    @property
-    def columns(self):
         raise NotImplementedError
 
     def get_pk_value(self, obj):
@@ -70,10 +70,22 @@ class Backend(object):
     def kolumnes(self):
         raise NotImplementedError
 
+    def get_kolumn(self, col_name):
+        raise NotImplementedError
+
 
 class Kolumne(object):
     def is_relationship(self):
-        return False
+        raise NotImplementedError
 
-    def local_column(self):
-        raise AttributeError
+    @property
+    def key(self):
+        raise NotImplementedError
+
+    @property
+    def doc(self):
+        raise NotImplementedError
+
+    @property
+    def direction(self):
+        raise NotImplementedError

@@ -10,16 +10,19 @@ from flask.ext.databrowser.sa_utils import get_primary_key
 
 
 class SABackend(Backend):
-    def __init__(self, model, db, model_name=""):
+    def __init__(self, model, db, model_name="", hide_back_ref=True):
         self.model = model
         self.db = db
         super(SABackend, self).__init__(model_name or model.__name__)
+        self._hide_back_ref = hide_back_ref
         self._primary_key = None
 
     def order_by(self, query, order_by, desc):
         order_criterion = self._get_last_sa_criterion(order_by)
         if order_criterion is None:
-            raise InvalidArgumentError(_("Invalid order by criterion '%(order_by)s'", order_by=order_by))
+            err_msg = _("Invalid order by criterion '%(order_by)s'",
+                        order_by=order_by)
+            raise InvalidArgumentError(err_msg)
         if hasattr(order_criterion.property, 'direction'):
             order_criterion = order_criterion.property.local_remote_pairs[0][0]
         if desc:
@@ -33,7 +36,8 @@ class SABackend(Backend):
                 attrs = col_name.split(".")
                 last_join_model = self.model
                 for rel in attrs[:-1]:
-                    last_join_model = getattr(last_join_model, rel).property.mapper.class_
+                    last_prop = getattr(last_join_model, rel).property
+                    last_join_model = last_prop.mapper.class_
                     joined_tables.add(last_join_model)
             return joined_tables
 
@@ -59,17 +63,20 @@ class SABackend(Backend):
         criterion = self._get_last_sa_criterion(col_name)
         return getattr(criterion, "doc", None)
 
+    #TODO should rename to _get_last_sa_column
     def _get_last_sa_criterion(self, col_name):
         attr_name_list = col_name.split('.')
         last_model = self.model
 
         try:
             for attr_name in attr_name_list[:-1]:
-                last_model = getattr(last_model, attr_name).property.mapper.class_
+                last_prop = getattr(last_model, attr_name).property
+                last_model = last_prop.mapper.class_
             return getattr(last_model, attr_name_list[-1])
         except AttributeError:
             return None
 
+    #TODO NO NEED ANY MORE
     @property
     def columns(self):
         return list(self.model.__table__.columns)
@@ -84,20 +91,51 @@ class SABackend(Backend):
         self.db.session.rollback()
 
     def get_items(self, pks):
-        return self.query.filter(getattr(self.model, self.primary_key).in_(pks)).all()
+        criterion = getattr(self.model, self.primary_key).in_(pks)
+        return self.query.filter(criterion).all()
 
     @property
     def kolumnes(self):
-        def _filter_foreign_keys(p):
-            # 不需要外键及多对多映射
-            return p.local_remote_side[0][0].foreign_keys if hasattr(p, "direction") else not p.columns[0].foreign_keys
+        """
+        :return: a list of Kolumne, won't return foreign keys, that means,
+        in the following Model:
 
-        return [SAKolumne(p) for p in self.model.__mapper__.iterate_properties if _filter_foreign_keys(p)]
+        ..code::python
+
+            class User(db.Model):
+
+                name = db.Column(db.String(32), nullable=False, unique=True)
+                group_id = db.Column(db.Integer, db.ForeignKey('TB_GROUP.id'))
+                # omit group = db.relationship("Group")
+
+        User's form won't display a select to specify the user's group enless
+        you specify the 'group' relationship
+
+        of course, back references are filtered if need
+        """
+        ret = []
+
+        for p in self.model.__mapper__.iterate_properties:
+            kol = SAKolumne(p)
+            if kol.is_relationship():
+                if not self.hide_back_ref or kol.not_back_ref():
+                    ret.append(kol)
+            else:
+                if not kol.is_fk():
+                    ret.append(kol)
+        return ret
+
+    def get_kolumn(self, col_name):
+        return SAKolumne(getattr(self.model, col_name).property)
+
+    def has_kolumn(self, col_name):
+        return hasattr(self.model, col_name)
 
 
 class SAKolumne(Kolumne):
     def __init__(self, property_):
-        assert isinstance(property_, (ColumnProperty, RelationshipProperty, InstrumentedAttribute))
+        assert isinstance(property_, (ColumnProperty, RelationshipProperty,
+                                      InstrumentedAttribute))
         if isinstance(property_, InstrumentedAttribute):
             self._property = property_.property
         self._property = property_
@@ -111,6 +149,23 @@ class SAKolumne(Kolumne):
     def local_column(self):
         return self._property.local_remote_pairs[0][0]
 
+    def not_back_ref(self):
+        '''
+        test if not is back reference
+        '''
+        return self._property.backref
+
+    def is_fk(self):
+        '''
+        test if is foreign key column
+        '''
+        return not self.is_relationship() and \
+            self._property.columns[0].foreign_keys
+
     @property
     def key(self):
         return self._property.key
+
+    @property
+    def direction(self):
+        return self._property.direction.name

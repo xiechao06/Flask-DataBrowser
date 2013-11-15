@@ -1,3 +1,4 @@
+#TODO remove genres
 IMAGE = 1
 LINK = 2
 PLAIN_TEXT = 3
@@ -103,6 +104,8 @@ class ListColumnSpec(ColumnSpec):
         self.item_css_class = item_css_class
 
 
+#TODO should add InputPlaceHolderColumnSpec
+
 class PlaceHolderColumnSpec(ColumnSpec):
     def __init__(self, col_name, template_fname, label=None, doc=None, as_input=False, validators=None, filter_=None,
                  form_width_class=None):
@@ -133,3 +136,10 @@ class FileColumnSpec(ColumnSpec):
     def __init__(self, col_name, label, validators=None):
         super(FileColumnSpec, self).__init__(col_name, genre=FILE, label=label)
         self.validators = validators or []
+
+def input_column_spec_from_kolumne(k):
+    #TODO use kolumne instead of property
+    return InputColumnSpec(k.key,
+                           doc=k.doc,
+                           kolumne=k)
+

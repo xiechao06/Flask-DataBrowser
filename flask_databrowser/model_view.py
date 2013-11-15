@@ -21,7 +21,7 @@ from flask.ext.sqlalchemy import Pagination
 
 from flask.ext.databrowser import sa_utils, helpers, filters, fake_form
 from flask.ext.databrowser.column_spec import (LinkColumnSpec, ColumnSpec, InputColumnSpec, PlaceHolderColumnSpec,
-                                               FileColumnSpec)
+                                               FileColumnSpec, input_column_spec_from_kolumne)
 from flask.ext.databrowser.convert import ValueConverter
 from flask.ext.databrowser.exceptions import ValidationError
 from flask.ext.databrowser.extra_widgets import PlaceHolder
@@ -50,6 +50,7 @@ class ModelView(object):
     serv_type = WEB_PAGE | WEB_SERVICE
 
     language = "en"
+    #TODO should rename to hide_backrefs
     column_hide_backrefs = True
     __create_form__ = __edit_form__ = __batch_edit_form__ = None
     list_template = "__data_browser__/list.html"
@@ -89,9 +90,16 @@ class ModelView(object):
     def model_name(self):
         return self.backend.model_name
 
+    #TODO should rename to create_column_specs
     @property
     def create_columns(self):
-        return []
+        """
+        get the create columns. override this method to provide columns you
+        want to insert into create form.
+        :return: a list of kolumnes returned by backend, or a dict
+        """
+        return [input_column_spec_from_kolumne(k) for k in
+                self.backend.kolumnes]
 
     def _get_create_columns(self):
         """
@@ -100,11 +108,7 @@ class ModelView(object):
         normalized. see ModelView.normalize_create_columns
         """
         if not self.__normalized_create_columns:
-            # 只接受form的字段或者InputColumnSpec或者PlaceholderColumnSpec
-            columns = [col for col in self.create_columns if
-                       isinstance(col, (basestring, InputColumnSpec, PlaceHolderColumnSpec) and col.as_input)]
-
-            self.__normalized_create_columns = self._normalize_columns(columns)
+            self.__normalized_create_columns = self._normalize_columns(self.create_columns)
         return self.__normalized_create_columns
 
     @property
@@ -112,7 +116,7 @@ class ModelView(object):
         """
         get all the *NORMALIZED* form columns for model view. which means,
         if you override this method, you should guarantee that return value are
-        normalized. see ModelView.normalize_form_columns 
+        normalized. see ModelView.normalize_form_columns
         """
         # only for backward compatiple, feel comfortable to ignore it
         if hasattr(self, 'get_form_columns') and isinstance(self.get_form_columns, types.MethodType):
@@ -130,28 +134,19 @@ class ModelView(object):
     def _get_column_doc(self, column):
         return self.__column_docs__.get(column) or self.backend.get_column_doc(column)
 
+
+    #TODO should rename to _get_form_column_specs
     def _normalize_columns(self, columns):
         """
         this utility function handle the following matters:
-
-            * if columns not defined in fieldsets, add them to one fieldset whose name is empty string
-            * if columns are empty undefined, fill the form_columns from model
+            * if columns not defined in fieldsets, add them to one fieldset
+                whose name is empty string
             * convert all the column of 'basestring' to InputColumn
-            * purge the create columns, only columns defined in model, foreign key could be displayed in edit form,
-            and pass the test
             * fill the label and doc of each column
+        :return: an OrderedDict whose keys are fieldset's name, whose values
+        are a list InputColumnSpec or PlaceHolderColumnSpec (as input).
         """
-        def _input_column_spec_from_kolumne(k):
-            return InputColumnSpec(k.key,
-                                   doc=self._get_column_doc(k.key),
-                                   label=self.__column_labels__.get(k.key),
-                                   property_=k)
-
-        if not columns:
-            return {"": [_input_column_spec_from_kolumne(k) for k in self.backend.kolumnes]}
-
         ret = OrderedDict()
-        col_name_2_prop = dict((k.key, k) for k in self.backend.kolumnes)
 
         if isinstance(columns, types.DictType):
             fieldsets = columns
@@ -161,17 +156,20 @@ class ModelView(object):
         for fieldset_name, columns in fieldsets.items():
             ret[fieldset_name] = []
             for col in columns:
-                if isinstance(col, basestring):
-                    if col in col_name_2_prop:
-                        ret[fieldset_name].append(_input_column_spec_from_kolumne(col_name_2_prop[col]))
-                elif col.col_name in col_name_2_prop:
-                    col.property_ = col_name_2_prop[col.col_name]
-                    if col.label is None:
-                        col.label = self.__column_labels__.get(col.col_name)
-                    if col.doc is None:
-                        col.doc = self._get_column_doc(col.col_name)
+                is_str = isinstance(col, basestring)
+                is_input = isinstance(col, InputColumnSpec) or \
+                        (isinstance(col, PlaceHolderColumnSpec) and col.as_input)
+                col_name = col if isinstance(col, basestring) else col.col_name
+                if (is_str or is_input) and self.backend.hasattr(col_name):
+                    kol = self.backend.get_kolumne(col_name)
+                    if is_str:
+                        col_spec = input_column_spec_from_kolumne(kol)
+                        ret[fieldset_name].append(col_spec)
+                    else:
+                        col.kolumne = kol
+                        if col.doc is None:
+                            col.doc = kol.doc
                     ret[fieldset_name].append(col)
-
         return ret
 
     @property
@@ -497,14 +495,13 @@ class ModelView(object):
         pass
 
     def create_view_2(self):
-        #TODO 重写
         self.try_create()
 
         return_url = request.args.get('url') or url_for('.' + self.list_view_endpoint)
         on_fly = int(request.args.get("on_fly", 0))
         current_step = int(request.args.get('__step__', 0)) if self.create_in_steps else None
         create_columns = self._get_create_columns()
-        form = self._get_create_form(create_columns, current_step)
+        form = self._get_create_form(create_columns)
         if form.validate_on_submit():
             model = self.create_model(form)
             if model:
@@ -558,6 +555,38 @@ class ModelView(object):
                     ('', '', request.path, '', '&'.join(k + '=' + unicode(v) for k, v in args.items()), ''))
             }
         return last_step, next_step
+
+
+    def _get_create_form(create_columns):
+        """
+        create a form for creation using create columns
+        """
+        assert isinstance(create_columns, dict)
+        if self.__create_form__ is None:
+            create_columns = list(itertools.chain(*create_columns.values()))
+            self.__create_form__ = self.scaffold_form(create_columns)
+
+        default_args = {}
+        for k, v in request.args.iterlists():
+            if self.backend.has_kolumne(k)
+                kol = self.backend.get_kolumne(k)
+                if kol.is_relationship():
+                    q = self.backend.query
+                    if kol.direction == 'MANYTOONE':
+                        default_args[k] = q.one(v[0])
+                    else:
+                        default_args[k] = [q.one(i) for i in v]
+                else:
+                    default_args[k] = v[0]
+        if default_args:
+            obj = type("_temp", (object, ), default_args)()
+            ret = self.__create_form__(obj=obj, **default_args)
+            # set the default args in form, otherwise the last step of creation won't be finished
+            for k, v in default_args.items():
+                if v and hasattr(ret, k) and k not in request.form:
+                    ret.k.data = v
+            return ret
+        return self.__create_form__()
 
     def create_view(self):
         self.try_create()
@@ -926,6 +955,7 @@ class ModelView(object):
         """
             Create form from the model.
         """
+        #TODO support misc column specifications, create_url, seperate backend
         from flask.ext.databrowser.form.convert import AdminModelConverter, get_form
 
         converter = AdminModelConverter(self.session, self)
@@ -1315,9 +1345,9 @@ class ModelView(object):
     def obj_api(self, id_):
         """
         this api handles 2 things:
-       
+
         * perform actions upon objects
-        * get the object itself and edit form  
+        * get the object itself and edit form
             why we mix the object and edit form together? since whether a column could be altered (eg. not readonly),
             is related to the object
         * get some extra information from preprocessed object
@@ -1622,7 +1652,7 @@ class ModelView(object):
 
     def get_edit_template(self):
         """
-        get the real edit template, if you specify option "ModelView.edit_template", 
+        get the real edit template, if you specify option "ModelView.edit_template",
         it will be used, else "/__data_browser/form.html" will be used
         """
         if self.edit_template is None:
