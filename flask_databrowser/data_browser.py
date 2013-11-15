@@ -32,7 +32,7 @@ class DataBrowser(object):
     def register_model_view(self, model_view, blueprint, extra_params=None):
         model_view.blueprint = blueprint
         model_view.data_browser = self
-        model_view.set_extra_params(extra_params)
+        model_view.extra_params = extra_params
 
         if model_view.serv_type & WEB_PAGE:
             model_view.add_page_url_rule()

@@ -69,18 +69,12 @@ class ModelView(object):
         self.backend = backend
         self.model = self.backend.model
         self.blueprint = None
+        self.extra_params = {}
         self.data_browser = None
-        self._extra_params = {}
         self.__list_column_specs = []
         self.__normalized_create_columns = []
         self.__normalized_form_columns = []
         self._default_list_filters = []
-
-    def set_extra_params(self, extra_params):
-        if isinstance(extra_params, types.FunctionType):
-            self._extra_params = extra_params()
-        elif isinstance(extra_params, types.DictType):
-            self._extra_params = extra_params
 
     # 可以重写的property
     @property
@@ -1144,9 +1138,8 @@ class ModelView(object):
             if desc:
                 kwargs["__desc__"] = desc
             kwargs["__pagination__"] = Pagination(None, page, self.data_browser.page_size, count, None)
-            list_kwargs = self._extra_params.get("list_view", {})
             kwargs["help_message"] = self.get_list_help()
-            for k, v in list_kwargs.items():
+            for k, v in self._extra_params.get("list_view", {}).items():
                 if isinstance(v, types.FunctionType):
                     v = v(self)
                 kwargs[k] = v
@@ -1693,3 +1686,13 @@ class ModelView(object):
     @property
     def _model_name(self):
         return self.backend.model_name
+
+    @property
+    def _extra_params(self):
+        #TODO 不需要是方法
+        if isinstance(self.extra_params, types.FunctionType):
+            return self.extra_params()
+        elif isinstance(self.extra_params, types.DictType):
+            return self.extra_params
+        else:
+            return {}

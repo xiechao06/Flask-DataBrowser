@@ -9,7 +9,7 @@
         </li>
       {% else %}
         <li class="previous">
-          <a href="{{ url_for_other_page(page=pagination.page - 1 if pagination.page > 1 else 1) }}">
+          <a href="{{ url_for_other_page(page=pagination.prev_num) }}">
             <i class="fa fa-angle-double-left fa-3x"></i>
           </a>
         </li>
@@ -27,7 +27,7 @@
         </li>
       {% else %}
         <li class="next">
-          <a href="{{ url_for_other_page(page=pagination.page + 1) }}">
+          <a href="{{ url_for_other_page(page=pagination.next_num) }}">
             <i class="fa fa-angle-double-right fa-3x"></i>
           </a>
         </li>
@@ -46,7 +46,7 @@
         </li>
       {% else %}
         <li class="previous">
-          <a href="{{ url_for_other_page(page=pagination.page - 1 if pagination.page > 1 else 1) }}">
+          <a href="{{ url_for_other_page(page=pagination.prev_num) }}">
             {{ _("prev") }}
           </a>
         </li>
@@ -79,7 +79,7 @@
         </li>
       {% else %}
         <li class="next">
-          <a href="{{ url_for_other_page(page=pagination.page + 1) }}">
+          <a href="{{ url_for_other_page(page=pagination.next_num) }}">
             {{ gettext("next") }}
           </a>
         </li>
