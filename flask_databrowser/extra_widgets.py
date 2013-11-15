@@ -7,6 +7,7 @@ import uuid
 from wtforms.widgets import HTMLString, html_params, Select
 from wtforms.compat import text_type
 from flask.ext.databrowser.sa_utils import get_primary_key
+from flask.ext.databrowser.column_spec import LinkColumnSpec, ImageColumnSpec, ColumnSpec
 
 
 class Image(object):
@@ -237,8 +238,6 @@ if __name__ == "__main__":
     print Link("a.com", "http://a.com")(None)
     print PlainText("abc<123")(None)
     from collections import namedtuple
-    from flask.ext.databrowser.column_spec import LinkColumnSpec, ImageColumnSpec, ColumnSpec
-
     table_column_spec = [LinkColumnSpec("a", "some link"), ImageColumnSpec("b"), ColumnSpec("c")]
     print TableWidget([namedtuple("A", ["a", "b", "c"])(i, i * 2, i * 3) for i in xrange(10)], ["a", "b", "c"])(None)
 

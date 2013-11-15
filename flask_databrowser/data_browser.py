@@ -3,8 +3,7 @@ from flask import request, Blueprint
 from flask.ext.principal import PermissionDenied
 
 from flask.ext.databrowser.column_spec import LinkColumnSpec
-from flask.ext.databrowser.utils import (test_request_type, url_for_other_page, urlencode_filter, truncate_str)
-from flask.ext.databrowser.sa_utils import get_primary_key
+from flask.ext.databrowser.utils import (test_request_type, url_for_other_page, urlencode_filter, truncate_str, get_identity_name)
 from flask.ext.databrowser.constants import WEB_PAGE, WEB_SERVICE
 
 
@@ -33,7 +32,7 @@ class DataBrowser(object):
     def register_model_view(self, model_view, blueprint, extra_params=None):
         model_view.blueprint = blueprint
         model_view.data_browser = self
-        model_view.extra_params = extra_params or {}
+        model_view.set_extra_params(extra_params)
 
         if model_view.serv_type & WEB_PAGE:
             model_view.add_page_url_rule()
@@ -44,12 +43,11 @@ class DataBrowser(object):
         blueprint.before_request(model_view.before_request_hook)
         blueprint.after_request(model_view.after_request_hook)
 
-        #TODO 取消与tablename的关联（可以考虑用python的路径+类名标识）
-        self.__registered_view_map[model_view.model.__tablename__] = model_view
+        self.__registered_view_map[get_identity_name(model_view.model)] = model_view
 
     def get_object_link_column_spec(self, model, label=None):
         try:
-            model_view = self.__registered_view_map[model.__tablename__]
+            model_view = self.__registered_view_map[get_identity_name(model)]
 
             #TODO 移动到model_view中
             model_view.try_view(model)
@@ -65,7 +63,7 @@ class DataBrowser(object):
 
     def get_create_url(self, model, target):
         try:
-            model_view = self.__registered_view_map[model.__tablename__]
+            model_view = self.__registered_view_map[get_identity_name(model)]
 
             #TODO 移动到model_view中
             model_view.try_create()
@@ -77,7 +75,7 @@ class DataBrowser(object):
 
     def get_form_url(self, obj, **kwargs):
         try:
-            model_view = self.__registered_view_map[obj.__tablename__]
+            model_view = self.__registered_view_map[get_identity_name(obj.__class__)]
             return model_view.url_for_object(obj, **kwargs)
         except KeyError:
             return None

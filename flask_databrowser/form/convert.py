@@ -466,7 +466,7 @@ class AdminModelConverter(ModelConverterBase):
         if 'get_label' in field_args:
             return field_args['get_label']
 
-        column_formatters = getattr(self.view, '__column_formatters__')
+        column_formatters = getattr(self.view, '__column_formatters__', None)
 
         if column_formatters:
             return column_formatters.get(name)

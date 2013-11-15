@@ -11,7 +11,6 @@ import urlparse
 
 import werkzeug
 from werkzeug.utils import secure_filename
-import yaml
 from werkzeug.datastructures import MultiDict
 
 from flask import (render_template, flash, request, url_for, redirect, Flask, make_response, jsonify)
@@ -33,13 +32,19 @@ from flask.ext.databrowser.constants import WEB_SERVICE, WEB_PAGE
 class ModelView(object):
     """
     changelog v2: remove params: __create_columns__, __sortable_columns__
+
+    现确立如下规则：
+    没有"_"开头的属性（包括property）可以重写
+    以"_"开头的属性，理论上不应该重写
     """
+
+    # 可以重写的属性
     __column_formatters__ = {}
     __list_columns__ = {}
     __column_labels__ = {}
     __column_docs__ = {}
     __column_filters__ = []
-    __default_order__ = None
+    default_order = None
     __batch_form_columns__ = []
     __form_columns__ = []
     __customized_actions__ = []
@@ -65,30 +70,19 @@ class ModelView(object):
         self.model = self.backend.model
         self.blueprint = None
         self.data_browser = None
-        self.extra_params = {}
+        self._extra_params = {}
         self.__list_column_specs = []
         self.__normalized_create_columns = []
         self.__normalized_form_columns = []
         self._default_list_filters = []
 
-    #TODO should be property
-    def get_extra_params(self):
-        if self.extra_params and hasattr(self.extra_params, "__call__"):
-            return self.extra_params()
-        else:
-            return self.extra_params
+    def set_extra_params(self, extra_params):
+        if isinstance(extra_params, types.FunctionType):
+            self._extra_params = extra_params()
+        elif isinstance(extra_params, types.DictType):
+            self._extra_params = extra_params
 
-    def _get_extra_params(self, view_name):
-        kwargs = self.get_extra_params().get(view_name, {})
-        for k, v in kwargs.items():
-            if isinstance(v, types.FunctionType):
-                kwargs[k] = v(self)
-        return kwargs
-
-    @property
-    def model_name(self):
-        return self.backend.model_name
-
+    # 可以重写的property
     @property
     def create_columns(self):
         return []
@@ -107,6 +101,7 @@ class ModelView(object):
             self.__normalized_create_columns = self._normalize_columns(columns)
         return self.__normalized_create_columns
 
+    #TODO 重构
     @property
     def form_columns(self):
         """
@@ -175,7 +170,8 @@ class ModelView(object):
         return ret
 
     @property
-    def session(self):
+    def _session(self):
+        #TODO 移至backend
         return self.data_browser.db.session
 
     @property
@@ -357,11 +353,11 @@ class ModelView(object):
         try:
             model = self.populate_obj(form)
             self.on_model_change(form, model)
-            self.session.add(model)
-            self.session.commit()
+            self._session.add(model)
+            self._session.commit()
             return model
         except Exception:
-            self.session.rollback()
+            self._session.rollback()
             raise
 
     def populate_obj(self, form):
@@ -421,7 +417,7 @@ class ModelView(object):
                             flash(ret[-1], "error")
                             return False
 
-                        self.session.commit()
+                        self._session.commit()
                         if isinstance(ret, werkzeug.wrappers.BaseResponse) and ret.status_code == 302:
                             if not action.direct:
                                 flash(action.success_message(processed_objs), 'success')
@@ -431,9 +427,9 @@ class ModelView(object):
                         return True
                     except Exception, ex:
                         flash(
-                            _('Failed to update %(model_name)s %(objs)s due to %(error)s', model_name=self.model_name,
+                            _('Failed to update %(model_name)s %(objs)s due to %(error)s', model_name=self._model_name,
                               objs=",".join(unicode(obj) for obj in processed_objs), error=unicode(ex)), 'error')
-                        self.session.rollback()
+                        self._session.rollback()
                         raise
             raise ValidationError(
                 _('invalid action %(action)s', action=action_name))
@@ -465,16 +461,16 @@ class ModelView(object):
 
                 self.do_update_log(obj, _("update"))
                 flash(_(u"%(model_name)s %(obj)s was updated and saved",
-                        model_name=self.model_name, obj=unicode(obj)))
+                        model_name=self._model_name, obj=unicode(obj)))
                 self.on_model_change(form, obj)
-                self.session.commit()
+                self._session.commit()
             return True
         except Exception, ex:
             flash(
                 _('Failed to update %(model_name)s %(obj)s due to %(error)s',
-                  model_name=self.model_name, obj=",".join([unicode(obj) for obj in objs]),
+                  model_name=self._model_name, obj=",".join([unicode(obj) for obj in objs]),
                   error=unicode(ex)), 'error')
-            self.session.rollback()
+            self._session.rollback()
             return False
 
     def try_view(self, processed_objs=None):
@@ -510,13 +506,13 @@ class ModelView(object):
             if model:
                 self.do_create_log(model)
                 flash(_(u'%(model_name)s %(model)s was created successfully',
-                        model_name=self.model_name, model=unicode(model)))
+                        model_name=self._model_name, model=unicode(model)))
                 if request.form.get("__builtin_action__") == _("add another"):
                     return redirect(self.url_for_object(url=return_url))
                 else:
                     if on_fly:
                         return render_template("__data_browser__/on_fly_result.html",
-                                               model_cls=self.model_name,
+                                               model_cls=self._model_name,
                                                obj=unicode(model),
                                                obj_pk=self.backend.get_pk_value(model),
                                                target=request.args.get("target"))
@@ -578,13 +574,13 @@ class ModelView(object):
             if model:
                 self.do_create_log(model)
                 flash(_(u'%(model_name)s %(model)s was created successfully',
-                        model_name=self.model_name, model=unicode(model)))
+                        model_name=self._model_name, model=unicode(model)))
                 if request.form.get("__builtin_action__") == _("add another"):
                     return redirect(self.url_for_object(url=return_url))
                 else:
                     if on_fly:
                         return render_template("__data_browser__/on_fly_result.html",
-                                               model_cls=self.model_name,
+                                               model_cls=self._model_name,
                                                obj=unicode(model),
                                                obj_pk=self.backend.get_pk_value(model),
                                                target=request.args.get("target"))
@@ -604,7 +600,7 @@ class ModelView(object):
         form = compound_form or form
 
         placeholder_kwargs = {}
-        form_kwargs = self.get_extra_params().get("create_view", {})
+        form_kwargs = self._extra_params.get("create_view", {})
         for k, v in form_kwargs.items():
             if isinstance(v, types.FunctionType):
                 v = v(self)
@@ -697,7 +693,7 @@ class ModelView(object):
 
         self.data_browser.logger.debug(
             _('%(model_name)s %(model)s was created successfully',
-              model_name=self.model_name, model=unicode(obj)),
+              model_name=self._model_name, model=unicode(obj)),
             extra={"obj": obj, "obj_pk": self.backend.get_pk_value(obj),
                    "action": _(u"create"), "actor": current_user})
 
@@ -706,11 +702,11 @@ class ModelView(object):
             return _(
                 u"you are viewing %(model_name)s-%(obj)s, "
                 u"since you have only read permission",
-                model_name=self.model_name,
+                model_name=self._model_name,
                 obj=",".join(unicode(model) for model in objs))
         else:
             return _(u"edit %(model_name)s-%(objs)s",
-                     model_name=self.model_name,
+                     model_name=self._model_name,
                      objs=",".join(unicode(model) for model in objs))
 
     def edit_hint_message(self, obj, read_only=False):
@@ -718,14 +714,14 @@ class ModelView(object):
             return _(
                 u"you are viewing %(model_name)s-%(obj)s, "
                 u"since you have only read permission",
-                model_name=self.model_name, obj=unicode(obj))
+                model_name=self._model_name, obj=unicode(obj))
         else:
             return _(u"edit %(model_name)s-%(obj)s",
-                     model_name=self.model_name,
+                     model_name=self._model_name,
                      obj=unicode(obj))
 
     def create_hint_message(self):
-        return _(u"create %(model_name)s", model_name=self.model_name)
+        return _(u"create %(model_name)s", model_name=self._model_name)
 
     def edit_view(self, id_):
         """
@@ -839,7 +835,7 @@ class ModelView(object):
                                                                              col.col_name).property.direction.name \
                     == "MANYTOONE":
                 assert hasattr(col.group_by, "property") or hasattr(col.group_by, "__call__")
-                rows = [row for row in col.filter_(self.session.query(getattr(self.model,
+                rows = [row for row in col.filter_(self._session.query(getattr(self.model,
                                                                               col.col_name).property.mapper.class_))
                 .all()
                         if col.opt_filter(row)]
@@ -871,7 +867,7 @@ class ModelView(object):
 
         form = compound_form or form
         kwargs = {}
-        form_kwargs = self.get_extra_params().get("form_view", {})
+        form_kwargs = self._extra_params.get("form_view", {})
         for k, v in form_kwargs.items():
             if isinstance(v, types.FunctionType):
                 v = v(self)
@@ -928,7 +924,7 @@ class ModelView(object):
         """
         from flask.ext.databrowser.form.convert import AdminModelConverter, get_form
 
-        converter = AdminModelConverter(self.session, self)
+        converter = AdminModelConverter(self._session, self)
         form_class = get_form(self.model, converter,
                               base_class=form.BaseForm, only=columns,
                               exclude=None, field_args=None)
@@ -1095,26 +1091,22 @@ class ModelView(object):
             self.__batch_edit_form__ = self.scaffold_form(processed_cols)
         return self.__batch_edit_form__(obj=fake_obj)
 
-    def url_for_list(self, *args, **kwargs):
+    def _get_url(self, endpoint, **kwargs):
         if isinstance(self.blueprint, Flask):
-            return url_for(self.list_view_endpoint, *args, **kwargs)
+            return url_for(endpoint, **kwargs)
         else:
-            return url_for(".".join([self.blueprint.name, self.list_view_endpoint]), *args, **kwargs)
+            return url_for(".".join([self.blueprint.name, endpoint]), **kwargs)
 
-    def url_for_list_json(self, *args, **kwargs):
-        #TODO 重构
-        blueprint_name = "" if isinstance(self.blueprint,
-                                          Flask) else self.blueprint.name
-        return url_for(".".join([blueprint_name, self.list_view_endpoint + "_json"]), *args, **kwargs)
+    def url_for_list(self, **kwargs):
+        return self._get_url(self.list_view_endpoint, **kwargs)
+
+    def url_for_list_json(self, **kwargs):
+        return self._get_url(self.list_view_endpoint+"_json", **kwargs)
 
     def url_for_object(self, model=None, **kwargs):
-        #TODO 重构
-        blueprint_name = "" if isinstance(self.blueprint,
-                                          Flask) else self.blueprint.name
         if model:
-            return url_for(".".join([blueprint_name, self.object_view_endpoint]), id_=self.backend.get_pk_value(model), **kwargs)
-        else:
-            return url_for(".".join([blueprint_name, self.object_view_endpoint]), **kwargs)
+            kwargs["id_"] = self.backend.get_pk_value(model)
+        return self._get_url(self.object_view_endpoint, **kwargs)
 
     def list_view(self):
         """
@@ -1124,17 +1116,12 @@ class ModelView(object):
             self.try_view()
             page, order_by, desc = self._parse_args()
             column_filters = self.parse_filters()
-            kwargs = {}
             #TODO 通过配置template的css文件实现
-            with self.data_browser.blueprint.open_resource(
-                    "static/css_classes/list.yaml") as f:
-                kwargs["__css_classes__"] = yaml.load(f.read())
+            kwargs = {"__list_columns__": self.scaffold_list_columns(order_by, desc),
+                      "__filters__": column_filters,
+                      "__actions__": self.scaffold_actions()}
 
-            kwargs["__list_columns__"] = self.scaffold_list_columns(order_by, desc)
-            kwargs["__filters__"] = column_filters
             #TODO 直接使用action对象
-            kwargs["__actions__"] = self.scaffold_actions()
-
             kwargs["__action_2_forbidden_message_formats__"] = dict(
                 (action["name"], action["forbidden_msg_formats"]) for action in
                 kwargs["__actions__"])
@@ -1156,10 +1143,8 @@ class ModelView(object):
             kwargs["model_view"] = self
             if desc:
                 kwargs["__desc__"] = desc
-            kwargs["__pagination__"] = Pagination(None, page,
-                                                  self.data_browser.page_size,
-                                                  count, kwargs["__data__"])
-            list_kwargs = self.get_extra_params().get("list_view", {})
+            kwargs["__pagination__"] = Pagination(None, page, self.data_browser.page_size, count, None)
+            list_kwargs = self._extra_params.get("list_view", {})
             kwargs["help_message"] = self.get_list_help()
             for k, v in list_kwargs.items():
                 if isinstance(v, types.FunctionType):
@@ -1285,8 +1270,8 @@ class ModelView(object):
         self.try_view()
 
         def calc_order(c):
-            if self.__default_order__:
-                return self.__default_order__[1] if c == self.__default_order__[0] else None
+            if self.default_order:
+                return self.default_order[1] if c == self.default_order[0] else None
             return None
 
         return jsonify({"sort_columns": [(c, calc_order(c)) for c in self.sortable_columns]})
@@ -1315,9 +1300,9 @@ class ModelView(object):
     def obj_api(self, id_):
         """
         this api handles 2 things:
-       
+
         * perform actions upon objects
-        * get the object itself and edit form  
+        * get the object itself and edit form
             why we mix the object and edit form together? since whether a column could be altered (eg. not readonly),
             is related to the object
         * get some extra information from preprocessed object
@@ -1375,13 +1360,13 @@ class ModelView(object):
                                 }), 403
                         try:
                             ret = action.op_upon_list(processed_objs, self)
-                            self.session.commit()
+                            self._session.commit()
                             return jsonify({"reason": action.success_message(processed_objs)})
                         except Exception, ex:
-                            self.session.rollback()
+                            self._session.rollback()
                             return jsonify({
                                 "reason": _('Failed to update %(model_name)s %(objs)s due to %(error)s',
-                                            model_name=self.model_name,
+                                            model_name=self._model_name,
                                             objs=",".join(unicode(obj) for obj in processed_objs),
                                             error=unicode(ex))
                             }), 403
@@ -1439,8 +1424,8 @@ class ModelView(object):
                 }), 403
             obj = self.populate_obj(create_form)
             self.on_model_change(create_form, obj)
-            self.session.add(obj)
-            self.session.commit()
+            self._session.add(obj)
+            self._session.commit()
             return jsonify({
                 'id': self.backend.get_pk_value(obj),
                 'repr': self.repr_obj(obj)
@@ -1450,16 +1435,12 @@ class ModelView(object):
         page = request.args.get("page", 1, type=int)
         order_by = request.args.get("order_by")
         desc = request.args.get("desc", 0, type=int)
-        if order_by is None and isinstance(self.__default_order__,
-                                           (list, tuple)):
+        if order_by is None and isinstance(self.default_order, (list, tuple)):
             try:
-                order_by, desc = self.__default_order__
-                if desc == "desc":
-                    desc = 1
-                else:
-                    desc = 0
+                order_by, desc = self.default_order
+                desc = 1 if desc == "desc" else 0
             except ValueError:
-                order_by = self.__default_order__[0]
+                order_by = self.default_order[0]
         return page, order_by, desc
 
     def _parse_args2(self):
@@ -1467,16 +1448,15 @@ class ModelView(object):
         offset = request.args.get("__offset__", None, type=int)
         order_by = request.args.get("order_by")
         desc = request.args.get("desc", 0, type=int)
-        if order_by is None and isinstance(self.__default_order__,
-                                           (list, tuple)):
+        if order_by is None and isinstance(self.default_order, (list, tuple)):
             try:
-                order_by, desc = self.__default_order__
+                order_by, desc = self.default_order
                 if desc == "desc":
                     desc = 1
                 else:
                     desc = 0
             except ValueError:
-                order_by = self.__default_order__[0]
+                order_by = self.default_order[0]
         return offset, limit, order_by, desc
 
     @property
@@ -1497,7 +1477,7 @@ class ModelView(object):
                             args["desc"] = 1
                         else:
                             try:
-                                args.pop("desc")
+                                del args["desc"]
                             except KeyError:
                                 pass
                     sort_url = self.url_for_list(**args)
@@ -1506,9 +1486,6 @@ class ModelView(object):
                 yield dict(name=c.col_name, label=c.label, doc=c.doc, sort_url=sort_url)
 
         return list(_(order_by=order_by, desc=desc))
-
-    def scaffold_filters(self):
-        return [dict(label="a", op=dict(name="lt", id="a__lt"))]
 
     def scaffold_actions(self):
         return [dict(name=action.name, value=action.name, css_class=action.css_class, data_icon=action.data_icon,
@@ -1559,13 +1536,13 @@ class ModelView(object):
 
         return count, q.all()
 
-    def scaffold_list(self, models):
+    def scaffold_list(self, objs):
         """
         convert the objects to a dict suitable for template renderation
         """
 
         def g():
-            for idx, r in enumerate(models):
+            for idx, r in enumerate(objs):
                 r = self.preprocess(r)
                 converter = ValueConverter(r, self)
                 pk = self.backend.get_pk_value(r)
@@ -1584,7 +1561,7 @@ class ModelView(object):
                                               self._get_customized_actions() if
                                               action.test_enabled(r) != 0])
 
-        return [] if not models else list(g())
+        return [] if not objs else list(g())
 
     def patch_row_css(self, idx, row):
         return ""
@@ -1705,3 +1682,14 @@ class ModelView(object):
                                     self.create_api_endpoint,
                                     self.create_api,
                                     methods=["GET", "POST"])
+
+    def _get_extra_params(self, view_name):
+        kwargs = self._extra_params.get(view_name, {})
+        for k, v in kwargs.items():
+            if isinstance(v, types.FunctionType):
+                kwargs[k] = v(self)
+        return kwargs
+
+    @property
+    def _model_name(self):
+        return self.backend.model_name

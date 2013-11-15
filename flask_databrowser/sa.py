@@ -78,10 +78,10 @@ class SABackend(Backend):
         return getattr(obj, self.primary_key)
 
     def commit(self):
-        self.db.session.commit()
+        self.db._session.commit()
 
     def rollback(self):
-        self.db.session.rollback()
+        self.db._session.rollback()
 
     def get_items(self, pks):
         return self.query.filter(getattr(self.model, self.primary_key).in_(pks)).all()
@@ -90,7 +90,7 @@ class SABackend(Backend):
     def kolumnes(self):
         def _filter_foreign_keys(p):
             # 不需要外键及多对多映射
-            return p.local_remote_side[0][0].foreign_keys if hasattr(p, "direction") else not p.columns[0].foreign_keys
+            return p.local_remote_pairs[0][0].foreign_keys if hasattr(p, "direction") else not p.columns[0].foreign_keys
 
         return [SAKolumne(p) for p in self.model.__mapper__.iterate_properties if _filter_foreign_keys(p)]
 

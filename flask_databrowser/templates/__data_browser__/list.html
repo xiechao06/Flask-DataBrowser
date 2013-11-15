@@ -206,7 +206,7 @@
   {% if __can_create__ %}
       <a id="create-btn" class="btn btn-success" href="{{ "?url=".join([__object_url__, request.url|urlencode]) }}">
         <span class="fa fa-plus"></span>
-        {{ _("create") + ' ' + model_view.model_name }}
+        {{ _("create") + ' ' + model_view._model_name }}
       </a>
     {% endif %}
     {% if help_message %}
@@ -243,7 +243,7 @@
 {% endmacro %}
 
 {% macro render_table() %}
-  <table id="list-table" class="{{ __css_classes__.list_table_class }}">
+  <table id="list-table" class="table table-condensed table-bordered">
     <thead>
     <tr>
       {% if model_view.can_batchly_edit %}
@@ -378,7 +378,7 @@
         {% if filter.input_type[0] == "checkbox" %}
           <div class="checkbox">
             <label>
-              <input type="checkbox" class="{{ __css_classes__[filter.input_class] }}" name="{{ filter.op.id }}" id="{{ filter.op.id }}"/>
+              <input type="checkbox" name="{{ filter.op.id }}" id="{{ filter.op.id }}"/>
               {{ filter.label }}
             </label>
           </div>
@@ -404,7 +404,7 @@
                   {% else %}
                     type="{{ input_type }}"
                   {% endif %}
-                    name="{{ filter.op.id }}" class="form-control {{ __css_classes__[filter.input_class] }}"
+                    name="{{ filter.op.id }}" class="form-control"
                     min=0 placeholder="{{ gettext("input %(label)s here", label=filter.label) }}"/>
               {% if not loop.last %}
                 <div class="text-center">{{ filter.sep }}</div>
@@ -443,7 +443,7 @@
 {% endmacro %}
 
 {% macro render_desktop_filter() %}
-  <div id="filter" class="{{ __css_classes__.filters_class }}">
+  <div id="filter" class="alert-info alert">
     <h4>{{ _("refine search") }}</h4>
     <hr/>
     <form role="form">

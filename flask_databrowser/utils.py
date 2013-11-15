@@ -222,3 +222,7 @@ def truncate_str(s, length=255, killwords=False, end='...', href="#"):
         result.append(word)
     result.append(a_)
     return u' '.join(result)
+
+
+def get_identity_name(model):
+    return ".".join([model.__module__, model.__name__])

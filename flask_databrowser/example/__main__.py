@@ -165,7 +165,7 @@ def main():
             "group.name": u"用户组名称",
         }
 
-        __default_order__ = ("name", "desc")
+        default_order = ("name", "desc")
 
         from datetime import datetime, timedelta
 

@@ -177,14 +177,14 @@ def extrac_validators(column, model_view):
 
     unique = False
     if column.primary_key:
-        ret.append(Unique(model_view.session,
+        ret.append(Unique(model_view._session,
             model_view.model,
             column, message=_("This field must be unique, but it already exists!")))
         unique = True
 
     # If field is unique, validate it
     if column.unique and not unique:
-        ret.append(Unique(model_view.session,
+        ret.append(Unique(model_view._session,
             model_view.model,
             column, message=_("This field must be unique, but it already exists!")))
     if isinstance(column.type, String) or isinstance(column.type, Unicode):
@@ -224,9 +224,9 @@ def convert_column(col_spec, converter, model_view, obj):
         elif col_spec.property_.direction.name != 'MANYTOMANY': # many to many allowed to be empty
             ret['validators'].append(validators.DataRequired(message=_(u"this field can't be empty")))
         if col_spec.filter_:
-            ret['options'] = [(getattr(obj_, get_primary_key(remote_model)), obj_) for obj_ in col_spec.filter_(model_view.session.query(remote_model)).all()]
+            ret['options'] = [(getattr(obj_, get_primary_key(remote_model)), obj_) for obj_ in col_spec.filter_(model_view._session.query(remote_model)).all()]
         else:
-            ret['options'] = [(getattr(obj_, get_primary_key(remote_model)), obj_) for obj_ in model_view.session.query(remote_model).all()]
+            ret['options'] = [(getattr(obj_, get_primary_key(remote_model)), obj_) for obj_ in model_view._session.query(remote_model).all()]
         if col_spec.opt_filter:
             ret['options'] = [(pk, opt) for pk, opt in ret['options'] if (col_spec.opt_filter(opt))]
         default = local_column.default
