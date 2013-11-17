@@ -1,4 +1,5 @@
 # -*- coding: UTF-8 -*-
+#TODO should be a library
 import operator
 from sqlalchemy.orm import ColumnProperty
 from sqlalchemy.schema import Table
@@ -42,3 +43,15 @@ def get_joined_tables(model, col_name):
         result.append(last_join_model)
     return result
 
+def get_column_default_value(column):
+    default = getattr(column, 'default', None)
+    value = None
+    if default is not None:
+        value = getattr(default, 'arg', None)
+        if value is not None:
+            if getattr(default, 'is_callable', False):
+                value = value(None)
+            else:
+                if not getattr(default, 'is_scalar', True):
+                    value = None
+    return value

@@ -29,8 +29,8 @@ class BaseAction(object):
         return ""
 
     @property
-    def model_name(self):
-        return self.model_view.model_name
+    def _model_name(self):
+        return self.model_view.backend.model_name
 
     @_raised_when_model_view_unset
     def success_message(self, models):
@@ -38,7 +38,7 @@ class BaseAction(object):
         will be called when all operations done 
         """
         return _(u"operation %(action)s applied upon %(model_name)s - [%(models)s] successfully", 
-                 action=self.name, model_name=self.model_name, models=",".join(unicode(model) for model in models))
+                 action=self.name, model_name=self._model_name, models=",".join(unicode(model) for model in models))
 
     @_raised_when_model_view_unset
     def error_message(self, models):
@@ -46,7 +46,7 @@ class BaseAction(object):
         will be called when operations break
         """
         return _(u"operation %(action)s failed to apply upon %(model_name)s - [%(models)s]", 
-                 action=self.name, model_name=self.model_name, models=",".join(unicode(model) for model in models))
+                 action=self.name, model_name=self._model_name, models=",".join(unicode(model) for model in models))
 
     def try_(self, processed_objs):
         pass
@@ -56,7 +56,7 @@ class BaseAction(object):
 
     def get_forbidden_msg_formats(self):
         ret = self._get_forbidden_msg_formats()
-        ret[-1] = self.model_name + _(u'%(action)s can\'t apply upon %(model_name)s [%%s]', action=self.name, model_name=self.model_name) # the default forbidden message
+        ret[-1] = self._model_name + _(u'%(action)s can\'t apply upon %(model_name)s [%%s]', action=self.name, model_name=self._model_name) # the default forbidden message
         return ret
 
     def test_enabled(self, model):
@@ -82,7 +82,7 @@ class DeleteAction(BaseAction):
 
     def op(self, obj):
         # even a model-like object could be deleted
-        self.model_view.session.delete(obj)
+        self.model_view._session.delete(obj)
 
     def try_(self, processed_objs):
         if self.permission is not None:

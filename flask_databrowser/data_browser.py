@@ -3,16 +3,19 @@ from flask import request, Blueprint
 from flask.ext.principal import PermissionDenied
 
 from flask.ext.databrowser.column_spec import LinkColumnSpec
-from flask.ext.databrowser.utils import (test_request_type, url_for_other_page, urlencode_filter, truncate_str)
-from flask.ext.databrowser.sa_utils import get_primary_key
+from flask.ext.databrowser.utils import (test_request_type,
+                                         url_for_other_page,
+                                         urlencode_filter,
+                                         truncate_str)
 from flask.ext.databrowser.constants import WEB_PAGE, WEB_SERVICE
 
 
 class DataBrowser(object):
-    def __init__(self, app, db, page_size=16, logger=None):
-        self.db = db
+    def __init__(self, app, page_size=16, logger=None):
         self.logger = logger or app.logger
-        self.blueprint = Blueprint("__data_browser__", __name__, static_folder="static", template_folder="templates")
+        self.blueprint = Blueprint("__data_browser__", __name__,
+                                   static_folder="static",
+                                   template_folder="templates")
         self.app = app
         self._init_app()
         self.page_size = page_size
@@ -24,16 +27,17 @@ class DataBrowser(object):
         self.app.jinja_env.filters['truncate'] = truncate_str
         self.app.before_request(test_request_type)
         # register it for using the templates of data browser
-        self.app.register_blueprint(self.blueprint, url_prefix="/__data_browser__")
+        self.app.register_blueprint(self.blueprint,
+                                    url_prefix="/__data_browser__")
 
-    def register_model(self, model, blueprint=None):
+    def register_modell(self, modell, blueprint=None):
         from flask.ext.databrowser.model_view import ModelView
-        return self.register_model_view(ModelView(model), blueprint)
+        return self.register_model_view(ModelView(modell), blueprint)
 
     def register_model_view(self, model_view, blueprint, extra_params=None):
         model_view.blueprint = blueprint
         model_view.data_browser = self
-        model_view.extra_params = extra_params or {}
+        model_view.extra_params = extra_params
 
         if model_view.serv_type & WEB_PAGE:
             model_view.add_page_url_rule()
@@ -44,40 +48,28 @@ class DataBrowser(object):
         blueprint.before_request(model_view.before_request_hook)
         blueprint.after_request(model_view.after_request_hook)
 
-        #TODO 取消与tablename的关联（可以考虑用python的路径+类名标识）
-        self.__registered_view_map[model_view.model.__tablename__] = model_view
+        self.__registered_view_map[model_view.modell.token] = model_view
 
-    def get_object_link_column_spec(self, model, label=None):
+    def get_object_link_column_spec(self, modell, label=None):
         try:
-            model_view = self.__registered_view_map[model.__tablename__]
+            model_view = self.__registered_view_map[modell.token]
+            model_view.try_view(modell)
 
-            #TODO 移动到model_view中
-            model_view.try_view(model)
-
-            return LinkColumnSpec(col_name=model_view.backend.primary_key,
-                                  formatter=lambda v, obj: model_view.url_for_object(obj, label=label,
-                                                                                     url=request.url),
+            return LinkColumnSpec(col_name=model_view.modell.primary_key,
+                                  formatter=lambda v, obj:
+                                  model_view.url_for_object(obj, label=label,
+                                                            url=request.url),
                                   anchor=lambda v: unicode(v), label=label)
-            #TODO
 
         except (KeyError, PermissionDenied):
             return None
 
-    def get_create_url(self, model, target):
+    def search_create_url(self, modell, target, on_fly=1):
         try:
-            model_view = self.__registered_view_map[model.__tablename__]
+            model_view = self.__registered_view_map[modell.token]
 
-            #TODO 移动到model_view中
             model_view.try_create()
-            return model_view.url_for_object(None, url=request.url, on_fly=1, target=target)
-            #TODO
-
+            return model_view.url_for_object(None, url=request.url,
+                                             on_fly=on_fly, target=target)
         except (KeyError, PermissionDenied):
-            return None
-
-    def get_form_url(self, obj, **kwargs):
-        try:
-            model_view = self.__registered_view_map[obj.__tablename__]
-            return model_view.url_for_object(obj, **kwargs)
-        except KeyError:
             return None

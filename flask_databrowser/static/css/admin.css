@@ -125,11 +125,7 @@ body {
 }
 
 
-.fa-square-o {
-    cursor: pointer;
-}
-
-.fa-check-square-o {
+.fa-square-o, .fa-check-square-o {
     cursor: pointer;
 }
 

@@ -1,7 +1,13 @@
 #-*- coding:utf-8 -*-
-class Backend(object):
+
+
+class Modell(object):
     def __init__(self, model_name=""):
         self.model_name = model_name
+
+    @property
+    def converter(self):
+        raise NotImplementedError
 
     @property
     def query(self):
@@ -17,6 +23,10 @@ class Backend(object):
             refer to `flask.ext.databrowser.Backend.get_list`_
 
         """
+        raise NotImplementedError
+
+    @property
+    def name(self):
         raise NotImplementedError
 
     def scaffold_query(self, current_filters, order_by):
@@ -71,21 +81,4 @@ class Backend(object):
         raise NotImplementedError
 
     def get_kolumn(self, col_name):
-        raise NotImplementedError
-
-
-class Kolumne(object):
-    def is_relationship(self):
-        raise NotImplementedError
-
-    @property
-    def key(self):
-        raise NotImplementedError
-
-    @property
-    def doc(self):
-        raise NotImplementedError
-
-    @property
-    def direction(self):
         raise NotImplementedError

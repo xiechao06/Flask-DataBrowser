@@ -153,16 +153,6 @@ class AdminModelConverter(ModelConverterBase):
 
         return None
 
-    def add_grouper(self, col_spec):
-        if hasattr(col_spec.group_by, "__call__"):
-            return col_spec.group_by
-        elif hasattr(col_spec.group_by, "property"):
-            column = col_spec.group_by.property
-            if hasattr(col_spec.group_by, "is_mapper") and col_spec.group_by.is_mapper:
-                column = get_primary_key(column)
-            return lambda x: getattr(x, column.key)
-        else:
-            return lambda x: x
 
     def convert(self, model, mapper, prop, field_args, hidden_pk, col_spec=None):
         # note!!! use copy here, otherwise col_spec.validators will be changed
@@ -213,6 +203,7 @@ class AdminModelConverter(ModelConverterBase):
                 if col_spec and col_spec.group_by:
                     session = self.session
 
+                    #TODO should be more elegant
                     class QuerySelectField_(QuerySelectField):
 
                         def __init__(self, col_spec, *args, **kwargs):
@@ -235,14 +226,17 @@ class AdminModelConverter(ModelConverterBase):
                                     for row in session.query(col_spec.group_by.property.mapper.class_).all():
                                         yield getattr(row, pk), unicode(row), getattr(row, pk) == self.data
 
+                                    for opt in self.col_spec.group.options:
+                                        # id, value, selected
+                                        yield opt, opt, opt == self.data
+
                             grouper_kwargs = {}
                             if kwargs.get("class"):
                                 grouper_kwargs["class"] = kwargs["class"]
                             if kwargs.get("disabled"):
                                 grouper_kwargs["disabled"] = True
                             s = grouper(FakeField(self.col_spec.grouper_input_name,
-                                                  getattr(self.data,
-                                                          col_spec.group_by.property.local_remote_pairs[0][0].name)),
+                                                  self.col_spec.group_by.group(self.data)),
                                         **grouper_kwargs) + "<div class='text-center'>--</div>"
                             s += super(QuerySelectField_, self).__call__(**kwargs)
                             return s
@@ -255,14 +249,14 @@ class AdminModelConverter(ModelConverterBase):
                 if not local_column.foreign_keys and getattr(self.view, 'column_hide_backrefs', False):
                     return None
                 if col_spec and col_spec.group_by:
-                    kwargs["grouper"] = self.add_grouper(col_spec)
+                    kwargs["grouper"] = col_spec.group_by
 
                 return QuerySelectMultipleField(
                     widget=form.Select2Widget(multiple=True),
                     **kwargs)
             elif prop.direction.name == 'MANYTOMANY':
                 if col_spec and col_spec.group_by:
-                    kwargs["grouper"] = self.add_grouper(col_spec)
+                    kwargs["grouper"] = col_spec.group_by
 
                 return QuerySelectMultipleField(
                     widget=form.Select2Widget(multiple=True),
@@ -466,7 +460,7 @@ class AdminModelConverter(ModelConverterBase):
         if 'get_label' in field_args:
             return field_args['get_label']
 
-        column_formatters = getattr(self.view, '__column_formatters__')
+        column_formatters = getattr(self.view, '__column_formatters__', None)
 
         if column_formatters:
             return column_formatters.get(name)
