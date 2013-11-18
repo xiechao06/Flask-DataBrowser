@@ -192,8 +192,8 @@
           <span class="alert alert-danger">{{ f.errors|join("; ") }}</span>
         {% endif %}
 
-        {% if f.doc %}
-          <span class="help-block">* <i class="text-info">{{ f.doc }}</i></span>
+        {% if f.description %}
+          <span class="help-block">* <i class="text-info">{{ f.description }}</i></span>
         {% endif %}
       </div>
       {% if not f.__read_only__ and f.name in create_url_map %}

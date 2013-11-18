@@ -33,7 +33,7 @@ def url_for_other_page(page):
     """
     args = request.args.copy()
     args['page'] = page
-    return url_for(request.endpoint, **args) # pylint: disable=W0142
+    return url_for(request.endpoint, **args)  # pylint: disable=W0142
 
 
 class TemplateParam(object):

@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 import copy
 
+import sqlalchemy as sa
 from wtforms import validators, fields, ValidationError
+from wtforms.widgets import HTMLString, html_params
 from flask.ext.babel import _
 from sqlalchemy import Boolean
 from sqlalchemy.orm.properties import RelationshipProperty, ColumnProperty
@@ -11,7 +13,7 @@ from sqlalchemy.orm.exc import NoResultFound
 from flask.ext.databrowser.kolumne import Kolumne
 from flask.ext.databrowser.sa import SAModell
 from flask.ext.databrowser import extra_widgets, extra_fields, sa_utils
-from flask.ext.databrowser.col_spec import FileColumnSpec
+from flask.ext.databrowser.col_spec import FileColumnSpec, InputColumnSpec
 from . import sa_converter
 
 
@@ -56,15 +58,17 @@ class SAKolumne(Kolumne):
         return self._property.direction.name
 
     def make_field(self, col_spec):
+        assert isinstance(col_spec, InputColumnSpec)
         kwargs = {
             'validators': copy.copy(col_spec.validators),
             'filters': [],
             'label': col_spec.label,
-            'doc': col_spec.doc,
+            'description': col_spec.doc,
             'opt_filter': col_spec.opt_filter
         }
+        if col_spec.read_only:
+            kwargs['disabled'] = True
 
-        # Check if it is relation or property
         if self.is_relationship():
             remote_model = self._property.mapper.class_
             local_column = self.local_column
@@ -93,28 +97,33 @@ class SAKolumne(Kolumne):
             if self._property.direction.name == 'MANYTOONE':
                 widget = extra_widgets.Select2Widget()
                 if col_spec.group_by:
-                    return GroupedQuerySelectField(col_spec,
-                                                   self.modell.session,
-                                                   widget=widget,
-                                                   **kwargs)
-                return extra_fields.QuerySelectField(widget=widget, **kwargs)
+                    ret = GroupedQuerySelectField(col_spec,
+                                                  self.modell.session,
+                                                  widget=widget,
+                                                  **kwargs)
+                else:
+                    ret = extra_fields.QuerySelectField(widget=widget,
+                                                        **kwargs)
             elif self._property.direction.name == 'ONETOMANY':
                 #TODO if group_by is considered, a more advanced widget should
                 # be used to select multiple options
-                return extra_fields.QuerySelectMultipleField(
+                ret = extra_fields.QuerySelectMultipleField(
                     widget=extra_widgets.Select2Widget(multiple=True),
                     **kwargs)
             elif self._property.direction.name == 'MANYTOMANY':
                 #TODO if group_by is considered, a more advanced widget should
                 # be used to select multiple options
-                return extra_fields.QuerySelectMultipleField(
+                ret = extra_fields.QuerySelectMultipleField(
                     widget=extra_widgets.Select2Widget(multiple=True),
                     **kwargs)
+            if col_spec.remote_create_url:
+                ret = pack_remote_create_url(ret, col_spec.remote_create_url)
         else:  # not relationship
             column = self._property.columns[0]
             # primary key can't be altered
             if column.primary_key:
                 return fields.HiddenField()
+            # should move to converter
             if column.primary_key or column.unique:
                 message = _("This field must be unique, "
                             "but it already exists!")
@@ -122,21 +131,27 @@ class SAKolumne(Kolumne):
                                                    self.modell.model,
                                                    column,
                                                    message=message))
+            # should move to converter
             if not column.nullable and not isinstance(column.type, Boolean):
                 message = _(u"this field can't be empty")
                 validator = validators.Required(message=message)
                 kwargs['validators'].append(validator)
+            # should move to converter
             kwargs['default'] = sa_utils.get_column_default_value(column)
+            if isinstance(column.type, sa.types.String):
+                kwargs['filters'] = [lambda value: value.strip()]
             if isinstance(col_spec, FileColumnSpec):
                 converter = sa_converter.converters["File"]
             else:
                 converter = sa_converter.get_converter(column)
 
             if converter is None:
-                return None
+                raise _('column %(col_name)s can\'t be converted',
+                        col_spec.col_name)
 
-            return converter(model=self.modell.model, column=column)
+            ret = converter(model=self.modell.model, column=column)
 
+        return ret
 
 #TODO should be more elegant
 class GroupedQuerySelectField(extra_fields.QuerySelectField):
@@ -208,3 +223,23 @@ class Unique(object):
                 raise ValidationError(self.message)
         except NoResultFound:
             pass
+
+
+def pack_remote_create_url(field, create_url):
+
+    class FakeField(field.field_class):
+
+        def __call__(self, **kwargs):
+            ret = super(FakeField, self).__call__(**kwargs)
+            params = {
+                'href': create_url,
+                'data-role': 'new-related-obj',
+                'data-target': 'field.name',
+                'class': 'btn btn-primary'
+            }
+            params = html_params(**params)
+            ret += HTMLString('<a %s>%s</a>' % (params, _("create")))
+            return ret
+
+    field.field_class = FakeField
+    return field

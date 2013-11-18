@@ -3,11 +3,13 @@
 extra widgets beside wtform's widgets
 """
 import operator
+
+from flask import render_template
 import uuid
 from wtforms.widgets import HTMLString, html_params, Select, TextInput
 from wtforms.compat import text_type
 from flask.ext.databrowser.sa_utils import get_primary_key
-from flask.ext.databrowser.column_spec import LinkColumnSpec, ImageColumnSpec, ColumnSpec
+from flask.ext.databrowser.column_spec import ColumnSpec
 
 
 class Image(object):
@@ -186,28 +188,27 @@ class ListWidget(object):
         return HTMLString(''.join(html))
 
 
-class PlaceHolder(object):
-    def __init__(self, template_fname, field_value, obj, model_view, options):
-        self.template_fname = template_fname
-        self.obj = obj
-        self.field_value = field_value
-        self.kwargs = {}
-        self.model_view = model_view
-        self.options = options
+#class PlaceHolder(object):
+    #def __init__(self, template_fname, field_value, obj, model_view, options):
+        #self.template_fname = template_fname
+        #self.obj = obj
+        #self.field_value = field_value
+        #self.kwargs = {}
+        #self.model_view = model_view
+        #self.options = options
 
-    def set_args(self, **kwargs):
-        self.kwargs = kwargs
+    #def set_args(self, **kwargs):
+        #self.kwargs = kwargs
 
-    def __call__(self, field, **kwargs):
-        from flask import render_template
+    #def __call__(self, field, **kwargs):
+        #from flask import render_template
 
-        return render_template(self.template_fname,
-                               field_value=self.field_value,
-                               obj=self.obj,
-                               model_view=self.model_view,
-                               options=self.options,
-                               **self.kwargs)
-
+        #return render_template(self.template_fname,
+                               #field_value=self.field_value,
+                               #obj=self.obj,
+                               #model_view=self.model_view,
+                               #options=self.options,
+                               #**self.kwargs)
 
 class SelectWidget(Select):
     def __init__(self, field_value, obj, model_view, choices, coerce=text_type, mulitple=False):
@@ -428,3 +429,23 @@ class Select2TagsWidget(TextInput):
     def __call__(self, field, **kwargs):
         kwargs['data-role'] = u'select2tags'
         return super(Select2TagsWidget, self).__call__(field, **kwargs)
+
+
+class PlaceHolder(object):
+    def __init__(self, template_fname, record, **extra_kwargs):
+        self.template_fname = template_fname
+        self.record = record
+        self.extra_kwargs = extra_kwargs
+
+    def __call__(self, field, **kwargs):
+
+        if 'query_factory' in kwargs:
+            options = kwargs['query_factory'].all()
+        else:
+            options = None
+
+        return render_template(self.template_fname,
+                               field_value=field.data,
+                               record=record,
+                               options=options,
+                               **self.extra_kwargs)

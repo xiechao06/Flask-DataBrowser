@@ -10,10 +10,6 @@ class Kolumne(object):
         raise NotImplementedError
 
     @property
-    def doc(self):
-        raise NotImplementedError
-
-    @property
     def direction(self):
         raise NotImplementedError
 

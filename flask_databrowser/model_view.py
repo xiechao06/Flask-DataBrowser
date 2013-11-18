@@ -154,8 +154,9 @@ class ModelView(object):
                     else:
                         col_spec = col
                         col_spec.kolumne = kol
+                        col_spec.data_browser = self.data_browser
                         if col_spec.doc is None:
-                            col_spec.doc = kol.doc
+                            col_spec.doc = self.modell.get_column_doc(col_name)
                     ret[fieldset_name].append(col_spec)
         return ret
 

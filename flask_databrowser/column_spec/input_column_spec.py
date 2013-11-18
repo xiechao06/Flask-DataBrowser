@@ -10,7 +10,7 @@ class InputColumnSpec(ColumnSpec):
     def __init__(self, col_name, group_by=None, read_only=False, doc=None,
                  formatter=None, label=None, css_class="", filter_=None,
                  opt_filter=None,  validators=None,  form_width_class=None,
-                 kolumne=None):
+                 kolumne=None, data_browser=None):
         """
         :param col_name: name of the kolumne
         :param group_by: should be instance of Grouper
@@ -39,6 +39,7 @@ class InputColumnSpec(ColumnSpec):
         :param validators: a list of wtforms' validators
         :param form_width_class: ...
         :param kolumne: underlying kolumne
+        :param data_browser:
         """
         super(InputColumnSpec, self).__init__(col_name, doc=doc,
                                               formatter=formatter, label=label,
@@ -52,6 +53,7 @@ class InputColumnSpec(ColumnSpec):
         self.opt_filter = opt_filter or (lambda obj: True)
         self.validators = validators or []
         self.kolumne = kolumne
+        self.data_browser = data_browser
 
     @property
     def grouper_input_name(self):
@@ -67,6 +69,13 @@ class InputColumnSpec(ColumnSpec):
         '''
         # note!!! use copy here, otherwise col_spec.validators will be changed
         return self.kolumne.make_field(self)
+
+    @property
+    def remote_create_url(self):
+        if self.kolumne.is_relationship():
+            remote_side = self.kolumne.remote_side
+            return self.data_browser.search_create_url(remote_side,
+                                                       self.col_name)
 
 
 def input_column_spec_from_kolumne(k):
