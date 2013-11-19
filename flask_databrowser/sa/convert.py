@@ -19,6 +19,28 @@ from wtforms_components.widgets import (ColorInput, EmailInput, DateInput,
 from .exc import UnknownTypeException
 from .utils import (is_date_column, is_integer_column, null_or_unicode)
 
+def get_field_class(column):
+    pass
+
+def get_column_specific_args(self, column):
+    kwargs = {}
+    kwargs['allow_blank'] = column.nullable
+    kwargs['default'] = sa_utils.get_column_default_value(column)
+    if isinstance(column.type, sa.types.String):
+        kwargs['filters'] = [lambda value: value.strip()]
+    kwargs.update(self._format_args())
+    if hasattr(column.type, 'country_code'):
+        kwargs['country_code'] = column.type.country_code
+    kwargs.update(self._choices_args())
+    #TODO what's this?
+    if issubclass(get_field_class(column), DecimalField):
+        if hasattr(column.type, 'scale'):
+            kwargs['places'] = column.type.scale
+    return kwargs
+
+def get_column_specific_validators(self, column):
+    pass
+
 
 class Converter(object):
     """
@@ -69,6 +91,15 @@ class Converter(object):
         (TimeField, TimeInput),
         (StringField, TextInput)
     ))
+
+    def get_field_class(self, column):
+        pass
+
+    def get_column_specific_params(self, column):
+        pass
+
+    def get_column_specific_validators(self, column):
+        pass
 
     def create_field(self, column, **kwargs):
         """
