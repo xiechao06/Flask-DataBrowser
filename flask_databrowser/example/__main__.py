@@ -5,12 +5,16 @@
 """
 
 from flask import redirect, Blueprint, request, abort, url_for, send_from_directory
+from flask.ext.debugtoolbar import DebugToolbarExtension
 from flask.ext.login import LoginManager
 from flask.ext.principal import Permission, RoleNeed, PermissionDenied
 from flask.ext.databrowser import filters
 from collections import OrderedDict
 from flask.ext.databrowser.column_spec import FileColumnSpec
-from flask.ext.databrowser.sa import SABackend
+from flask.ext.databrowser.grouper import SAPropertyGrouper
+from flask.ext.databrowser.sa import SAModell
+from flask.ext.databrowser.column_spec import ImageColumnSpec, TableColumnSpec, PlaceHolderColumnSpec, \
+            ListColumnSpec, ColumnSpec, InputColumnSpec
 
 admin_permission = Permission(RoleNeed("Admin"))
 
@@ -44,7 +48,8 @@ def main():
 
     accounts_bp = Blueprint("accounts", __name__, static_folder="static",
                             template_folder="templates")
-    browser = databrowser.DataBrowser(app, db, page_size=4)
+    browser = databrowser.DataBrowser(app)
+
 
     from flask.ext.databrowser.utils import ErrorHandler
 
@@ -100,10 +105,8 @@ def main():
         def get_list_help(self):
             return "<h3>this is list view</h3>"
 
-        from flask.ext.databrowser.column_spec import ImageColumnSpec, TableColumnSpec, PlaceHolderColumnSpec, \
-            ListColumnSpec, ColumnSpec, InputColumnSpec
-
-        __list_columns__ = ["id", "name", "group", "password", "roll_called", "group.name", "create_time",
+        def get_list_columns(self):
+            return ["id", "name", "group", "password", "roll_called", "group.name", "create_time",
                             ImageColumnSpec("avatar", alt=u"头像",
                                             formatter=lambda v,
                                                              model: "http://farm9.staticflickr"
@@ -116,7 +119,7 @@ def main():
             "roll_called", "birthday", "create_time", "car_list"]
 
         __form_columns__ = OrderedDict()
-        __form_columns__[u"主要的"] = ["id", InputColumnSpec("name", read_only=True),
+        __form_columns__[u"主要的"] = ["id", InputColumnSpec("name", disabled=True),
                                     PlaceHolderColumnSpec("group", template_fname="/accounts/group-snippet.html",
                                                           as_input=True), "password",
                                     PlaceHolderColumnSpec("foo", template_fname="/accounts/foo-snippet.html")]
@@ -130,7 +133,7 @@ def main():
                                                     doc=u"头像， ^_^!")]
         __form_columns__[u"额外的"] = [
             TableColumnSpec("dogs", css_class="table table-striped table-hover table-condensed table-bordered"),
-            InputColumnSpec("car_list", css_class="alert alert-info", group_by=lambda x: x.model[0], read_only=True),
+            InputColumnSpec("car_list", css_class="alert alert-info", group_by=SAPropertyGrouper(Car.model), disabled=True),
             # "car_list"
         ]
 
@@ -143,20 +146,20 @@ def main():
         #__batch_form_columns__["primary"] = ["name", InputColumnSpec("group", read_only=True)]
         #__batch_form_columns__["secondary"] = ["age", "roll_called"]
 
-        __column_formatters__ = {
+        column_formatters = {
             "create_time": lambda v, model: v.strftime("%Y-%m-%d %H") + u"点",
             "avatar": lambda v, model: "http://farm9.staticflickr.com/8522/8478415115_152c6f5e55_m.jpg",
             "group": lambda v, model: v.name if v else "",
         }
 
-        __column_docs__ = {
+        column_docs = {
             "password": u"md5值",
             "roll_called": u"点名过",
         }
 
         #__sortable_columns__ = ["id", "name", "group"]
 
-        __column_labels__ = {
+        column_labels = {
             "age": u"年龄",
             "name": u"姓名",
             "create_time": u"创建于",
@@ -167,14 +170,14 @@ def main():
 
         default_order = ("name", "desc")
 
-        from datetime import datetime, timedelta
+        def get_list_filters(self):
+            from datetime import datetime, timedelta
 
-        today = datetime.today()
-        yesterday = today.date()
-        week_ago = (today - timedelta(days=7)).date()
-        _30days_ago = (today - timedelta(days=30)).date()
-
-        __column_filters__ = [filters.In_("group", name=u"是", opt_formatter=lambda opt: opt.name),
+            today = datetime.today()
+            yesterday = today.date()
+            week_ago = (today - timedelta(days=7)).date()
+            _30days_ago = (today - timedelta(days=30)).date()
+            return [filters.In_("group", name=u"是", opt_formatter=lambda opt: opt.name),
                               filters.BiggerThan("create_time", name=u"在",
                                                  options=[(yesterday, u'一天内'),
                                                           (week_ago, u'一周内'),
@@ -233,7 +236,7 @@ def main():
                                   RollCall(u"点名", warn_msg=u"点名后就是弱智！"), RollCall(u"点名", warn_msg=u"点名后就是弱智！"),
                                   RollCall(u"点名", warn_msg=u"点名后就是弱智！"), _ReadOnlyAction(u"打酱油的")]
 
-    user_model_view = UserModelView(SABackend(User, db, u"用户"))
+    user_model_view = UserModelView(SAModell(User, db, u"用户"))
     browser.register_model_view(user_model_view, accounts_bp,
                                 extra_params={"form_view": {"age_hint": "modify your age here"},
                                               "create_view": {"age_hint": "input your age here"}})
@@ -242,7 +245,7 @@ def main():
 
         __form_columns__ = ["id", "model"]
 
-    browser.register_model_view(CarModelView(SABackend(Car, db, u"汽车")), accounts_bp,
+    browser.register_model_view(CarModelView(SAModell(Car, db, u"汽车")), accounts_bp,
                                 extra_params={"form_view": {"company": "xc"}})
     app.register_blueprint(accounts_bp, url_prefix="/accounts")
 

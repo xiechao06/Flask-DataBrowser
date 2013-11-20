@@ -12,6 +12,7 @@ from flask.ext.databrowser.constants import WEB_PAGE, WEB_SERVICE
 
 class DataBrowser(object):
     def __init__(self, app, page_size=16, logger=None):
+        #TODO page_size关联到view上
         self.logger = logger or app.logger
         self.blueprint = Blueprint("__data_browser__", __name__,
                                    static_folder="static",
@@ -27,8 +28,7 @@ class DataBrowser(object):
         self.app.jinja_env.filters['truncate'] = truncate_str
         self.app.before_request(test_request_type)
         # register it for using the templates of data browser
-        self.app.register_blueprint(self.blueprint,
-                                    url_prefix="/__data_browser__")
+        self.app.register_blueprint(self.blueprint, url_prefix="/__data_browser__")
 
     def register_modell(self, modell, blueprint=None):
         from flask.ext.databrowser.model_view import ModelView

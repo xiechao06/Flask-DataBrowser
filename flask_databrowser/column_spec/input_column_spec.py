@@ -7,10 +7,10 @@ from flask.ext.databrowser.grouper import Grouper
 # we should provide a non-hacker way to hack them in template
 class InputColumnSpec(ColumnSpec):
 
-    def __init__(self, col_name, group_by=None, read_only=False, doc=None,
+    def __init__(self, col_name, group_by=None, disabled=False, doc=None,
                  formatter=None, label=None, css_class="", filter_=None,
                  opt_filter=None,  validators=None,  form_width_class=None,
-                 kolumne=None, data_browser=None):
+                 kolumne=None, data_browser=None, entry_formatter=None):
         """
         :param col_name: name of the kolumne
         :param group_by: should be instance of Grouper
@@ -28,7 +28,7 @@ class InputColumnSpec(ColumnSpec):
 
             will group the Person into male group and female group
 
-        :param read_only: if this is a read only field
+        :param disabled: if this is a read only field
         :param doc: document of the kolumne
         :param formatter: a function the raw value of the kolumne to the
             representation
@@ -44,29 +44,30 @@ class InputColumnSpec(ColumnSpec):
         super(InputColumnSpec, self).__init__(col_name, doc=doc,
                                               formatter=formatter, label=label,
                                               css_class=css_class,
-                                              form_width_class=
-                                              form_width_class)
-        assert isinstance(group_by, Grouper)
+                                              form_width_class=form_width_class)
+        if group_by:
+            assert isinstance(group_by, Grouper)
         self.group_by = group_by
-        self.read_only = read_only
+        self.disabled = disabled
         self.filter_ = filter_ or (lambda v: v)
         self.opt_filter = opt_filter or (lambda obj: True)
         self.validators = validators or []
         self.kolumne = kolumne
         self.data_browser = data_browser
+        self.entry_formatter = entry_formatter
 
     @property
     def grouper_input_name(self):
-        '''
+        """
         name of the grouper input html element's name
-        '''
+        """
         return self.col_name + "." + self.group_by.__class__.__name__
 
     @property
     def field(self):
-        '''
+        """
         convert to field
-        '''
+        """
         # note!!! use copy here, otherwise col_spec.validators will be changed
         return self.kolumne.make_field(self)
 

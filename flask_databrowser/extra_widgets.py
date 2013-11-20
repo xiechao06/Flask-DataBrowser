@@ -3,12 +3,16 @@
 extra widgets beside wtform's widgets
 """
 import operator
+import datetime
 
-from flask import render_template
+from flask import render_template, _request_ctx_stack
 import uuid
+import time
+from flask.ext.babel import gettext, ngettext
+from wtforms import fields, widgets
 from wtforms.widgets import HTMLString, html_params, Select, TextInput
 from wtforms.compat import text_type
-from flask.ext.databrowser.sa_utils import get_primary_key
+from flask.ext.databrowser.sa.sa_utils import get_primary_key
 from flask.ext.databrowser.column_spec import ColumnSpec
 
 
@@ -188,27 +192,28 @@ class ListWidget(object):
         return HTMLString(''.join(html))
 
 
-#class PlaceHolder(object):
+    #class PlaceHolder(object):
     #def __init__(self, template_fname, field_value, obj, model_view, options):
-        #self.template_fname = template_fname
-        #self.obj = obj
-        #self.field_value = field_value
-        #self.kwargs = {}
-        #self.model_view = model_view
-        #self.options = options
+    #self.template_fname = template_fname
+    #self.obj = obj
+    #self.field_value = field_value
+    #self.kwargs = {}
+    #self.model_view = model_view
+    #self.options = options
 
     #def set_args(self, **kwargs):
-        #self.kwargs = kwargs
+    #self.kwargs = kwargs
 
     #def __call__(self, field, **kwargs):
-        #from flask import render_template
+    #from flask import render_template
 
-        #return render_template(self.template_fname,
-                               #field_value=self.field_value,
-                               #obj=self.obj,
-                               #model_view=self.model_view,
-                               #options=self.options,
-                               #**self.kwargs)
+    #return render_template(self.template_fname,
+    #field_value=self.field_value,
+    #obj=self.obj,
+    #model_view=self.model_view,
+    #options=self.options,
+    #**self.kwargs)
+
 
 class SelectWidget(Select):
     def __init__(self, field_value, obj, model_view, choices, coerce=text_type, mulitple=False):
@@ -257,8 +262,8 @@ class TimeField(fields.Field):
         super(TimeField, self).__init__(label, validators, **kwargs)
 
         self.formats = formats or ('%H:%M:%S', '%H:%M',
-                                  '%I:%M:%S%p', '%I:%M%p',
-                                  '%I:%M:%S %p', '%I:%M %p')
+                                   '%I:%M:%S%p', '%I:%M%p',
+                                   '%I:%M:%S %p', '%I:%M %p')
 
     def _value(self):
         if self.raw_data:
@@ -290,6 +295,7 @@ class Select2Widget(widgets.Select):
         You must include select2.js, form.js and select2 stylesheet for it to
         work.
     """
+
     def __call__(self, field, **kwargs):
         allow_blank = getattr(field, 'allow_blank', False)
 
@@ -323,53 +329,9 @@ class Select2Widget(widgets.Select):
 
 
 class OptGroupWidget(object):
-
     def __call__(self, field, **kwargs):
         return Select2Widget.render_optgroup(field.label.text, field.choices)
 
-class Select2Widget(Select):
-    """
-        `Select2 <https://github.com/ivaynberg/select2>`_ styled select widget.
-
-        You must include select2.js, form.js and select2 stylesheet for it to
-        work.
-    """
-    def __call__(self, field, **kwargs):
-        allow_blank = getattr(field, 'allow_blank', False)
-
-        if allow_blank and not self.multiple:
-            kwargs['data-role'] = u'select2blank'
-        else:
-            kwargs['data-role'] = u'select2'
-        if hasattr(field, "iter_optgroups"):
-            kwargs.setdefault('id', field.id)
-            if self.multiple:
-                kwargs['multiple'] = 'multiple'
-            html = [u'<select %s>' % html_params(name=field.name, **kwargs)]
-            for grouplabel, choices in field.iter_optgroups():
-                html.append(self.render_optgroup(grouplabel, choices))
-            html.append(u'</select>')
-            return HTMLString(u''.join(html))
-        else:
-            return super(Select2Widget, self).__call__(field, **kwargs)
-
-    @classmethod
-    def render_optgroup(cls, grouplabel, choices):
-        html = []
-        if grouplabel is not None:
-            options = {'label': grouplabel}
-            html.append(u'<optgroup %s>' % html_params(**options))
-        for value, label, selected in choices:
-            html.append(cls.render_option(value, label, selected))
-        if grouplabel is not None:
-            html.append(u'</optgroup>')
-        return HTMLString(u''.join(html))
-
-
-class OptGroupWidget(object):
-
-    def __call__(self, field, **kwargs):
-        return Select2Widget.render_optgroup(field.label.text, field.choices)
 
 class DatePickerWidget(TextInput):
     """
@@ -377,6 +339,7 @@ class DatePickerWidget(TextInput):
 
         You must include bootstrap-datepicker.js and form.js for styling to work.
     """
+
     def __call__(self, field, **kwargs):
         kwargs['data-role'] = u'datepicker'
         return super(DatePickerWidget, self).__call__(field, **kwargs)
@@ -388,6 +351,7 @@ class DateTimePickerWidget(TextInput):
 
         You must include bootstrap-datepicker.js and form.js for styling to work.
     """
+
     def __call__(self, field, **kwargs):
         kwargs['data-role'] = u'datetimepicker'
         return super(DateTimePickerWidget, self).__call__(field, **kwargs)
@@ -397,6 +361,7 @@ class RenderTemplateWidget(object):
     """
         WTForms widget that renders Jinja2 template
     """
+
     def __init__(self, template):
         """
             Constructor
@@ -426,6 +391,7 @@ class Select2TagsWidget(TextInput):
     """`Select2 <http://ivaynberg.github.com/select2/#tags>`_ styled text widget.
     You must include select2.js, form.js and select2 stylesheet for it to work.
     """
+
     def __call__(self, field, **kwargs):
         kwargs['data-role'] = u'select2tags'
         return super(Select2TagsWidget, self).__call__(field, **kwargs)
@@ -444,8 +410,5 @@ class PlaceHolder(object):
         else:
             options = None
 
-        return render_template(self.template_fname,
-                               field_value=field.data,
-                               record=record,
-                               options=options,
+        return render_template(self.template_fname, field_value=field.data, record=self.record, options=options,
                                **self.extra_kwargs)

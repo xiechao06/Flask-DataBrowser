@@ -1,6 +1,7 @@
 # -*- coding: UTF-8 -*-
 #TODO should be a library
 import operator
+from sqlalchemy import types
 from sqlalchemy.orm import ColumnProperty
 from sqlalchemy.schema import Table
 
@@ -43,6 +44,7 @@ def get_joined_tables(model, col_name):
         result.append(last_join_model)
     return result
 
+
 def get_column_default_value(column):
     default = getattr(column, 'default', None)
     value = None
@@ -55,3 +57,32 @@ def get_column_default_value(column):
                 if not getattr(default, 'is_scalar', True):
                     value = None
     return value
+
+
+def is_numerical_column(column):
+    return (
+        is_integer_column(column) or
+        isinstance(column.type, types.Float) or
+        isinstance(column.type, types.Numeric)
+    )
+
+
+def is_integer_column(column):
+    return (
+        isinstance(column.type, types.Integer) or
+        isinstance(column.type, types.SmallInteger) or
+        isinstance(column.type, types.BigInteger)
+    )
+
+
+def is_date_column(column):
+    return (
+        isinstance(column.type, types.Date) or
+        isinstance(column.type, types.DateTime)
+    )
+
+
+def is_str_column(column):
+    return isinstance(column.type, (
+        types.String, types.Unicode, types.Text, types.UnicodeText, types.LargeBinary,
+        types.Binary))

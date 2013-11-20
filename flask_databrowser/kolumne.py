@@ -19,3 +19,7 @@ class Kolumne(object):
 
     def make_field(self, col_spec):
         raise NotImplementedError
+
+    @property
+    def doc(self):
+        raise NotImplementedError

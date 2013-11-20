@@ -4,6 +4,7 @@ import json
 from collections import namedtuple, OrderedDict
 from wtforms import validators
 from flask import Flask, Blueprint, url_for
+from flask.ext.databrowser.sa import SAModell
 from flask.ext.databrowser.test import basetest
 from flask.ext.databrowser import ModelView, DataBrowser
 from flask.ext.databrowser.column_spec import InputColumnSpec
@@ -53,7 +54,7 @@ class TestCreateAPI(basetest.BaseTest):
 
     def test_with_no_create_columns(self):
         # we assert when no create columns are defined, creat api return correctly
-        model_view = ModelView(self.__tables.User)
+        model_view = ModelView(SAModell(self.__tables.User, self.db))
         blueprint = Blueprint("foo0", __name__, static_folder="static", template_folder="templates")
         self.browser.register_model_view(model_view, blueprint)
         self.app.register_blueprint(blueprint, url_prefix="/foo0")

@@ -9,11 +9,11 @@ from flask.ext.babel import gettext as _
 from flask.ext.databrowser.exceptions import ValidationError
 
 
-def make_disabled_field(field):
-    class FakeField(field.field_class):
+def make_field_disabled(field):
+    class DisabledField(field.field_class):
         def __call__(self, **kwargs):
-            kwargs["disabled"] = True
-            return super(FakeField, self).__call__(**kwargs)
+            kwargs.setdefault("disabled", True)
+            return super(DisabledField, self).__call__(**kwargs)
 
         def validate(self, form, extra_validators=()):
             return True
@@ -23,7 +23,7 @@ def make_disabled_field(field):
         def __read_only__(self):
             return True
 
-    field.field_class = FakeField
+    field.field_class = DisabledField
     return field
 
 
@@ -99,13 +99,13 @@ def get_description(view, col_name, obj, col_spec=None):
     if col_spec and col_spec.doc:
         return col_spec.doc
         # TODO this model should be the one registered in model view
-    if view.__column_docs__:
-        ret = view.__column_docs__.get(col_name)
+    if view.column_docs:
+        ret = view.column_docs.get(col_name)
         if ret:
             return ret
             # if this model is actually a model
     if obj and hasattr(obj.__class__, "_sa_class_manager"):
-        return view.backend.get_column_doc(col_name)
+        return view.modell.get_column_doc(col_name)
     return ""
 
 

@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
-from wtforms import fields
+from datetime import time
+from flask.ext.babel import gettext
+from wtforms import fields, widgets
+from flask.ext.databrowser.extra_widgets import Select2Widget, Select2TagsWidget
+
 
 class TimeField(fields.Field):
     """
@@ -24,8 +28,8 @@ class TimeField(fields.Field):
         super(TimeField, self).__init__(label, validators, **kwargs)
 
         self.formats = formats or ('%H:%M:%S', '%H:%M',
-                                  '%I:%M:%S%p', '%I:%M%p',
-                                  '%I:%M:%S %p', '%I:%M %p')
+                                   '%I:%M:%S%p', '%I:%M%p',
+                                   '%I:%M:%S %p', '%I:%M %p')
 
     def _value(self):
         if self.raw_data:
@@ -40,9 +44,7 @@ class TimeField(fields.Field):
             for format in self.formats:
                 try:
                     timetuple = time.strptime(date_str, format)
-                    self.data = datetime.time(timetuple.tm_hour,
-                                              timetuple.tm_min,
-                                              timetuple.tm_sec)
+                    self.data = time(timetuple.tm_hour, timetuple.tm_min, timetuple.tm_sec)
                     return
                 except ValueError:
                     pass
@@ -50,7 +52,7 @@ class TimeField(fields.Field):
             raise ValueError(gettext('Invalid time format'))
 
 
-class Select2Field(SelectField):
+class Select2Field(fields.SelectField):
     """
         `Select2 <https://github.com/ivaynberg/select2>`_ styled select widget.
 
@@ -60,7 +62,7 @@ class Select2Field(SelectField):
     widget = Select2Widget()
 
 
-class Select2TagsField(TextField):
+class Select2TagsField(fields.TextField):
     """`Select2 <http://ivaynberg.github.com/select2/#tags>`_ styled text field.
     You must include select2.js, form.js and select2 stylesheet for it to work.
     """

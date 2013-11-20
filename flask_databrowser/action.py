@@ -30,7 +30,7 @@ class BaseAction(object):
 
     @property
     def _model_name(self):
-        return self.model_view.backend.model_name
+        return self.model_view.modell.model_name
 
     @_raised_when_model_view_unset
     def success_message(self, models):

@@ -10,7 +10,7 @@ from flask.ext.babel import gettext as _
 from werkzeug.utils import cached_property
 
 from .utils import TemplateParam, raised_when
-from flask.ext.databrowser.sa_utils import get_primary_key
+from flask.ext.databrowser.sa.sa_utils import get_primary_key
 
 _raised_when_model_unset = raised_when(lambda inst, *args, **kwargs: not inst.model_view,
                                        RuntimeError(r'field "model view" unset, you should set it'))

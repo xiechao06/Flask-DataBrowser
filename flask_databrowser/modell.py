@@ -81,5 +81,8 @@ class Modell(object):
     def kolumnes(self):
         raise NotImplementedError
 
-    def get_kolumn(self, col_name):
+    def get_kolumne(self, col_name):
+        raise NotImplementedError
+
+    def has_kolumne(self, col_name):
         raise NotImplementedError

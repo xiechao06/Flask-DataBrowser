@@ -18,7 +18,7 @@ from flask.ext.babel import _
 from flask.ext.principal import PermissionDenied
 from flask.ext.sqlalchemy import Pagination
 
-from flask.ext.databrowser import sa_utils, helpers, filters, fake_form
+from flask.ext.databrowser import helpers, filters, fake_form
 from flask.ext.databrowser.column_spec import (LinkColumnSpec, ColumnSpec, InputColumnSpec, PlaceHolderColumnSpec,
                                                FileColumnSpec, input_column_spec_from_kolumne)
 from flask.ext.databrowser.convert import ValueConverter
@@ -27,6 +27,7 @@ from flask.ext.databrowser.extra_widgets import PlaceHolder
 from flask.ext.databrowser.form import form
 from flask.ext.databrowser.convert_utils import convert_column, get_dict_converter
 from flask.ext.databrowser.constants import WEB_SERVICE, WEB_PAGE
+from flask.ext.databrowser.sa import sa_utils
 
 
 class ModelView(object):
@@ -39,17 +40,21 @@ class ModelView(object):
     """
 
     # 可以重写的属性
-    __column_formatters__ = {}
-    __list_columns__ = {}
-    __column_labels__ = {}
-    __column_docs__ = {}
-    __column_filters__ = []
+    column_formatters = {}
+    column_labels = {}
+    column_docs = {}
+
+    def get_list_columns(self):
+        return []
+
+    def get_list_filters(self):
+        return []
+
     default_order = None
     __batch_form_columns__ = []
     __form_columns__ = []
     __customized_actions__ = []
     __max_col_len__ = 255
-    __model_list__ = []
     __extra_fields__ = {}
 
     serv_type = WEB_PAGE | WEB_SERVICE
@@ -119,8 +124,7 @@ class ModelView(object):
             return '__data_browser__/form.html'
 
     def _get_column_doc(self, column):
-        return self.__column_docs__.get(column) or self.modell.get_column_doc(column)
-
+        return self.column_docs.get(column) or self.modell.get_column_doc(column)
 
     #TODO should rename to _get_form_column_specs
     def _normalize_columns(self, columns):
@@ -146,7 +150,7 @@ class ModelView(object):
                 is_str = isinstance(col, basestring)
                 is_input = isinstance(col, InputColumnSpec)
                 col_name = col if is_str else col.col_name
-                if (is_str or is_input) and self.modell.hasattr(col_name):
+                if (is_str or is_input) and self.modell.has_kolumne(col_name):
                     kol = self.modell.get_kolumne(col_name)
                     if is_str:
                         col_spec = input_column_spec_from_kolumne(kol)
@@ -229,7 +233,7 @@ class ModelView(object):
                     col = self._col_spec_from_str(col)
                 else:
                     assert isinstance(col, ColumnSpec)
-                    col.label = self.__column_labels__.get(col.col_name, col.col_name) if (
+                    col.label = self.column_labels.get(col.col_name, col.col_name) if (
                         col.label is None) else col.label
 
                 self.__list_column_specs.append(col)
@@ -295,17 +299,17 @@ class ModelView(object):
         get column specification from string
         """
         # we get document from sqlalchemy models
-        doc = self.__column_docs__.get(col, "")
+        doc = self.column_docs.get(col, "")
         if not doc:
             doc = self.modell.get_column_doc(col)
-        label = self.__column_labels__.get(col, col)
+        label = self.column_labels.get(col, col)
         if self.modell.primary_key == col:
             formatter = lambda x, obj: self.url_for_object(obj, url=request.url)
             col_spec = LinkColumnSpec(col, doc=doc, anchor=lambda x: x,
                                       formatter=formatter,
                                       label=label, css_class="control-text")
         else:
-            formatter = self.__column_formatters__.get(col, lambda x, obj: unicode(x))
+            formatter = self.column_formatters.get(col, lambda x, obj: unicode(x))
             col_spec = ColumnSpec(col, doc=doc, formatter=formatter, label=label, css_class="control-text")
         return col_spec
 
@@ -320,7 +324,7 @@ class ModelView(object):
         if id_:
             return self.edit_view(id_)
         else:
-            return self.create_view()
+            return self.create_view_2()
 
     # Model handlers
     def on_model_change(self, form, model):
@@ -356,12 +360,9 @@ class ModelView(object):
         form.populate_obj(model)
         return model
 
-    def get_column_filters(self):
-        return self.__column_filters__
-
-    def _get_column_filters(self):
+    def _get_list_filters(self):
         ret = []
-        for fltr in self.get_column_filters():
+        for fltr in self.get_list_filters():
             if not fltr.model_view:
                 fltr.model_view = self
             ret.append(fltr)
@@ -512,7 +513,7 @@ class ModelView(object):
         kwargs = self._get_extra_params("create_view")
         if self.create_in_steps:
             create_template = self.get_step_create_template(current_step)
-            kwargs["last_step"], kwargs["next_step"] = self._get_arround_steps(current_step, create_columns.keys())
+            kwargs["last_step"], kwargs["next_step"] = self._get_around_steps(current_step, create_columns.keys())
         else:
             create_template = self.create_template
         resp = self.render(create_template, form=form, return_url=return_url, **kwargs)
@@ -524,7 +525,7 @@ class ModelView(object):
                 "utf-8")
         return resp
 
-    def _get_arround_steps(self, current_step, step_names):
+    def _get_around_steps(self, current_step, step_names):
         last_step = None
         next_step = None
         if current_step > 0:
@@ -546,7 +547,7 @@ class ModelView(object):
         return last_step, next_step
 
 
-    def _get_create_form(create_columns):
+    def _get_create_form(self, create_columns):
         """
         create a form for creation using create columns
         """
@@ -937,7 +938,7 @@ class ModelView(object):
         """
         field_dict = dict((col_spec.col_name, col_spec.field) for
                           col_spec in col_specs)
-        return type(model.__name__ + 'Form', (form.BaseForm, ), field_dict)
+        return type(self.model.__name__ + 'Form', (form.BaseForm, ), field_dict)
 
         #TODO support misc column specifications, create_url, seperate modell
         #from flask.ext.databrowser.form.convert import AdminModelConverter, get_form
@@ -1099,11 +1100,11 @@ class ModelView(object):
                 if isinstance(col, InputColumnSpec):
                     if col.col_name.find(".") == -1:
                         if read_only:
-                            col.read_only = True
+                            col.disabled = True
                         processed_cols.append(col)
                 elif col.find(".") == -1:
                     if read_only:
-                        processed_cols.append(InputColumnSpec(col, read_only=True))
+                        processed_cols.append(InputColumnSpec(col, disabled=True))
                     else:
                         processed_cols.append(col)
             self.__batch_edit_form__ = self.scaffold_form(processed_cols)
@@ -1594,7 +1595,7 @@ class ModelView(object):
         """
         set filter's value using args
         """
-        shadow_column_filters = copy.copy(self._get_column_filters())
+        shadow_column_filters = copy.copy(self._get_list_filters())
         #如果不用copy的话，会修改原来的filter
 
         op_id_2_filter = dict(
@@ -1625,9 +1626,6 @@ class ModelView(object):
             self.edit_template = posixpath.join(
                 self.data_browser.blueprint.name, "form.html")
         return self.edit_template
-
-    def get_list_columns(self):
-        return self.__list_columns__
 
     def get_form_columns(self, obj=None):
         return self.__form_columns__

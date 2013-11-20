@@ -4,7 +4,7 @@ from collections import namedtuple
 
 from flask import Blueprint
 from flask.ext.principal import PermissionDenied
-from flask.ext.databrowser.sa import SABackend
+from flask.ext.databrowser.sa import SAModell
 from flask.ext.databrowser.test import basetest
 from flask.ext.databrowser import ModelView, DataBrowser
 from collections import OrderedDict
@@ -47,8 +47,8 @@ class TestCreate(basetest.BaseTest):
         class GroupModelView(ModelView):
             pass
 
-        user_model_view = UserModelView(SABackend(self.__tables.User, self.db))
-        group_model_view = GroupModelView(SABackend(self.__tables.Group, self.db))
+        user_model_view = UserModelView(SAModell(self.__tables.User, self.db))
+        group_model_view = GroupModelView(SAModell(self.__tables.Group, self.db))
         blueprint = Blueprint("foo1", __name__, static_folder="static", template_folder="templates")
         self.browser.register_model_view(user_model_view, blueprint)
         self.browser.register_model_view(group_model_view, blueprint)
@@ -177,7 +177,7 @@ class TestCreate(basetest.BaseTest):
             from flask.ext.databrowser.column_spec import InputColumnSpec
 
             __create_columns__["group"] = ["group"]
-            __create_columns__["name"] = [InputColumnSpec("name", read_only=True)]
+            __create_columns__["name"] = [InputColumnSpec("name", disabled=True)]
 
         self.register(UserModelView)
         with self.app.test_request_context():

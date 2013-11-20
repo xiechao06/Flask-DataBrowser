@@ -2,7 +2,7 @@
 from flask.ext.babel import _
 from flask.ext.databrowser.modell import Modell
 from flask.ext.databrowser.exceptions import InvalidArgumentError
-from flask.ext.databrowser.sa_utils import get_primary_key
+from flask.ext.databrowser.sa.sa_utils import get_primary_key
 from flask.ext.databrowser.sa import SAKolumne
 
 
@@ -21,7 +21,7 @@ class SAModell(Modell):
 
     @property
     def token(self):
-        return SAModell.get_token(self.db, self.model)
+        return ".".join([self.model.__module__, self.model_name])
 
     def order_by(self, query, order_by, desc):
         order_criterion = self._get_last_sa_criterion(order_by)
@@ -122,19 +122,19 @@ class SAModell(Modell):
         ret = []
 
         for p in self.model.__mapper__.iterate_properties:
-            kol = SAKolumne(p)
+            kol = SAKolumne(p, self)
             if kol.is_relationship():
-                if not self.hide_back_ref or kol.not_back_ref():
+                if not self._hide_back_ref or kol.not_back_ref():
                     ret.append(kol)
             else:
                 if not kol.is_fk():
                     ret.append(kol)
         return ret
 
-    def get_kolumn(self, col_name):
-        return SAKolumne(getattr(self.model, col_name).property)
+    def get_kolumne(self, col_name):
+        return SAKolumne(getattr(self.model, col_name).property, self)
 
-    def has_kolumn(self, col_name):
+    def has_kolumne(self, col_name):
         return hasattr(self.model, col_name)
 
     @property

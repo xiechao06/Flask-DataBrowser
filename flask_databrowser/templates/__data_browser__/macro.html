@@ -308,7 +308,8 @@
     {% else %}
       {% set current_step = None %}
     {% endif %}
-    {{ render_form_fields(form, current_step=current_step) }}
+{#    {{ render_form_fields(form, current_step=current_step) }}#}
+    {{ render_fields(form) }}
     {% if previous_steps_info %}{{ render_previous_steps_info(previous_steps_info=previous_steps_info) }}{% endif %}
     {{ render_form_buttons(cancel_url, extra, last_step, next_step) }}
   {% endcall %}
