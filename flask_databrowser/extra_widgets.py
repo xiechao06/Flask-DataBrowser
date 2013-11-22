@@ -374,13 +374,11 @@ class RenderTemplateWidget(object):
     def __call__(self, field, **kwargs):
         ctx = _request_ctx_stack.top
         jinja_env = ctx.app.jinja_env
-        from flask.ext.databrowser import helpers
 
         kwargs.update({
             'field': field,
             '_gettext': gettext,
             '_ngettext': ngettext,
-            'h': helpers,
         })
 
         template = jinja_env.get_template(self.template)
@@ -398,8 +396,9 @@ class Select2TagsWidget(TextInput):
 
 
 class PlaceHolder(object):
-    def __init__(self, template_fname, record, **extra_kwargs):
+    def __init__(self, template_fname, field_value, record, **extra_kwargs):
         self.template_fname = template_fname
+        self.field_value = field_value
         self.record = record
         self.extra_kwargs = extra_kwargs
 
@@ -410,5 +409,5 @@ class PlaceHolder(object):
         else:
             options = None
 
-        return render_template(self.template_fname, field_value=field.data, record=self.record, options=options,
+        return render_template(self.template_fname, field_value=self.field_value, record=self.record, options=options,
                                **self.extra_kwargs)

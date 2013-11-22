@@ -45,8 +45,6 @@ class InputColumnSpec(ColumnSpec):
                                               formatter=formatter, label=label,
                                               css_class=css_class,
                                               form_width_class=form_width_class)
-        if group_by:
-            assert isinstance(group_by, Grouper)
         self.group_by = group_by
         self.disabled = disabled
         self.filter_ = filter_ or (lambda v: v)

@@ -6,6 +6,7 @@ import operator
 from wtforms import widgets, Field
 from wtforms.fields import SelectFieldBase
 from wtforms.validators import ValidationError
+from flask.ext.databrowser.extra_widgets import Select2Widget
 
 try:
     from sqlalchemy.orm.util import identity_key
@@ -253,10 +254,9 @@ class QuerySelectMultipleField(QuerySelectField):
 
 #TODO should be more elegant
 class GroupedQuerySelectField(QuerySelectField):
-    col_spec = None
-    #def __init__(self, col_spec, *args, **kwargs):
-    #    super(GroupedQuerySelectField, self).__init__(*args, **kwargs)
-    #    self.col_spec = col_spec
+    def __init__(self, col_spec, *args, **kwargs):
+        super(GroupedQuerySelectField, self).__init__(*args, **kwargs)
+        self.col_spec = col_spec
 
     def __call__(self, **kwargs):
         grouper = Select2Widget()

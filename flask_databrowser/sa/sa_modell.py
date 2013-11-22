@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from flask.ext.babel import _
+from sqlalchemy.orm.attributes import InstrumentedAttribute
 from flask.ext.databrowser.modell import Modell
 from flask.ext.databrowser.exceptions import InvalidArgumentError
 from flask.ext.databrowser.sa.sa_utils import get_primary_key
@@ -21,7 +22,7 @@ class SAModell(Modell):
 
     @property
     def token(self):
-        return ".".join([self.model.__module__, self.model_name])
+        return ".".join([self.model.__module__, self.name])
 
     def order_by(self, query, order_by, desc):
         order_criterion = self._get_last_sa_criterion(order_by)
@@ -91,10 +92,13 @@ class SAModell(Modell):
         return getattr(obj, self.primary_key)
 
     def commit(self):
-        self.db._session.commit()
+        self.db.session.commit()
 
     def rollback(self):
-        self.db._session.rollback()
+        self.db.session.rollback()
+
+    def add(self, item):
+        self.db.session.add(item)
 
     def get_items(self, pks):
         criterion = getattr(self.model, self.primary_key).in_(pks)
@@ -114,7 +118,7 @@ class SAModell(Modell):
                 group_id = db.Column(db.Integer, db.ForeignKey('TB_GROUP.id'))
                 # omit group = db.relationship("Group")
 
-        User's form won't display a select to specify the user's group enless
+        User's form won't display a select to specify the user's group unless
         you specify the 'group' relationship
 
         of course, back references are filtered if need
@@ -131,11 +135,15 @@ class SAModell(Modell):
                     ret.append(kol)
         return ret
 
+    @property
+    def properties(self):
+        return [SAKolumne(p, self) for p in self.model.__mapper__.iterate_properties]
+
     def get_kolumne(self, col_name):
-        return SAKolumne(getattr(self.model, col_name).property, self)
+        return SAKolumne(getattr(self.model, col_name), self)
 
     def has_kolumne(self, col_name):
-        return hasattr(self.model, col_name)
+        return hasattr(self.model, col_name) and isinstance(getattr(self.model, col_name), InstrumentedAttribute)
 
     @property
     def session(self):

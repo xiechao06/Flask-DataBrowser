@@ -105,6 +105,9 @@ class SAKolumne(Kolumne):
         """
         return not self.is_relationship() and self._property.columns[0].foreign_keys
 
+    def is_primary_key(self):
+        return not self.is_relationship() and self._property.columns[0].primary_key
+
     @property
     def key(self):
         return self._property.key
@@ -120,22 +123,14 @@ class SAKolumne(Kolumne):
         kwargs = self._merge_with_column_args(col_spec_kwargs, column_kwargs)
 
         if self.is_relationship():
-            field_class = self._get_relationship_field_class()
-            ret = field_class(**kwargs)
-            if col_spec.remote_create_url:
-                ret = pack_remote_create_url(ret, col_spec.remote_create_url)
-            if col_spec.group_by:
-                ret = pack_grouper(ret, col_spec)
+            ret = self._get_relationship_field(col_spec, **kwargs)
         else:
             column = self._property.columns[0]
             if column.primary_key and self.hidden_pk:
                 return fields.HiddenField()
-            default_value = sa_utils.get_column_default_value(column)
-            if default_value is not None:
-                kwargs["default"] = default_value
-
-            field_class = self._get_field_class(column)
-            ret = field_class(**kwargs)
+            kwargs.update(sa_utils.get_column_default_value(column))
+            kwargs.update(self._format_args(column))
+            ret = self._get_field(column, **kwargs)
         if col_spec.disabled:
             ret = utils.make_field_disabled(ret)
         return ret
@@ -154,24 +149,31 @@ class SAKolumne(Kolumne):
         return result
         # merge them
 
-    def _get_relationship_field_class(self):
+    def _get_relationship_field(self, col_spec, **kwargs):
         """
         convert the relationship to field
         """
         direction_name = self._property.direction.name
         if direction_name == 'MANYTOONE':
-            ret = QuerySelectField
+            if col_spec.group_by:
+                ret = GroupedQuerySelectField(**kwargs)
+            else:
+                ret = QuerySelectField(**kwargs)
         elif direction_name == 'ONETOMANY':
             #TODO if group_by is considered, a more advanced widget should
             # be used to select multiple options
-            ret = QuerySelectMultipleField
+            if col_spec.group_by:
+                kwargs["grouper"] = self._add_grouper(col_spec.group_by)
+            ret = QuerySelectMultipleField(**kwargs)
         elif direction_name == 'MANYTOMANY':
             #TODO if group_by is considered, a more advanced widget should
             # be used to select multiple options
-            ret = QuerySelectMultipleField
+            if col_spec.group_by:
+                kwargs["grouper"] = self._add_grouper(col_spec.group_by)
+            ret = QuerySelectMultipleField(**kwargs)
         return ret
 
-    def _get_field_class(self, column):
+    def _get_field(self, column, **kwargs):
         """
         Returns WTForms field class. Class is based on a custom field class
         attribute or SQLAlchemy column type.
@@ -184,7 +186,7 @@ class SAKolumne(Kolumne):
             check_type = column.type
         for type_ in self.TYPE_MAP:
             if isinstance(check_type, type_):
-                return self.TYPE_MAP[type_]
+                return self.TYPE_MAP[type_](**kwargs)
         return None
 
     def _get_col_spec_args(self, col_spec):
@@ -220,14 +222,13 @@ class SAKolumne(Kolumne):
             query_factory = lambda: col_spec.filter_(query)
         return {'query_factory': query_factory}
 
-    def _format_args(self):
+    def _format_args(self, column):
         kwargs = {}
         date_format = None
-        column = self._property.columns[0]
         if isinstance(column.type, sa_types.DateTime) or isinstance(column.type, types.ArrowType):
-            date_format = self.meta.datetime_format
+            date_format = self.datetime_format
         if isinstance(column.type, sa_types.Date):
-            date_format = self.meta.date_format
+            date_format = self.date_format
         if date_format:
             kwargs['format'] = date_format
         return kwargs
@@ -276,7 +277,7 @@ class SAKolumne(Kolumne):
 
     @property
     def datetime_format(self):
-        return "%Y-%m-%d %H:%M:%S"
+        return "%Y-%m-%d %H:%M"
 
     def _get_validators(self):
         # MANYTOMANY and ONETOMANY column won't be required
@@ -336,27 +337,19 @@ class SAKolumne(Kolumne):
     def doc(self):
         return getattr(self._property, "doc", None)
 
+    def _add_grouper(self, group_by):
+        if hasattr(group_by, "__call__"):
+            return group_by
+        elif hasattr(group_by, "property"):
+            if hasattr(group_by, "is_mapper") and group_by.is_mapper:
+                column = sa_utils.get_primary_key(group_by.property)
+            return lambda x: getattr(x, column.key)
+        else:
+            return lambda x: x
+
 
 def pack_grouper(field, col_spec):
     field.field_class = GroupedQuerySelectField
-    field.col_spec = col_spec
-    return field
-
-
-def pack_remote_create_url(field, create_url):
-    class FakeField(field.field_class):
-        def __call__(self, **kwargs):
-            ret = super(FakeField, self).__call__(**kwargs)
-            params = {
-                'href': create_url,
-                'data-role': 'new-related-obj',
-                'data-target': 'field.name',
-                'class': 'btn btn-primary'
-            }
-            params = html_params(**params)
-            ret += HTMLString('<a %s>%s</a>' % (params, _("create")))
-            return ret
-
-    field.field_class = FakeField
+    field.kwargs["col_spec"] = col_spec
     return field
 

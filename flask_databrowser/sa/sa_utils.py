@@ -46,6 +46,7 @@ def get_joined_tables(model, col_name):
 
 
 def get_column_default_value(column):
+    kwargs = {}
     default = getattr(column, 'default', None)
     value = None
     if default is not None:
@@ -56,7 +57,9 @@ def get_column_default_value(column):
             else:
                 if not getattr(default, 'is_scalar', True):
                     value = None
-    return value
+    if value is not None:
+        kwargs["default"] = value
+    return kwargs
 
 
 def is_numerical_column(column):

@@ -110,9 +110,12 @@ class TestCreate(basetest.BaseTest):
     def test_create_in_fieldsets(self):
 
         class UserModelView(ModelView):
-            __create_columns__ = OrderedDict()
-            __create_columns__["Group"] = ["group"]
-            __create_columns__["name"] = ["name"]
+            @property
+            def create_columns(self):
+                ret = OrderedDict()
+                ret["Group"] = ["group"]
+                ret["name"] = ["name"]
+                return ret
 
         self.register(UserModelView)
         with self.app.test_request_context():
@@ -129,9 +132,13 @@ class TestCreate(basetest.BaseTest):
 
         class UserModelView(ModelView):
             create_in_steps = True
-            __create_columns__ = OrderedDict()
-            __create_columns__["Group"] = ["group"]
-            __create_columns__["name"] = ["name"]
+
+            @property
+            def create_columns(self):
+                ret = OrderedDict()
+                ret["Group"] = ["group"]
+                ret["name"] = ["name"]
+                return ret
 
         self.register(UserModelView)
         with self.app.test_request_context():
@@ -173,11 +180,14 @@ class TestCreate(basetest.BaseTest):
 
     def test_input_column_spec(self):
         class UserModelView(ModelView):
-            __create_columns__ = OrderedDict()
-            from flask.ext.databrowser.column_spec import InputColumnSpec
+            @property
+            def create_columns(self):
+                ret = OrderedDict()
+                from flask.ext.databrowser.column_spec import InputColumnSpec
 
-            __create_columns__["group"] = ["group"]
-            __create_columns__["name"] = [InputColumnSpec("name", disabled=True)]
+                ret["group"] = ["group"]
+                ret["name"] = [InputColumnSpec("name", disabled=True)]
+                return ret
 
         self.register(UserModelView)
         with self.app.test_request_context():
@@ -190,21 +200,22 @@ class TestCreate(basetest.BaseTest):
 
     def test_place_holder_column_spec(self):
         class UserModelView(ModelView):
-            from flask.ext.databrowser.column_spec import PlaceHolderColumnSpec
+            @property
+            def create_columns(self):
+                from flask.ext.databrowser.column_spec import InputColumnSpec
 
-            __create_columns__ = ["name", PlaceHolderColumnSpec("group", template_fname="place.html", label="group",
-                                                                as_input=True)]
+                return ["name", InputColumnSpec("group", label="group")]
 
         self.register(UserModelView)
         with self.app.test_request_context():
             with self.app.test_client() as c:
-                rv = c.post("/foo1/group", data={"id": 1, "name": "foo"})
+                c.post("/foo1/group", data={"id": 1, "name": "foo"})
 
                 rv = c.get("/foo1/user")
                 from pyquery import PyQuery as pq
 
                 d = pq(rv.data)
-                assert len(d("[data-role=options]")) == 1
+                assert len(d("[data-role=select2blank]")) == 1
 
 
 if __name__ == "__main__":

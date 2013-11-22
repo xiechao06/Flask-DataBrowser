@@ -36,13 +36,13 @@ class SAPropertyGrouper(Grouper):
     this grouper will group products by product type when create/edit Order
     '''
 
-    def __init__(self, property_):
+    def __init__(self, property_, db):
         self._property = property_
+        self._db = db
 
     @property
     def options(self):
-        #TODO unimplemeted
-        pass
+        return self._property.class_.query.all()
 
     def group(self, record):
         #TODO unimplemeted

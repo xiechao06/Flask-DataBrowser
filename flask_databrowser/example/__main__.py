@@ -4,17 +4,15 @@
 @version: $
 """
 
-from flask import redirect, Blueprint, request, abort, url_for, send_from_directory
-from flask.ext.debugtoolbar import DebugToolbarExtension
+from flask import redirect, Blueprint,url_for, send_from_directory
 from flask.ext.login import LoginManager
-from flask.ext.principal import Permission, RoleNeed, PermissionDenied
+from flask.ext.principal import Permission, RoleNeed
 from flask.ext.databrowser import filters
 from collections import OrderedDict
-from flask.ext.databrowser.column_spec import FileColumnSpec
+from flask.ext.databrowser.column_spec import FileColumnSpec, InputPlaceHolderColumnSpec
 from flask.ext.databrowser.grouper import SAPropertyGrouper
 from flask.ext.databrowser.sa import SAModell
-from flask.ext.databrowser.column_spec import ImageColumnSpec, TableColumnSpec, PlaceHolderColumnSpec, \
-            ListColumnSpec, ColumnSpec, InputColumnSpec
+from flask.ext.databrowser.column_spec import ImageColumnSpec, TableColumnSpec, PlaceHolderColumnSpec, InputColumnSpec
 
 admin_permission = Permission(RoleNeed("Admin"))
 
@@ -51,7 +49,7 @@ def main():
     browser = databrowser.DataBrowser(app)
 
 
-    from flask.ext.databrowser.utils import ErrorHandler
+    from flask.ext.databrowser.error_handle import ErrorHandler
 
     error_handler = ErrorHandler(browser)
     if not app.config["DEBUG"]:
@@ -105,42 +103,49 @@ def main():
         def get_list_help(self):
             return "<h3>this is list view</h3>"
 
-        def get_list_columns(self):
+        @property
+        def list_columns(self):
             return ["id", "name", "group", "password", "roll_called", "group.name", "create_time",
                             ImageColumnSpec("avatar", alt=u"头像",
                                             formatter=lambda v,
                                                              model: "http://farm9.staticflickr"
                                                                     ".com/8522/8478415115_152c6f5e55_m.jpg",
                                             doc=u"头像，^_^！"), "good"]
-        __create_columns__ = OrderedDict()
-        __create_columns__["primary"] = ["name", "group", "password"]
-        __create_columns__["secondary"] = [
-            PlaceHolderColumnSpec("age", template_fname="/accounts/age-snippet.html", as_input=True),
-            "roll_called", "birthday", "create_time", "car_list"]
+        @property
+        def create_columns(self):
+            ret = OrderedDict()
+            ret["primary"] = ["name", "group", "password"]
+            ret["secondary"] = [
+                InputPlaceHolderColumnSpec("age", template_fname="/accounts/age-snippet.html"),
+                "roll_called", "birthday", "create_time", "car_list"]
+            return ret
 
-        __form_columns__ = OrderedDict()
-        __form_columns__[u"主要的"] = ["id", InputColumnSpec("name", disabled=True),
-                                    PlaceHolderColumnSpec("group", template_fname="/accounts/group-snippet.html",
-                                                          as_input=True), "password",
-                                    PlaceHolderColumnSpec("foo", template_fname="/accounts/foo-snippet.html")]
-        __form_columns__[u"次要的"] = ["roll_called", "good",
-                                    PlaceHolderColumnSpec("age", template_fname="/accounts/age-snippet.html",
-                                                          as_input=True), "create_time",
-                                    ImageColumnSpec("avatar", alt=u"头像",
-                                                    formatter=lambda v,
-                                                                     model: "http://farm9.staticflickr"
-                                                                            ".com/8522/8478415115_152c6f5e55_m.jpg",
-                                                    doc=u"头像， ^_^!")]
-        __form_columns__[u"额外的"] = [
-            TableColumnSpec("dogs", css_class="table table-striped table-hover table-condensed table-bordered"),
-            InputColumnSpec("car_list", css_class="alert alert-info", group_by=SAPropertyGrouper(Car.model), disabled=True),
-            # "car_list"
-        ]
+        def get_form_columns(self, obj=None):
+            ret = OrderedDict()
+            ret[u"主要的"] = ["id", InputColumnSpec("name", disabled=True),
+                           PlaceHolderColumnSpec("group", template_fname="/accounts/group-snippet.html",
+                                                 form_width_class="col-lg-3")
+                , "password",
+                                        PlaceHolderColumnSpec("foo", template_fname="/accounts/foo-snippet.html")]
+            ret[u"次要的"] = ["roll_called", "good",
+                                        PlaceHolderColumnSpec("age", template_fname="/accounts/age-snippet.html"), "create_time",
+                                        ImageColumnSpec("avatar", alt=u"头像",
+                                                        formatter=lambda v,
+                                                                         model: "http://farm9.staticflickr"
+                                                                                ".com/8522/8478415115_152c6f5e55_m.jpg",
+                                                        doc=u"头像， ^_^!")]
+            ret[u"额外的"] = [
+                TableColumnSpec("dogs", css_class="table table-striped table-hover table-condensed table-bordered"),
+                InputColumnSpec("car_list", css_class="alert alert-info", group_by=lambda x: x.model[0],
+                                disabled=False),
+                # "car_list"
+            ]
 
-        __form_columns__[u"头像"] = [
-            ImageColumnSpec("pic_url", label=u"头像"),
-            FileColumnSpec("pic_path", label=u"上传")
-        ]
+            ret[u"头像"] = [
+                ImageColumnSpec("pic_url", label=u"头像"),
+                FileColumnSpec("pic_path", label=u"上传")
+            ]
+            return ret
 
         #__batch_form_columns__ = OrderedDict()
         #__batch_form_columns__["primary"] = ["name", InputColumnSpec("group", read_only=True)]
@@ -170,7 +175,8 @@ def main():
 
         default_order = ("name", "desc")
 
-        def get_list_filters(self):
+        @property
+        def list_filters(self):
             from datetime import datetime, timedelta
 
             today = datetime.today()
