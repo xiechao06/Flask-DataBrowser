@@ -3,7 +3,7 @@ from collections import OrderedDict
 import copy
 from decimal import Decimal
 
-from sqlalchemy_utils import types
+from sqlalchemy_utils import types as sa_util_types
 from wtforms import validators, fields, ValidationError, SelectField, TextAreaField, BooleanField, FloatField, \
     PasswordField
 from wtforms.widgets import HTMLString, html_params, CheckboxInput, TextArea
@@ -45,15 +45,15 @@ class SAKolumne(Kolumne):
         (sa_types.String, StringField),
         (sa_types.Time, TimeField),
         (sa_types.Unicode, StringField),
-        (types.ArrowType, DateTimeField),
-        (types.ChoiceType, SelectField),
-        (types.ColorType, ColorField),
-        (types.EmailType, EmailField),
-        (types.NumberRangeType, NumberRangeField),
-        (types.PasswordType, PasswordField),
-        (types.PhoneNumberType, PhoneNumberField),
-        (types.ScalarListType, StringField),
-        (types.UUIDType, StringField),
+        (sa_util_types.ArrowType, DateTimeField),
+        (sa_util_types.ChoiceType, SelectField),
+        (sa_util_types.ColorType, ColorField),
+        (sa_util_types.EmailType, EmailField),
+        (sa_util_types.NumberRangeType, NumberRangeField),
+        (sa_util_types.PasswordType, PasswordField),
+        (sa_util_types.PhoneNumberType, PhoneNumberField),
+        (sa_util_types.ScalarListType, StringField),
+        (sa_util_types.UUIDType, StringField),
     ))
 
     WIDGET_MAP = OrderedDict((
@@ -225,7 +225,7 @@ class SAKolumne(Kolumne):
     def _format_args(self, column):
         kwargs = {}
         date_format = None
-        if isinstance(column.type, sa_types.DateTime) or isinstance(column.type, types.ArrowType):
+        if isinstance(column.type, sa_types.DateTime) or isinstance(column.type, sa_util_types.ArrowType):
             date_format = self.datetime_format
         if isinstance(column.type, sa_types.Date):
             date_format = self.date_format
@@ -236,7 +236,7 @@ class SAKolumne(Kolumne):
     def _choices_args(self):
         kwargs = {}
         column = self._property.columns[0]
-        if isinstance(column.type, types.ChoiceType):
+        if isinstance(column.type, sa_util_types.ChoiceType):
             kwargs['choices'] = column.type.choices
             kwargs['coerce'] = self._get_coerce(column)
         if hasattr(column.type, 'enums'):
@@ -265,7 +265,7 @@ class SAKolumne(Kolumne):
 
         :param column: SQLAlchemy Column object
         """
-        if isinstance(column.type, (sa_types.DateTime, types.ArrowType)):
+        if isinstance(column.type, (sa_types.DateTime, sa_util_types.ArrowType)):
             return self.datetime_format
 
         if isinstance(column.type, sa_types.Date):
@@ -317,7 +317,7 @@ class SAKolumne(Kolumne):
             column = self._property.columns[0]
             ret = [i for i in (unique_validator(column), length_validator(column), required_validator(column)) if
                    i is not None]
-            if isinstance(column.type, types.EmailType):
+            if isinstance(column.type, sa_util_types.EmailType):
                 ret.append(Email())
         return ret
 

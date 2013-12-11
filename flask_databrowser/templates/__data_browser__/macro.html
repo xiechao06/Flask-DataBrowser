@@ -120,6 +120,7 @@
     </div>
   {% endif %}
 {% endmacro %}
+
 {% macro render_fields(fields) %}
   {% for f in fields if f.type != 'HiddenField' and f.type != 'CSRFTokenField' %}
     <div class="form-group{{ ' error' if f.errors }}">

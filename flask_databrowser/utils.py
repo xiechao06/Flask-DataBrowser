@@ -12,8 +12,9 @@ from wtforms_components import Unique
 
 def wrap_form_field(field, create_url=None):
     class FormFieldProxy(object):
-        def __init__(self, field):
+        def __init__(self, field, create_url):
             self.field = field
+            self.create_url = create_url
 
         def __getattr__(self, item):
             return getattr(self.field, item)
@@ -29,10 +30,6 @@ def wrap_form_field(field, create_url=None):
                 _add_class(kwargs, "form-control" if self.is_input_field else "form-control-static")
 
                 return self.field(**kwargs)
-
-        @property
-        def create_url(self):
-            return create_url
 
         @property
         def is_input_field(self):
@@ -65,7 +62,7 @@ def wrap_form_field(field, create_url=None):
                         return True
             return False
 
-    return FormFieldProxy(field)
+    return FormFieldProxy(field, create_url)
 
 
 def make_field_disabled(field):

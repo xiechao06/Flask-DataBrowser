@@ -12,7 +12,8 @@ import urlparse
 import werkzeug
 from werkzeug.utils import secure_filename
 
-from flask import (render_template, flash, request, url_for, redirect, Flask, make_response, jsonify)
+from flask import (render_template, flash, request, url_for, redirect, Flask,
+                   make_response, jsonify)
 from flask.ext.babel import _
 from flask.ext.principal import PermissionDenied
 from flask.ext.sqlalchemy import Pagination
@@ -90,7 +91,7 @@ class ModelView(object):
         """
         return [input_column_spec_from_kolumne(k) for k in self.modell.kolumnes if not k.is_primary_key()]
 
-    def _get_create_columns(self, current_step=None):
+    def _compose_create_columns(self, current_step=None):
         """
         get all the *NORMALIZED* create columns for model view. which means,
         if you override this method, you should guarantee that return value are
@@ -501,10 +502,13 @@ class ModelView(object):
     def create_view(self):
         self.try_create()
 
-        return_url = request.args.get('url') or url_for('.' + self.list_view_endpoint)
+        return_url = request.args.get('url',
+                                      url_for('.' + self.list_view_endpoint))
         on_fly = int(request.args.get("on_fly", 0))
-        current_step = int(request.args.get('__step__', 0)) if self.create_in_steps else None
-        create_columns = self._get_create_columns(current_step)
+        current_step = int(request.args.get('__step__', 0)) if \
+            self.create_in_steps else None
+
+        create_columns = self._compose_create_columns(current_step)
         form = self._get_create_form(create_columns)
         if form.validate_on_submit():
             model = self.create_model(form)
@@ -516,37 +520,41 @@ class ModelView(object):
                     return redirect(self.url_for_object(url=return_url))
                 else:
                     if on_fly:
-                        return render_template("__data_browser__/on_fly_result.html",
-                                               model_cls=self._model_name,
-                                               obj=unicode(model),
-                                               obj_pk=self.modell.get_pk_value(model),
-                                               target=request.args.get("target"))
+                        return render_template(
+                            "__data_browser__/on_fly_result.html",
+                            model_cls=self._model_name,
+                            obj=unicode(model),
+                            obj_pk=self.modell.get_pk_value(model),
+                            target=request.args.get("target"))
                     else:
                         return redirect(return_url)
-        #get or validate error
+
         kwargs = self._get_extra_params("create_view")
         if self.create_in_steps:
             create_template = self.get_step_create_template(current_step)
-            kwargs["last_step"], kwargs["next_step"] = self._get_around_steps(current_step)
+            kwargs["last_step"], kwargs["next_step"] = \
+                self._get_around_steps(current_step)
         else:
             create_template = self.create_template
 
         form = FormProxy(form, create_url_map=self._get_url_map(create_columns))
         fieldset_list = self._get_fieldsets(form, create_columns)
 
-        resp = self.render(create_template, form=form, return_url=return_url, help_message=self.get_create_help(),
-                           hint_message=self.create_hint_message(),
+        resp = self.render(create_template, form=form, return_url=return_url,
+                           help_message=self.create_help,
+                           hint_message=self.create_hint_message,
                            fieldset_list=fieldset_list, **kwargs)
 
         if form.is_submitted():
             # alas! something wrong
             resp = make_response(resp, 403)
-            resp.headers["Warning"] = u"&".join([k + u"-" + u"; ".join(v) for k, v in form.errors.items()]).encode(
-                "utf-8")
+            warn_msg = u"&".join([k + u"-" + u"; ".join(v) for k, v in
+                                  form.errors.items()]).encode('utf-8')
+            resp.headers["Warning"] = warn_msg
         return resp
 
     def _get_around_steps(self, current_step):
-        step_names = self._get_create_columns().keys()
+        step_names = self._compose_create_columns().keys()
 
         last_step = None
         next_step = None
@@ -562,7 +570,7 @@ class ModelView(object):
             args = request.args.to_dict()
             args['__step__'] = current_step + 1
             next_step = {
-                'name': self._get_create_columns().keys()[current_step + 1],
+                'name': self._compose_create_columns().keys()[current_step + 1],
                 'url': urlparse.urlunparse(
                     ('', '', request.path, '', '&'.join(k + '=' + unicode(v) for k, v in args.items()), ''))
             }
@@ -592,7 +600,8 @@ class ModelView(object):
         if default_args:
             obj = type("_temp", (object, ), default_args)()
             ret = self.__create_form__(obj=obj, **default_args)
-            # set the default args in form, otherwise the last step of creation won't be finished
+            # set the default args in form, otherwise the last step of
+            # creation won't be finished
             for k, v in default_args.items():
                 if v and hasattr(ret, k) and k not in request.form:
                     ret.k.data = v
@@ -646,6 +655,7 @@ class ModelView(object):
                      model_name=self._model_name,
                      obj=unicode(obj))
 
+    @property
     def create_hint_message(self):
         return _(u"create %(model_name)s", model_name=self._model_name)
 
@@ -792,7 +802,8 @@ class ModelView(object):
                 "utf-8")
         return resp
 
-    def get_create_help(self):
+    @property
+    def create_help(self):
         return ""
 
     def get_edit_help(self, objs):
@@ -808,15 +819,6 @@ class ModelView(object):
         field_dict = dict((col_spec.col_name, col_spec.field) for
                           col_spec in col_specs)
         return type(self.model.__name__ + 'Form', (BaseForm, ), field_dict)
-
-        #TODO support misc column specifications, create_url, seperate modell
-        #from flask.ext.databrowser.form.convert import AdminModelConverter, get_form
-
-        #converter = AdminModelConverter(self.modell, self)
-        #form_class = get_form(self.model, converter,
-                              #base_class=form.BaseForm, only=columns,
-                              #exclude=None, field_args=None)
-        #return form_class
 
     def _model_columns(self, obj):
         """
@@ -846,7 +848,7 @@ class ModelView(object):
         return ret
 
     def get_create_form(self):
-        create_columns = self._get_create_columns()
+        create_columns = self._compose_create_columns()
         if self.__create_form__ is None:
             if isinstance(create_columns, types.DictType):
                 create_columns = list(itertools.chain(*create_columns.values()))
