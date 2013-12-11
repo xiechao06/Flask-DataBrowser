@@ -120,29 +120,30 @@
     </div>
   {% endif %}
 {% endmacro %}
+
 {% macro render_fields(fields) %}
   {% for f in fields if f.type != 'HiddenField' and f.type != 'CSRFTokenField' %}
     <div class="form-group{{ ' error' if f.errors }}">
       {% if f.label.text %}
         <label class="control-label col-lg-2" for="{{ f.id }}">
           {{ f.label.text }}
-          {% if not f.__read_only__ and h.is_required_form_field(f) %}
+          {% if not f.__read_only__ and f.is_required() %}
             <strong style="color: red">&#42;</strong>
           {% else %}
             &nbsp;
           {% endif %}
         </label>
       {% else %}
-        {% if not f.__read_only__ and h.is_required_form_field(f) %}
+        {% if not f.__read_only__ and f.is_required() %}
           <strong style="color: red">&#42;</strong>
         {% else %}
           &nbsp;
         {% endif %}
       {% endif %}
       <div class="{{ f.form_width_class }}">
-        {% if h.in_batch_mode() %}
-          {% if h.is_required_form_field(f) %}
-            {% if h.is_unique_form_field(f) %}
+        {% if in_batch_mode %}
+          {% if f.is_required() %}
+            {% if f.is_unique() %}
               {{ f(disabled=True, value=_("unique field, can't be modified"))|safe }}
             {% elif not focus_set %}
               {{ f(autofocus='autofocus', disabled=True, required=True)|safe }}
@@ -151,7 +152,7 @@
               {{ f(disabled=True, required=True)|safe }}
             {% endif %}
           {% else %}
-            {% if h.is_unique_form_field(f) %}
+            {% if f.is_unique() %}
               {{ f(disabled=True, value=_("unique field, can't be modified"))|safe }}
             {% elif not focus_set %}
               {{ f(autofocus='autofocus', disabled=True)|safe }}
@@ -160,7 +161,7 @@
               {{ f(disabled=True)|safe }}
             {% endif %}
           {% endif %}
-          {% if not __read_only__ and not h.is_unique_form_field(f) %}
+          {% if not __read_only__ and not f.is_unique() %}
             <div class="checkbox">
               <label>
                 <input type="checkbox" data-role="hold_value" name="hold-value-{{ f.name }}" checked="checked">
@@ -173,14 +174,14 @@
             {{ f(disabled=True)|safe }}
           {% else %}
             {% if not focus_set %}
-              {% if h.is_required_form_field(f) %}
+              {% if f.is_required() %}
                 {{ f(autofocus='autofocus', required=True)|safe }}
               {% else %}
                 {{ f(autofocus='autofocus')|safe }}
               {% endif %}
               {% set focus_set = True %}
             {% else %}
-              {% if h.is_required_form_field(f) %}
+              {% if f.is_required() %}
                 {{ f(required=True)|safe }}
               {% else %}
                 {{ f()|safe }}
@@ -189,15 +190,15 @@
           {% endif %}
         {% endif %}
         {% if f.errors %}
-          <span class="alert alert-danger">{{ f.errors|join("; ") }}</span>
+          <div class="alert alert-danger">{{ f.errors|join("; ") }}</div>
         {% endif %}
 
         {% if f.description %}
           <span class="help-block">* <i class="text-info">{{ f.description }}</i></span>
         {% endif %}
       </div>
-      {% if not f.__read_only__ and f.name in create_url_map %}
-        <a href="{{ create_url_map[f.name] }}" data-role="new-related-obj" data-target="{{ f.name }}" class="btn btn-primary">{{ _("create") }}</a>
+      {% if not __read_only__ and f.create_url %}
+        <a href="{{ f.create_url }}" data-role="new-related-obj" data-target="{{ f.name }}" class="btn btn-primary">{{ _("create") }}</a>
       {% endif %}
     </div>
   {% endfor %}
@@ -229,7 +230,7 @@
         {% endif %}
         {% if next_step %}
           <div class='pull-right'>
-            <button data-target="{{ next_step.url }}" class='btn btn-default' data-role='next-step'>{{ _('Next step') }}: {{ next_step.name }}
+            <button data-target="{{ next_step.url }}" class='btn btn-default' data-role='next-step' type="button">{{ _('Next step') }}: {{ next_step.name }}
               <i class="fa fa-step-forward"></i></button>
           </div>
         {% endif %}
@@ -288,19 +289,6 @@
   </div>
 {% endmacro %}
 
-{% macro render_previous_steps_info(previous_steps_info) %}
-  <div class='alert alert-success'>
-    <h5>{{ _("Fields already filled") }}</h5>
-    <ul>
-      {% for k, v in previous_steps_info %}
-        <li>
-          <small><i>{{ k }} - {{ v }}</i></small>
-        </li>
-      {% endfor %}
-    </ul>
-  </div>
-{% endmacro %}
-
 {% macro render_form(form, cancel_url, extra=None, last_step=None, next_step=None, previous_steps_info=None) -%}
   {% call form_tag() %}
     {% if last_step is not none or next_step is not none %}
@@ -309,7 +297,6 @@
       {% set current_step = None %}
     {% endif %}
     {{ render_form_fields(form, current_step=current_step) }}
-    {% if previous_steps_info %}{{ render_previous_steps_info(previous_steps_info=previous_steps_info) }}{% endif %}
     {{ render_form_buttons(cancel_url, extra, last_step, next_step) }}
   {% endcall %}
 {% endmacro %}

@@ -14,7 +14,6 @@ from flask.ext.babel import Babel
 Babel(app)
 
 
-from datetime import datetime
 import logging
 from models import Log
 

@@ -6,18 +6,22 @@ import operator
 from wtforms import widgets, Field
 from wtforms.fields import SelectFieldBase
 from wtforms.validators import ValidationError
-from .form import OptGroupWidget
+from flask.ext.databrowser.extra_widgets import Select2Widget
 
 try:
     from sqlalchemy.orm.util import identity_key
+
     has_identity_key = True
 except ImportError:
     has_identity_key = False
 
+__all__ = ('QuerySelectField', 'QuerySelectMultipleField')
 
-__all__ = (
-    'QuerySelectField', 'QuerySelectMultipleField',
-    )
+
+class OptGroupWidget(object):
+    def __call__(self, field, **kwargs):
+        from flask.ext.databrowser.extra_widgets import Select2Widget
+        return Select2Widget.render_optgroup(field.label.text, field.choices)
 
 
 class GroupedSelectField(SelectFieldBase):
@@ -152,7 +156,9 @@ class QuerySelectField(GroupedSelectField):
         if not self._group_list:
             if self.grouper:
                 import itertools
-                for grouper, values in itertools.groupby(sorted(self._query_objects(), key=self.grouper), key=self.grouper):
+
+                for grouper, values in itertools.groupby(sorted(self._query_objects(), key=self.grouper),
+                                                         key=self.grouper):
                     self._group_list.append((grouper, list(values)))
 
             else:
@@ -197,7 +203,8 @@ class QuerySelectMultipleField(QuerySelectField):
     def __init__(self, label=None, validators=None, default=None, opt_filter=None, **kwargs):
         if default is None:
             default = []
-        super(QuerySelectMultipleField, self).__init__(label, validators, default=default, opt_filter=opt_filter, **kwargs)
+        super(QuerySelectMultipleField, self).__init__(label, validators, default=default, opt_filter=opt_filter,
+                                                       **kwargs)
         self._invalid_formdata = False
 
     def _get_data(self):
@@ -243,6 +250,41 @@ class QuerySelectMultipleField(QuerySelectField):
             for v in self.data:
                 if v not in obj_list:
                     raise ValidationError(self.gettext('Not a valid choice'))
+
+
+#TODO should be more elegant
+class GroupedQuerySelectField(QuerySelectField):
+    def __init__(self, col_spec, *args, **kwargs):
+        super(GroupedQuerySelectField, self).__init__(*args, **kwargs)
+        self.col_spec = col_spec
+
+    def __call__(self, **kwargs):
+        grouper = Select2Widget()
+        grouper_kwargs = {}
+        if kwargs.get("class"):
+            grouper_kwargs["class"] = kwargs["class"]
+        if kwargs.get("disabled"):
+            grouper_kwargs["disabled"] = True
+        s = grouper(FakeGroupField(self.col_spec.grouper_input_name,
+                                   self.col_spec.group_by.group(self.data),
+                                   self.col_spec.group_by.options),
+                    **grouper_kwargs) + "<div class='text-center'>--</div>"
+        s += super(GroupedQuerySelectField, self).__call__(**kwargs)
+        return s
+
+
+class FakeGroupField(object):
+    def __init__(self, name, data, options):
+        self.name = name
+        self.id = "_" + name
+        self.data = data
+        self.options = options
+
+    def iter_choices(self):
+        for opt in self.options:
+            # id, value, selected
+            yield opt, opt, opt == self.data
+
 
 def get_pk_from_identity(obj):
     # TODO: Remove me
