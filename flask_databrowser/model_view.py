@@ -19,13 +19,14 @@ from flask.ext.principal import PermissionDenied
 from flask.ext.sqlalchemy import Pagination
 
 from flask.ext.databrowser import filters
-from flask.ext.databrowser.column_spec import (LinkColumnSpec, ColumnSpec, InputColumnSpec, FileColumnSpec,
+from flask.ext.databrowser.column_spec import (LinkColumnSpec, ColumnSpec,
+                                               InputColumnSpec, FileColumnSpec,
                                                input_column_spec_from_kolumne)
 from flask.ext.databrowser.convert import ValueConverter
 from flask.ext.databrowser.exceptions import ValidationError
-from flask.ext.databrowser.extra_widgets import PlaceHolder
 from flask.ext.databrowser.form import FormProxy, BaseForm
 from flask.ext.databrowser.constants import WEB_SERVICE, WEB_PAGE
+from .stuffed_field import StuffedField
 
 
 class ModelView(object):
@@ -76,33 +77,43 @@ class ModelView(object):
         self.extra_params = {}
         self.data_browser = None
         self.__list_column_specs = []
-        self.__normalized_create_columns = []
+        self._normalized_create_col_specs = []
         self.__normalized_form_columns = []
         self._default_list_filters = []
-        self.__create_form__ = self.__edit_form__ = self.__batch_edit_form__ = None
+        self.__create_form__ = self.__edit_form__ = \
+            self.__batch_edit_form__ = None
         self.page_size = page_size
 
     @property
     def create_columns(self):
         """
         get the create columns. override this method to provide columns you
-        want to insert into create form.
-        :return: a list of kolumnes returned by modell, or a dict
-        """
-        return [input_column_spec_from_kolumne(k) for k in self.modell.kolumnes if not k.is_primary_key()]
+        want to insert into create form. accepted column types are:
 
-    def _compose_create_columns(self, current_step=None):
+            * basestring - name of the column
+            * InputColumnSpec
+        besides, all columns could be grouped in field sets, so the return
+        value could be an OrderedDict
+
+        :return: a list of kolumnes returned by modell, or an OrderedDict
+        """
+        return [input_column_spec_from_kolumne(k) for k in
+                self.modell.kolumnes if not k.is_primary_key()]
+
+    def _compose_create_col_specs(self, current_step=None):
         """
         get all the *NORMALIZED* create columns for model view. which means,
         if you override this method, you should guarantee that return value are
         normalized. see ModelView.normalize_create_columns
         """
-        if not self.__normalized_create_columns:
-            self.__normalized_create_columns = self._normalize_columns(self.create_columns)
+        if not self._normalized_create_col_specs:
+            self._normalized_create_col_specs = \
+                self._compose_normalized_col_specs(self.create_columns)
         if current_step is None:
-            return self.__normalized_create_columns
+            return self._normalized_create_col_specs
         else:
-            return dict([self.__normalized_create_columns.items()[current_step]])
+            return dict([self._normalized_create_col_specs.items()
+                         [current_step]])
 
     #TODO 重构
     @property
@@ -114,11 +125,11 @@ class ModelView(object):
         """
         # only for backward compatiple, feel comfortable to ignore it
         if not self.__normalized_form_columns:
-            self.__normalized_form_columns = self._normalize_columns(self.get_form_columns())
+            self.__normalized_form_columns = self._compose_normalized_col_specs(self.get_form_columns())
         return self.__normalized_form_columns
 
     def _get_form_columns(self, obj):
-        return self._normalize_columns(self.get_form_columns(obj))
+        return self._compose_normalized_col_specs(self.get_form_columns(obj))
 
     def get_step_create_template(self, step):
         try:
@@ -129,8 +140,7 @@ class ModelView(object):
     def get_column_doc(self, col_name):
         return self.column_docs.get(col_name) or self.modell.get_column_doc(col_name)
 
-    #TODO should rename to _get_form_column_specs
-    def _normalize_columns(self, columns):
+    def _compose_normalized_col_specs(self, columns):
         """
         this utility function handle the following matters:
             * if columns not defined in fieldsets, add them to one fieldset
@@ -138,7 +148,7 @@ class ModelView(object):
             * convert all the column of 'basestring' to InputColumn
             * fill the label and doc of each column
         :return: an OrderedDict whose keys are fieldset's name, whose values
-        are a list InputColumnSpec or PlaceHolderColumnSpec (as input).
+            are a list InputColumnSpec or PlaceHolderColumnSpec (as input).
         """
         ret = OrderedDict()
 
@@ -508,8 +518,8 @@ class ModelView(object):
         current_step = int(request.args.get('__step__', 0)) if \
             self.create_in_steps else None
 
-        create_columns = self._compose_create_columns(current_step)
-        form = self._get_create_form(create_columns)
+        create_col_specs = self._compose_create_col_specs(current_step)
+        form = self._compose_create_form(create_col_specs)
         if form.validate_on_submit():
             model = self.create_model(form)
             if model:
@@ -537,24 +547,24 @@ class ModelView(object):
         else:
             create_template = self.create_template
 
-        form = FormProxy(form, create_url_map=self._get_url_map(create_columns))
-        fieldset_list = self._get_fieldsets(form, create_columns)
-
         resp = self.render(create_template, form=form, return_url=return_url,
                            help_message=self.create_help,
                            hint_message=self.create_hint_message,
-                           fieldset_list=fieldset_list, **kwargs)
+                           **kwargs)
 
         if form.is_submitted():
             # alas! something wrong
             resp = make_response(resp, 403)
-            warn_msg = u"&".join([k + u"-" + u"; ".join(v) for k, v in
-                                  form.errors.items()]).encode('utf-8')
-            resp.headers["Warning"] = warn_msg
+            resp.headers["Warning"] = self._compose_warn_msg(form)
         return resp
 
+    def _compose_warn_msg(self, form):
+        warn_msg = u"&".join([k + u"-" + u"; ".join(v) for k, v in
+                              form.errors.items()]).encode('utf-8')
+        return warn_msg
+
     def _get_around_steps(self, current_step):
-        step_names = self._compose_create_columns().keys()
+        step_names = self._compose_create_col_specs().keys()
 
         last_step = None
         next_step = None
@@ -570,20 +580,20 @@ class ModelView(object):
             args = request.args.to_dict()
             args['__step__'] = current_step + 1
             next_step = {
-                'name': self._compose_create_columns().keys()[current_step + 1],
+                'name': self._compose_create_col_specs().keys()[current_step + 1],
                 'url': urlparse.urlunparse(
                     ('', '', request.path, '', '&'.join(k + '=' + unicode(v) for k, v in args.items()), ''))
             }
         return last_step, next_step
 
-    def _get_create_form(self, create_columns):
+    def _compose_create_form(self, create_col_specs):
         """
         create a form for creation using create columns
         """
-        assert isinstance(create_columns, dict)
+        assert isinstance(create_col_specs, dict)
         if self.__create_form__ is None:
-            create_columns = list(itertools.chain(*create_columns.values()))
-            self.__create_form__ = self.scaffold_form(create_columns)
+            self.__create_form__ = self.scaffold_form(
+                itertools.chain(*create_col_specs.values()))
 
         default_args = {}
         for k, v in request.args.iterlists():
@@ -605,8 +615,16 @@ class ModelView(object):
             for k, v in default_args.items():
                 if v and hasattr(ret, k) and k not in request.form:
                     ret.k.data = v
-            return ret
-        return self.__create_form__()
+            ret = ret
+        ret = self.__create_form__()
+        # compose field sets, note! field sets are our stuffs other than
+        # the standard wtforms.Form, they are ONLY use to generate form
+        # in html page
+        ret.fieldsets = {}
+        for fs_name, fs_col_specs in create_col_specs.items():
+            ret.fieldsets[fs_name] = [ReprField(ret[spec.col_name]) for spec in
+                                      fs_col_specs]
+        return ret
 
     def do_update_log(self, obj, action):
         from flask.ext.login import current_user
@@ -816,9 +834,22 @@ class ModelView(object):
         """
         Create form from the model.
         """
-        field_dict = dict((col_spec.col_name, col_spec.field) for
-                          col_spec in col_specs)
+        focus_set = False
+        field_dict = {}
+        for col_spec in col_specs:
+            field, focus_set = self._composed_stuffed_field(col_spec,
+                                                            focus_set)
+            field_dict[col_spec.col_name] = field
         return type(self.model.__name__ + 'Form', (BaseForm, ), field_dict)
+
+    def _composed_stuffed_field(self, col_spec, focus_set):
+        # why we stuff our own goods in field here? since it's the
+        # framework's duty, not the one who implements other backends
+
+        # if focus not set, then it is determined by if the field is disabled
+        field = StuffedField(col_spec.field)
+        return field, field.__auto_focus__
+
 
     def _model_columns(self, obj):
         """
@@ -848,7 +879,7 @@ class ModelView(object):
         return ret
 
     def get_create_form(self):
-        create_columns = self._compose_create_columns()
+        create_columns = self._compose_create_col_specs()
         if self.__create_form__ is None:
             if isinstance(create_columns, types.DictType):
                 create_columns = list(itertools.chain(*create_columns.values()))

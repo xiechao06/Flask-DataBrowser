@@ -1,3 +1,5 @@
+{# bootstrap specific #}
+
 {% macro render_pagination(pagination, __count__, mobile) %}
   <div class="visible-sm visible-xs">
     <ul class="pager">
@@ -87,32 +89,37 @@
     </ul>
   </div>
 {% endmacro %}
+
 {% macro render_form_fields(form, focus_set=False, current_step=None) %}
   {{ form.hidden_tag() if form.hidden_tag is defined }}
-  {% if fieldset_list|length == 1 %}
+  {% if form.fieldsets|length == 1 %}
     {% set fieldset, fields = fieldset_list[0] %}
     <fieldset>
       {% if fieldset %}
         <legend>{% if current_step is not none %}{{ gettext('Step %(step)d', step=current_step + 1) }}
           : {% endif %}{{ fieldset }}</legend>
       {% endif %}
-      {{ render_fields(fields) }}
+      {% for f in fields if f.type != 'HiddenField' and f.type != 'CSRFTokenField' %}
+        {{ render_field(f) }}
+      {% endfor %}
     </fieldset>
   {% else %}
     <div class="panel-group" id="accordion_div">
-      {% for fieldset, fields in fieldset_list %}
+      {% for fs_name, fs_fields in form.fieldsets.items() %}
         <div class="panel panel-default">
           <div class="panel-heading">
             <h3 class="panel-title">
               <a class="accordion-toggle" data-toggle="collapse" href="#collapse_{{ loop.index }}">
-                {{ fieldset }}
+                {{ fs_name }}
                 <i class="fa fa-chevron-down" id="collapse_{{ loop.index }}_notation" data-role="fieldset-notation"></i>
               </a>
             </h3>
           </div>
           <div id="collapse_{{ loop.index }}" class="panel-collapse collapse in" data-role="fieldset-body">
             <div class="panel-body">
-              {{ render_fields(fields) }}
+            {% for f in fields if f.type != 'HiddenField' and f.type != 'CSRFTokenField' %}
+              {{ render_field(f) }}
+            {% endfor %}
             </div>
           </div>
         </div>
@@ -121,20 +128,116 @@
   {% endif %}
 {% endmacro %}
 
+{% macro _render_field_label(field) -%}
+  {% if field.label.text %}
+    <label class="control-label col-lg-2" for="{{ field.id }}">
+      {{ field.label.text }}
+      {% if not field.__read_only__ and field.__required__ %}
+        <strong style="color: red">&#42;</strong>
+      {% else %}
+        &nbsp;
+      {% endif %}
+    </label>
+  {% else %}
+    {% if not field.__read_only__ and field.__required__ %}
+      <strong style="color: red">&#42;</strong>
+    {% else %}
+      &nbsp;
+    {% endif %}
+  {% endif %}
+{%- endmacro %}
+
+{% macro _render_field_input(field) -%}
+  {% if not field.render_kwargs.input_width_class %}
+    {% if field.__as_input__ %}
+      {% set input_width_class = 'col-lg-3' %}
+    {% elif field.label.text %}
+      {% set input_width_class = 'col-lg-10' %}
+    {% else %}
+      {% set input_width_class = 'col-lg-12' %}
+    {% endif %}
+  {% endif %}
+  <div class="{{ input_width_class }}">
+    {% if in_batch_mode %}
+      {% if field.type == 'BooleanField' %}
+        <div class="checkbox"> 
+          {{ field(disabled=True)|safe }}
+        </div>
+      {% else %}
+        {% if field.__unique__ %}
+          {{ field(disabled=True, value='form-control-static', 
+          value=_("unique field, can't be modified"))|safe }}
+        {% else %}
+          {{ field(disabled=True, class='form-control-static')|safe }}
+        {% endif %}
+      {% endif %}
+      {% if not __read_only__ and not field.__unique__ and not field.__read_only__ %}
+        <div class="checkbox">
+          <label>
+            <input type="checkbox" data-role="hold_value" name="hold-value-{{ field.name }}" checked="checked">
+            {{ _("keep unchanged") }}
+          </label>
+        </div>
+      {% endif %}
+    {% else %}
+      {% if field.type == 'BooleanField' %}
+        <div class="checkbox"> 
+          {{ field()|safe }}
+        </div>
+      {% else %}
+        {{ field(class='form-control' if field.__as_input__ else 'form-control-static')|safe }}
+      {% endif %}
+    {% endif %}
+  </div>
+{%- endmacro %}
+
+{% macro _render_afflicated_create_url(field) -%}
+  {% if not __read_only__ and field.create_url %}
+    <a href="{{ f.create_url }}" data-role="new-related-obj" data-target="{{ field.name }}" class="btn btn-primary">{{ _("create") }}</a>
+  {% endif %}
+{%- endmacro %}
+
+{% macro _render_field_desc(field) %}
+  {% if field.description %}
+    <span class="help-block">* <i class="text-info">{{ field.description }}</i></span>
+  {% endif %}
+{%- endmacro %}
+
+{% macro _render_field_error(field) -%}
+  {% if field.errors %}
+    <div class="alert alert-danger">{{ field.errors|join("; ") }}</div>
+  {% endif %}
+{%- endmacro %}
+
+{# accepted render kwargs include:
+  * input_width_class
+  * css_class
+#}
+{% macro render_field(field) -%}
+  <div class="form-group{{ ' error' if field.errors }} {{ field.render_kwargs.css_class }}">
+    {{ _render_field_label(field) }}
+    {{ _render_field_input(field) }}
+    {{ _render_field_error(field) }}
+    {{ _render_afflicated_create_url(field) }}
+    {{ _render_field_desc(field) }}
+  </div>
+{%- endmacro %}
+
+
 {% macro render_fields(fields) %}
   {% for f in fields if f.type != 'HiddenField' and f.type != 'CSRFTokenField' %}
     <div class="form-group{{ ' error' if f.errors }}">
       {% if f.label.text %}
         <label class="control-label col-lg-2" for="{{ f.id }}">
           {{ f.label.text }}
-          {% if not f.__read_only__ and f.is_required() %}
+          {% if not f.__read_only__ and f.__required__ %}
             <strong style="color: red">&#42;</strong>
           {% else %}
             &nbsp;
           {% endif %}
         </label>
       {% else %}
-        {% if not f.__read_only__ and f.is_required() %}
+        {% if not f.__read_only__ and f.__required__ %}
           <strong style="color: red">&#42;</strong>
         {% else %}
           &nbsp;
@@ -142,17 +245,17 @@
       {% endif %}
       <div class="{{ f.form_width_class }}">
         {% if in_batch_mode %}
-          {% if f.is_required() %}
-            {% if f.is_unique() %}
-              {{ f(disabled=True, value=_("unique field, can't be modified"))|safe }}
+          {% if f.__required__ %}
+            {% if f.__unique__ %}
+              {{ f(disabled=True, value=_("__unique__ field, can't be modified"))|safe }}
             {% elif not focus_set %}
-              {{ f(autofocus='autofocus', disabled=True, required=True)|safe }}
+              {{ f(autofocus='autofocus', disabled=True, __required__=True)|safe }}
               {% set focus_set = True %}
             {% else %}
-              {{ f(disabled=True, required=True)|safe }}
+              {{ f(disabled=True, __required__=True)|safe }}
             {% endif %}
           {% else %}
-            {% if f.is_unique() %}
+            {% if f.__unique__ %}
               {{ f(disabled=True, value=_("unique field, can't be modified"))|safe }}
             {% elif not focus_set %}
               {{ f(autofocus='autofocus', disabled=True)|safe }}
@@ -161,7 +264,7 @@
               {{ f(disabled=True)|safe }}
             {% endif %}
           {% endif %}
-          {% if not __read_only__ and not f.is_unique() %}
+          {% if not __read_only__ and not f.__unique__ %}
             <div class="checkbox">
               <label>
                 <input type="checkbox" data-role="hold_value" name="hold-value-{{ f.name }}" checked="checked">
@@ -174,15 +277,15 @@
             {{ f(disabled=True)|safe }}
           {% else %}
             {% if not focus_set %}
-              {% if f.is_required() %}
-                {{ f(autofocus='autofocus', required=True)|safe }}
+              {% if f.__required__ %}
+                {{ f(autofocus='autofocus', __required__=True)|safe }}
               {% else %}
                 {{ f(autofocus='autofocus')|safe }}
               {% endif %}
               {% set focus_set = True %}
             {% else %}
-              {% if f.is_required() %}
-                {{ f(required=True)|safe }}
+              {% if f.__required__ %}
+                {{ f(__required__=True)|safe }}
               {% else %}
                 {{ f()|safe }}
               {% endif %}
@@ -202,13 +305,6 @@
       {% endif %}
     </div>
   {% endfor %}
-{% endmacro %}
-
-{% macro form_tag() %}
-  <form action="" method="POST" class="form-horizontal" role="form"
-      {% if form.has_file_field %} enctype="multipart/form-data"{% endif %}>
-    {{ caller() }}
-  </form>
 {% endmacro %}
 
 {% macro create() %}
@@ -290,7 +386,8 @@
 {% endmacro %}
 
 {% macro render_form(form, cancel_url, extra=None, last_step=None, next_step=None, previous_steps_info=None) -%}
-  {% call form_tag() %}
+  <form action="" method="POST" class="form-horizontal" role="form"
+      {% if form.has_file_field %} enctype="multipart/form-data"{% endif %}>
     {% if last_step is not none or next_step is not none %}
       {% set current_step = request.args.get('__step__', 0)|int %}
     {% else %}
@@ -298,6 +395,5 @@
     {% endif %}
     {{ render_form_fields(form, current_step=current_step) }}
     {{ render_form_buttons(cancel_url, extra, last_step, next_step) }}
-  {% endcall %}
+  </form>
 {% endmacro %}
-

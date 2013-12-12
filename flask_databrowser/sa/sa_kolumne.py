@@ -131,8 +131,6 @@ class SAKolumne(Kolumne):
             kwargs.update(sa_utils.get_column_default_value(column))
             kwargs.update(self._format_args(column))
             ret = self._get_field(column, **kwargs)
-        if col_spec.disabled:
-            ret = utils.make_field_disabled(ret)
         return ret
 
     def _merge_with_column_args(self, col_spec_args, column_args):

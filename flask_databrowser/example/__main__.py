@@ -124,7 +124,7 @@ def main():
             ret = OrderedDict()
             ret[u"主要的"] = ["id", InputColumnSpec("name", disabled=True),
                            PlaceHolderColumnSpec("group", template_fname="/accounts/group-snippet.html",
-                                                 form_width_class="col-lg-3")
+                                                 render_kwargs={'form_width_class': "col-lg-3"})
                 , "password",
                                         PlaceHolderColumnSpec("foo", template_fname="/accounts/foo-snippet.html")]
             ret[u"次要的"] = ["roll_called", "good",

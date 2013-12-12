@@ -137,10 +137,10 @@ class SAModell(Modell):
 
     @property
     def properties(self):
-        return [SAKolumne(p, self) for p in self.model.__mapper__.iterate_properties]
+        return [SAKolumne(p, self.db) for p in self.model.__mapper__.iterate_properties]
 
     def get_kolumne(self, col_name):
-        return SAKolumne(getattr(self.model, col_name), self)
+        return SAKolumne(getattr(self.model, col_name), self.db)
 
     def has_kolumne(self, col_name):
         return hasattr(self.model, col_name) and isinstance(getattr(self.model, col_name), InstrumentedAttribute)

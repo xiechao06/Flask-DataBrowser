@@ -2,7 +2,6 @@
 from datetime import datetime
 from basemain import db
 
-
 class User(db.Model):
     __tablename__ = "TB_USER"
 

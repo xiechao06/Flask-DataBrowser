@@ -3,6 +3,7 @@
 /flask_databrowser/.ropeproject/history
 /flask_databrowser/.ropeproject/objectdb
 *.py[cod]
+/flask_databrowser/example/temp.db
 
 # C extensions
 *.so
