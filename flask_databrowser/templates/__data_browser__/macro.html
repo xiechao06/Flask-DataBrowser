@@ -93,13 +93,13 @@
 {% macro render_form_fields(form, focus_set=False, current_step=None) %}
   {{ form.hidden_tag() if form.hidden_tag is defined }}
   {% if form.fieldsets|length == 1 %}
-    {% set fieldset, fields = fieldset_list[0] %}
+    {% set fs_name, fs_fields = form.fieldsets.items() %}
     <fieldset>
-      {% if fieldset %}
+      {% if fs_name %}
         <legend>{% if current_step is not none %}{{ gettext('Step %(step)d', step=current_step + 1) }}
           : {% endif %}{{ fieldset }}</legend>
       {% endif %}
-      {% for f in fields if f.type != 'HiddenField' and f.type != 'CSRFTokenField' %}
+      {% for f in fs_fields if f.type != 'HiddenField' and f.type != 'CSRFTokenField' %}
         {{ render_field(f) }}
       {% endfor %}
     </fieldset>
@@ -117,7 +117,7 @@
           </div>
           <div id="collapse_{{ loop.index }}" class="panel-collapse collapse in" data-role="fieldset-body">
             <div class="panel-body">
-            {% for f in fields if f.type != 'HiddenField' and f.type != 'CSRFTokenField' %}
+            {% for f in fs_fields if f.type != 'HiddenField' and f.type != 'CSRFTokenField' %}
               {{ render_field(f) }}
             {% endfor %}
             </div>
@@ -148,7 +148,7 @@
 {%- endmacro %}
 
 {% macro _render_field_input(field) -%}
-  {% if not field.render_kwargs.input_width_class %}
+  {% if not field.__render_kwargs__.input_width_class %}
     {% if field.__as_input__ %}
       {% set input_width_class = 'col-lg-3' %}
     {% elif field.label.text %}
@@ -165,7 +165,7 @@
         </div>
       {% else %}
         {% if field.__unique__ %}
-          {{ field(disabled=True, value='form-control-static', 
+          {{ field(disabled=True, class='form-control-static', 
           value=_("unique field, can't be modified"))|safe }}
         {% else %}
           {{ field(disabled=True, class='form-control-static')|safe }}
@@ -214,7 +214,7 @@
   * css_class
 #}
 {% macro render_field(field) -%}
-  <div class="form-group{{ ' error' if field.errors }} {{ field.render_kwargs.css_class }}">
+  <div class="form-group{{ ' error' if field.errors }} {{ field.__render_kwargs__.css_class }}">
     {{ _render_field_label(field) }}
     {{ _render_field_input(field) }}
     {{ _render_field_error(field) }}
@@ -224,92 +224,9 @@
 {%- endmacro %}
 
 
-{% macro render_fields(fields) %}
-  {% for f in fields if f.type != 'HiddenField' and f.type != 'CSRFTokenField' %}
-    <div class="form-group{{ ' error' if f.errors }}">
-      {% if f.label.text %}
-        <label class="control-label col-lg-2" for="{{ f.id }}">
-          {{ f.label.text }}
-          {% if not f.__read_only__ and f.__required__ %}
-            <strong style="color: red">&#42;</strong>
-          {% else %}
-            &nbsp;
-          {% endif %}
-        </label>
-      {% else %}
-        {% if not f.__read_only__ and f.__required__ %}
-          <strong style="color: red">&#42;</strong>
-        {% else %}
-          &nbsp;
-        {% endif %}
-      {% endif %}
-      <div class="{{ f.form_width_class }}">
-        {% if in_batch_mode %}
-          {% if f.__required__ %}
-            {% if f.__unique__ %}
-              {{ f(disabled=True, value=_("__unique__ field, can't be modified"))|safe }}
-            {% elif not focus_set %}
-              {{ f(autofocus='autofocus', disabled=True, __required__=True)|safe }}
-              {% set focus_set = True %}
-            {% else %}
-              {{ f(disabled=True, __required__=True)|safe }}
-            {% endif %}
-          {% else %}
-            {% if f.__unique__ %}
-              {{ f(disabled=True, value=_("unique field, can't be modified"))|safe }}
-            {% elif not focus_set %}
-              {{ f(autofocus='autofocus', disabled=True)|safe }}
-              {% set focus_set = True %}
-            {% else %}
-              {{ f(disabled=True)|safe }}
-            {% endif %}
-          {% endif %}
-          {% if not __read_only__ and not f.__unique__ %}
-            <div class="checkbox">
-              <label>
-                <input type="checkbox" data-role="hold_value" name="hold-value-{{ f.name }}" checked="checked">
-                {{ _("keep unchanged") }}
-              </label>
-            </div>
-          {% endif %}
-        {% else %}
-          {% if __read_only__ %}
-            {{ f(disabled=True)|safe }}
-          {% else %}
-            {% if not focus_set %}
-              {% if f.__required__ %}
-                {{ f(autofocus='autofocus', __required__=True)|safe }}
-              {% else %}
-                {{ f(autofocus='autofocus')|safe }}
-              {% endif %}
-              {% set focus_set = True %}
-            {% else %}
-              {% if f.__required__ %}
-                {{ f(__required__=True)|safe }}
-              {% else %}
-                {{ f()|safe }}
-              {% endif %}
-            {% endif %}
-          {% endif %}
-        {% endif %}
-        {% if f.errors %}
-          <div class="alert alert-danger">{{ f.errors|join("; ") }}</div>
-        {% endif %}
-
-        {% if f.description %}
-          <span class="help-block">* <i class="text-info">{{ f.description }}</i></span>
-        {% endif %}
-      </div>
-      {% if not __read_only__ and f.create_url %}
-        <a href="{{ f.create_url }}" data-role="new-related-obj" data-target="{{ f.name }}" class="btn btn-primary">{{ _("create") }}</a>
-      {% endif %}
-    </div>
-  {% endfor %}
-{% endmacro %}
-
-{% macro create() %}
+{% macro create() -%}
   <button name="__builtin_action__" type="submit" class="btn btn-default">{{ _('add another') }}</button>
-{% endmacro %}
+{%- endmacro %}
 
 {% macro render_form_buttons(cancel_url, extra=None, last_step=None, next_step=None) %}
   {% if last_step or next_step %}

@@ -5,10 +5,10 @@ from flask.ext.databrowser.column_spec import ColumnSpec
 class ImageColumnSpec(ColumnSpec):
 
     def __init__(self, col_name, alt="", doc=None, formatter=None,
-                 label=None, css_class=None):
+                 label=None, render_kwargs={}):
         super(ImageColumnSpec, self).__init__(col_name, doc=doc,
                                               formatter=formatter, label=label,
-                                              css_class=css_class)
+                                              render_kwargs=render_kwargs)
         self.alt = alt
 
     @property

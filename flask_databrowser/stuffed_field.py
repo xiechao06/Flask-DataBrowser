@@ -6,12 +6,13 @@ from wtforms import widgets
 
 class StuffedField(object):
     '''
-    this is a field to generate html
+    this is a proxy of BOUND field used to generate html
     '''
-    def __init__(self, col_spec, focus_set):
+    def __init__(self, bound_field, col_spec, focus_set):
         self._col_spec = col_spec
-        self.field = col_spec.field
+        self.field = bound_field
         self._auto_focus = not focus_set and not self._col_spec.disabled
+        self._render_kwargs = col_spec.render_kwargs
 
     def __getattr__(self, item):
         return getattr(self.field, item)
@@ -24,6 +25,14 @@ class StuffedField(object):
         if self.__required__:
             kwargs['required'] = True
         return self.field(**kwargs)
+
+    @property
+    def __auto_focus__(self):
+        return self._auto_focus
+
+    @property
+    def __render_kwargs__(self):
+        return self._render_kwargs
 
     @property
     def __read_only__(self):

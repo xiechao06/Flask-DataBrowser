@@ -621,9 +621,13 @@ class ModelView(object):
         # the standard wtforms.Form, they are ONLY use to generate form
         # in html page
         ret.fieldsets = {}
+        focus_set = False
+        # only stuff bound fields take effects
         for fs_name, fs_col_specs in create_col_specs.items():
-            ret.fieldsets[fs_name] = [ReprField(ret[spec.col_name]) for spec in
-                                      fs_col_specs]
+            for col_spec in fs_col_specs:
+                field, focus_set = self._composed_stuffed_field(
+                    ret[col_spec.col_name], col_spec, focus_set)
+                ret.fieldsets.setdefault(fs_name, []).append(field)
         return ret
 
     def do_update_log(self, obj, action):
@@ -701,14 +705,15 @@ class ModelView(object):
         else:
             id_list = [i for i in id_.split(",") if i]
 
-        return_url = request.args.get('url') or url_for('.' + self.list_view_endpoint)
+        return_url = request.args.get('url') or \
+            url_for('.' + self.list_view_endpoint)
 
         if id_list is None:
             return redirect(return_url)
 
         pre_url = next_url = ""
-        in_batch_mode = False
-        if len(id_list) == 1:
+        in_batch_mode = len(id_list) > 1
+        if not in_batch_mode:
             model = self.get_one(id_list[0])
             self.try_view([model])  # first, we test if we could view
             preprocessed_obj = self.preprocess(model)
@@ -721,7 +726,8 @@ class ModelView(object):
             if form.validate_on_submit():  # ON POST
                 ret = self.update_objs(form, [model])
                 if ret:
-                    if isinstance(ret, werkzeug.wrappers.BaseResponse) and ret.status_code == 302:
+                    if isinstance(ret, werkzeug.wrappers.BaseResponse) and \
+                       ret.status_code == 302:
                         return ret
                     else:
                         return redirect(request.url)
@@ -732,7 +738,6 @@ class ModelView(object):
             help_message = self.get_edit_help(preprocessed_obj)
             actions = all_customized_actions
         else:
-            in_batch_mode = True
             model_list = [self.get_one(id_) for id_ in id_list]
             preprocessed_objs = [self.preprocess(obj) for obj in model_list]
             self.try_view(preprocessed_objs) # first, we test if we could view
@@ -783,12 +788,7 @@ class ModelView(object):
                 grouper_info[col.grouper_input_name] = grouper_2_cols
 
         form = compound_form or form
-        kwargs = {}
-        form_kwargs = self._extra_params.get("form_view", {})
-        for k, v in form_kwargs.items():
-            if isinstance(v, types.FunctionType):
-                v = v(self)
-            kwargs[k] = v
+        kwargs = self._get_extra_params("form_view")
 
         #for f in form:
         #    if isinstance(f.widget, PlaceHolder):
@@ -816,8 +816,7 @@ class ModelView(object):
         if form.is_submitted():
             # alas! something wrong
             resp = make_response(resp, 403)
-            resp.headers["Warning"] = u"&".join([k + u"-" + u"; ".join(v) for k, v in form.errors.items()]).encode(
-                "utf-8")
+            resp.headers["Warning"] = self._compose_warn_msg(form)
         return resp
 
     @property
@@ -834,20 +833,16 @@ class ModelView(object):
         """
         Create form from the model.
         """
-        focus_set = False
-        field_dict = {}
-        for col_spec in col_specs:
-            field, focus_set = self._composed_stuffed_field(col_spec,
-                                                            focus_set)
-            field_dict[col_spec.col_name] = field
+        field_dict = dict((col_spec.col_name, col_spec.field) for col_spec in
+                          col_specs)
         return type(self.model.__name__ + 'Form', (BaseForm, ), field_dict)
 
-    def _composed_stuffed_field(self, col_spec, focus_set):
+    def _composed_stuffed_field(self, bound_field, col_spec, focus_set):
         # why we stuff our own goods in field here? since it's the
         # framework's duty, not the one who implements other backends
 
         # if focus not set, then it is determined by if the field is disabled
-        field = StuffedField(col_spec.field)
+        field = StuffedField(bound_field, col_spec, focus_set)
         return field, field.__auto_focus__
 
 
