@@ -41,7 +41,6 @@ class ModelView(object):
     # 可以重写的属性
     column_formatters = {}
     column_labels = {}
-    column_docs = {}
 
     @property
     def list_columns(self):
@@ -78,9 +77,9 @@ class ModelView(object):
         self.data_browser = None
         self.__list_column_specs = []
         self._normalized_create_col_specs = []
-        self.__normalized_form_columns = []
+        self._edit_col_specs = []
         self._default_list_filters = []
-        self.__create_form__ = self.__edit_form__ = \
+        self.__create_form__ = self._edit_form = \
             self.__batch_edit_form__ = None
         self.page_size = page_size
 
@@ -100,14 +99,29 @@ class ModelView(object):
         return [input_column_spec_from_kolumne(k) for k in
                 self.modell.kolumnes if not k.is_primary_key()]
 
+    @property
+    def edit_columns(self):
+        """
+        get the create columns. override this method to provide columns you
+        want to insert into create form. accepted column types are:
+
+            * basestring - name of the column
+            * InputColumnSpec
+        besides, all columns could be grouped in field sets, so the return
+        value could be an OrderedDict
+
+        :return: a list of kolumnes returned by modell, or an OrderedDict
+        """
+        return [input_column_spec_from_kolumne(k) for k in
+                self.modell.kolumnes if not k.is_primary_key()]
+
+
     def _compose_create_col_specs(self, current_step=None):
         """
-        get all the *NORMALIZED* create columns for model view. which means,
-        if you override this method, you should guarantee that return value are
-        normalized. see ModelView.normalize_create_columns
+        get all the *NORMALIZED* create column specs for model view.
         """
         if not self._normalized_create_col_specs:
-            self._normalized_create_col_specs = \
+            self._normalized_create_col_specs, _ = \
                 self._compose_normalized_col_specs(self.create_columns)
         if current_step is None:
             return self._normalized_create_col_specs
@@ -124,9 +138,9 @@ class ModelView(object):
         normalized. see ModelView.normalize_form_columns
         """
         # only for backward compatiple, feel comfortable to ignore it
-        if not self.__normalized_form_columns:
-            self.__normalized_form_columns = self._compose_normalized_col_specs(self.get_form_columns())
-        return self.__normalized_form_columns
+        if not self._edit_col_specs:
+            self._edit_col_specs = self._compose_normalized_col_specs(self.get_form_columns())
+        return self._edit_col_specs
 
     def _get_form_columns(self, obj):
         return self._compose_normalized_col_specs(self.get_form_columns(obj))
@@ -137,9 +151,6 @@ class ModelView(object):
         except IndexError:
             return '__data_browser__/form.html'
 
-    def get_column_doc(self, col_name):
-        return self.column_docs.get(col_name) or self.modell.get_column_doc(col_name)
-
     def _compose_normalized_col_specs(self, columns):
         """
         this utility function handle the following matters:
@@ -147,10 +158,13 @@ class ModelView(object):
                 whose name is empty string
             * convert all the column of 'basestring' to InputColumn
             * fill the label and doc of each column
-        :return: an OrderedDict whose keys are fieldset's name, whose values
-            are a list InputColumnSpec or PlaceHolderColumnSpec (as input).
+            * if the column is not defined in modell, wipe it
+        :return: 2 OrderedDict, the first's keys are fieldset's name,
+        whose values are a list InputColumnSpec (as input). the second contains
+        the remaining col_specs
         """
-        ret = OrderedDict()
+        normalized_col_specs = OrderedDict()
+        extra_col_specs = OrderedDict()
 
         if isinstance(columns, types.DictType):
             fieldsets = columns
@@ -158,7 +172,7 @@ class ModelView(object):
             fieldsets = {"": columns}
 
         for fieldset_name, columns in fieldsets.items():
-            ret[fieldset_name] = []
+            normalized_col_specs[fieldset_name] = []
             for col in columns:
                 is_str = isinstance(col, basestring)
                 is_input = isinstance(col, InputColumnSpec)
@@ -171,22 +185,15 @@ class ModelView(object):
                         col_spec = col
                         col_spec.kolumne = kol
                     if col_spec.doc is None:
-                        col_spec.doc = self.get_column_doc(col_name)
+                        col_spec.doc = self.modell.get_column_doc(col_name)
                     col_spec.data_browser = self.data_browser
-                    col_spec.label = self._get_label(col_name, col_spec)
-                    ret[fieldset_name].append(col_spec)
-        return ret
-
-    def _get_label(self, name, col_spec):
-        """
-            Label for field name. If it is not specified explicitly,
-            then the views prettify_name method is used to find it.
-        """
-        if col_spec and col_spec.label is not None:
-            return col_spec.label
-        if self.column_labels:
-            return self.column_labels.get(name)
-        return self.prettify_name(name)
+                    normalized_col_specs[fieldset_name].append(col_spec)
+                else:
+                    col_spec = col
+                    if isinstance(col, basestring):
+                        col_spec = self._col_spec_from_str(col)
+                    extra_col_specs[fieldset_name].append(col_spec)
+        return normalized_col_specs, extra_col_specs
 
     @property
     def list_view_url(self):
@@ -240,6 +247,7 @@ class ModelView(object):
 
     @property
     def list_column_specs(self):
+        # TODO return values should be a list of col spec
         if self.__list_column_specs:
             return self.__list_column_specs
 
@@ -247,15 +255,9 @@ class ModelView(object):
         if not list_columns:
             list_columns = [col.name for col in self.modell.columns]
         for col in list_columns:
-            if isinstance(col, basestring):
-                col = self._col_spec_from_str(col)
-            else:
-                assert isinstance(col, ColumnSpec)
-                col.label = self.column_labels.get(col.col_name, col.col_name) if (
-                    col.label is None) else col.label
-
-            self.__list_column_specs.append(col)
-
+            col_spec = self._col_spec_from_str(col) if \
+                isinstance(col, basestring) else col
+            self.__list_column_specs.append(col_spec)
         return self.__list_column_specs
 
     @property
@@ -299,34 +301,19 @@ class ModelView(object):
 
         return render_template(template, **kwargs)
 
-    def prettify_name(self, name):
-        """
-            Prettify pythonic variable name.
-
-            For example, 'hello_world' will be converted to 'Hello World'
-
-            :param name:
-                Name to prettify
-        """
-        return name.replace('_', ' ').title()
-
     def _col_spec_from_str(self, col):
         """
         get column specification from string
         """
-        # we get document from sqlalchemy models
-        doc = self.column_docs.get(col, "")
-        if not doc:
-            doc = self.modell.get_column_doc(col)
-        label = self.column_labels.get(col, col)
+        doc = self.modell.get_column_doc(col)
         if self.modell.primary_key == col:
             formatter = lambda x, obj: self.url_for_object(obj, url=request.url)
             col_spec = LinkColumnSpec(col, doc=doc, anchor=lambda x: x,
                                       formatter=formatter,
-                                      label=label, css_class="control-text")
+                                      css_class="control-text")
         else:
             formatter = self.column_formatters.get(col, lambda x, obj: unicode(x))
-            col_spec = ColumnSpec(col, doc=doc, formatter=formatter, label=label, css_class="control-text")
+            col_spec = ColumnSpec(col, doc=doc, formatter=formatter, css_class="control-text")
         return col_spec
 
     def generate_model_string(self, link):
@@ -518,8 +505,7 @@ class ModelView(object):
         current_step = int(request.args.get('__step__', 0)) if \
             self.create_in_steps else None
 
-        create_col_specs = self._compose_create_col_specs(current_step)
-        form = self._compose_create_form(create_col_specs)
+        form = self._compose_create_form(current_step)
         if form.validate_on_submit():
             model = self.create_model(form)
             if model:
@@ -586,10 +572,11 @@ class ModelView(object):
             }
         return last_step, next_step
 
-    def _compose_create_form(self, create_col_specs):
+    def _compose_create_form(self, current_step):
         """
         create a form for creation using create columns
         """
+        create_col_specs = self._compose_create_col_specs(current_step)
         assert isinstance(create_col_specs, dict)
         if self.__create_form__ is None:
             self.__create_form__ = self.scaffold_form(
@@ -711,20 +698,19 @@ class ModelView(object):
         if id_list is None:
             return redirect(return_url)
 
-        pre_url = next_url = ""
         in_batch_mode = len(id_list) > 1
         if not in_batch_mode:
-            model = self.get_one(id_list[0])
-            self.try_view([model])  # first, we test if we could view
-            preprocessed_obj = self.preprocess(model)
+            record = self.get_one(id_list[0])
+            self.try_view([record])  # first, we test if we could view
+            preprocessed_record = self.preprocess(record)
             try:
-                self.try_edit([preprocessed_obj])
+                self.try_edit([preprocessed_record])
                 read_only = False
             except PermissionDenied:
                 read_only = True
-            form = self.get_edit_form(obj=model)
+            form = self._compose_edit_form(record=record)
             if form.validate_on_submit():  # ON POST
-                ret = self.update_objs(form, [model])
+                ret = self.update_objs(form, [record])
                 if ret:
                     if isinstance(ret, werkzeug.wrappers.BaseResponse) and \
                        ret.status_code == 302:
@@ -732,10 +718,12 @@ class ModelView(object):
                     else:
                         return redirect(request.url)
                 # ON GET
-            compound_form = self.get_compound_edit_form(obj=model, form=form)
-            hint_message = self.edit_hint_message(preprocessed_obj, read_only)
-            all_customized_actions = self._get_customized_actions([preprocessed_obj])
-            help_message = self.get_edit_help(preprocessed_obj)
+            compound_form = self.get_compound_edit_form(obj=record, form=form)
+            hint_message = self.edit_hint_message(preprocessed_record,
+                                                  read_only)
+            all_customized_actions = self._get_customized_actions(
+                [preprocessed_record])
+            help_message = self.get_edit_help(preprocessed_record)
             actions = all_customized_actions
         else:
             model_list = [self.get_one(id_) for id_ in id_list]
@@ -775,7 +763,7 @@ class ModelView(object):
             help_message = self.get_edit_help(preprocessed_objs)
             actions = all_customized_actions
         grouper_info = {}
-        model_columns = self._model_columns(model)
+        model_columns = self._compose_edit_col_specs(model)
 
         for col in model_columns:
             grouper_2_cols = {}
@@ -794,7 +782,7 @@ class ModelView(object):
         #    if isinstance(f.widget, PlaceHolder):
         #        f.widget.set_args(**kwargs)
 
-        form_columns = self.get_form_columns(preprocessed_obj) if len(id_list) == 1 else self.get_batch_form_columns(
+        form_columns = self.get_form_columns(preprocessed_record) if len(id_list) == 1 else self.get_batch_form_columns(
             preprocessed_objs)
         fieldset_list = self._get_fieldsets(form, form_columns)
 
@@ -802,8 +790,6 @@ class ModelView(object):
                            obj=self.preprocess(model) if len(id_list) == 1 else None,
                            form=form,
                            fieldset_list=fieldset_list,
-                           pre_url=pre_url,
-                           next_url=next_url,
                            grouper_info=grouper_info,
                            actions=actions,
                            return_url=return_url,
@@ -845,33 +831,33 @@ class ModelView(object):
         field = StuffedField(bound_field, col_spec, focus_set)
         return field, field.__auto_focus__
 
+    def _compose_edit_col_specs(self, obj):
+        if not self._edit_col_specs:
+            self._edit_col_specs, self._info_col_specs = \
+                self._compose_normalized_col_specs(self.edit_columns)
+        return self._edit_col_specs, self._info_col_specs
+        #form_columns = self._get_form_columns(obj)
+        #if not form_columns:
+            ## if no form columns given, use the model's attribute
+            #form_columns = self.modell.kolumnes
 
-    def _model_columns(self, obj):
-        """
-        select the model columns from __form_columns__
-        """
-        form_columns = self._get_form_columns(obj)
-        if not form_columns:
-            # if no form columns given, use the model's attribute
-            form_columns = self.modell.kolumnes
-
-        if isinstance(form_columns, types.DictType):
-            form_columns = list(itertools.chain(*form_columns.values()))
-        ret = []
-        model_clumns = set([p.key for p in self.modell.properties])
-        for col in form_columns:
-            if isinstance(col, InputColumnSpec):
-                col_name = col.col_name
-                # try_edit will override the field's read_only attribute
-            elif isinstance(col, basestring) and (not '.' in col):
-                col_name = col
-            elif isinstance(col, FileColumnSpec):
-                col_name = col.col_name
-            else:
-                continue
-            if col_name in model_clumns:
-                ret.append(col)
-        return ret
+        #if isinstance(form_columns, types.DictType):
+            #form_columns = list(itertools.chain(*form_columns.values()))
+        #ret = []
+        #model_clumns = set([p.key for p in self.modell.properties])
+        #for col in form_columns:
+            #if isinstance(col, InputColumnSpec):
+                #col_name = col.col_name
+                ## try_edit will override the field's read_only attribute
+            #elif isinstance(col, basestring) and (not '.' in col):
+                #col_name = col
+            #elif isinstance(col, FileColumnSpec):
+                #col_name = col.col_name
+            #else:
+                #continue
+            #if col_name in model_clumns:
+                #ret.append(col)
+        #return ret
 
     def get_create_form(self):
         create_columns = self._compose_create_col_specs()
@@ -906,18 +892,42 @@ class ModelView(object):
             return ret
         return self.__create_form__()
 
-    def get_edit_form(self, obj=None):
-        if self.__edit_form__ is None:
-            self.__edit_form__ = self.scaffold_form(self._model_columns(obj))
-            # if request specify some fields, then we override fields with this value
+    def _compose_edit_form(self, record=None):
+        edit_col_specs, info_col_specs = self._compose_edit_col_specs(record)
+        assert isinstance(edit_col_specs, dict) and \
+            isinstance(info_col_specs, dict)
+        if self._edit_form is None:
+            self._edit_form = self.scaffold_form(
+                itertools.chain(*edit_col_specs.values()))
+        # if request specify some fields, then we override fields with this
+        # value
         for k, v in request.args.items():
             if self.modell.has_kolumne(k):
                 kol = self.modell.get_kolumne(k)
-                if kol.is_relationship(): # relationship
-                    setattr(obj, k, kol.query.get(v))
+                if kol.is_relationship():  # relationship
+                    setattr(record, k, kol.query.get(v))
                 else:
-                    setattr(obj, k, v)
-        ret = self.__edit_form__(obj=obj)
+                    setattr(record, k, v)
+        ret = self._edit_form(obj=record)
+        # compose bound_field sets, note! bound_field sets are our stuffs
+        # other than
+        # the standard wtforms.Form, they are ONLY use to generate form
+        # in html page
+        ret.fieldsets = {}
+        focus_set = False
+        # only stuff bound fields take effects
+        for fs_name, fs_col_specs in edit_col_specs.items():
+            for col_spec in fs_col_specs:
+                bound_field, focus_set = self._composed_stuffed_field(
+                    ret[col_spec.col_name], col_spec, focus_set)
+                ret.fieldsets.setdefault(fs_name, []).append(bound_field)
+        # stuff the info fields
+        for fs_name, fs_col_specs in info_col_specs.items():
+            for col_spec in fs_col_specs:
+                value = operator.attrgetter(col_spec.col_name)(record)
+                field = col_spec.field
+                field.value = value
+                ret.fieldsets.setdefault(fs_name, []).append(field)
         return ret
 
     def _get_fake_form_columns(self, form, form_columns, original_obj):

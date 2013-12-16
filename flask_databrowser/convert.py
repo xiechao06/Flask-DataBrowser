@@ -9,7 +9,7 @@ from flask.ext.databrowser.column_spec import LinkColumnSpec, ImageColumnSpec, P
 class ValueConverter(object):
     """
     a converter from **plain value** (other than sqlalchemy.orm.attributes.InstrumentedAttribute)
-    to widget (we don't need Field here, since we don't need validate the input). 
+    to widget (we don't need Field here, since we don't need validate the input).
     note, since python is a dynamic language, we can't get the return type of
     a property until we get the value of the property, the rule is as following:
     """
@@ -97,7 +97,7 @@ class ValueConverter(object):
                     else:
                         kwargs["class"] = self.css_class
                 return self.widget(self, **kwargs)
-        description = getattr(col_spec, "doc", self.model_view.get_column_doc(col_spec.col_name))
+        description = col_spec.doc
 
         label = self.model_view.column_labels.get(col_spec.col_name, col_spec.col_name) if (
             col_spec.label is None) else col_spec.label

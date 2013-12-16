@@ -79,5 +79,4 @@ class InputColumnSpec(ColumnSpec):
 
 
 def input_column_spec_from_kolumne(k):
-    #TODO use kolumne instead of property
     return InputColumnSpec(k.key, doc=k.doc, kolumne=k)
