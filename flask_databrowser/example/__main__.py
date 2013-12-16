@@ -162,9 +162,12 @@ def main():
             #]
             return ret
 
-        #__batch_form_columns__ = OrderedDict()
-        #__batch_form_columns__["primary"] = ["name", InputColumnSpec("group", read_only=True)]
-        #__batch_form_columns__["secondary"] = ["age", "roll_called"]
+        @property
+        def batch_edit_columns(self):
+            ret = OrderedDict()
+            ret["primary"] = ["name", InputColSpec("group", label=u'用户组')]
+            ret["secondary"] = ["age", "roll_called"]
+            return ret
 
         column_formatters = {
             "create_time": lambda v, model: v.strftime("%Y-%m-%d %H") + u"点",

@@ -24,7 +24,7 @@ from flask.ext.databrowser.col_spec import (LinkColumnSpec, ColSpec,
                                                input_column_spec_from_kolumne)
 from flask.ext.databrowser.convert import ValueConverter
 from flask.ext.databrowser.exceptions import ValidationError
-from flask.ext.databrowser.form import FormProxy, BaseForm
+from flask.ext.databrowser.form import BaseForm
 from flask.ext.databrowser.constants import WEB_SERVICE, WEB_PAGE
 from .stuffed_field import StuffedField
 from flask.ext.databrowser.extra_widgets import Link
@@ -52,7 +52,6 @@ class ModelView(object):
         return []
 
     default_order = None
-    __batch_form_columns__ = []
     __customized_actions__ = []
     __max_col_len__ = 255
     __extra_fields__ = {}
@@ -77,11 +76,12 @@ class ModelView(object):
         self.extra_params = {}
         self.data_browser = None
         self.__list_column_specs = []
-        self._normalized_create_col_specs = []
+        self._create_col_specs = []
         self._edit_col_specs = []
+        self._batch_edit_col_specs = []
         self._default_list_filters = []
-        self.__create_form__ = self._edit_form = \
-            self.__batch_edit_form__ = None
+        self._create_form = self._edit_form = \
+            self._batch_edit_form = None
         self.page_size = page_size
 
     @property
@@ -105,7 +105,7 @@ class ModelView(object):
     @property
     def edit_columns(self):
         """
-        get the create columns. override this method to provide columns you
+        get the edit columns. override this method to provide columns you
         want to insert into create form. accepted column types are:
 
             * basestring - name of the column
@@ -120,18 +120,35 @@ class ModelView(object):
         return [input_column_spec_from_kolumne(k) for k in
                 self.modell.kolumnes if not k.is_primary_key()]
 
+    @property
+    def batch_edit_columns(self):
+        """
+        get the batch edit columns. override this method to provide columns you
+        want to insert into create form. accepted column types are:
+
+            * basestring - name of the column
+            * InputColumnSpec
+        besides, all columns could be grouped in field sets, so the return
+        value could be an OrderedDict
+
+        note!!! don't put primary key here if only you mean to
+
+        :return: a list of kolumnes returned by modell, or an OrderedDict
+        """
+        return [input_column_spec_from_kolumne(k) for k in
+                self.modell.kolumnes if not k.is_primary_key()]
 
     def _compose_create_col_specs(self, current_step=None):
         """
         get all the *NORMALIZED* create column specs for model view.
         """
-        if not self._normalized_create_col_specs:
-            self._normalized_create_col_specs, _ = \
+        if not self._create_col_specs:
+            self._create_col_specs, _ = \
                 self._compose_normalized_col_specs(self.create_columns)
         if current_step is None:
-            return self._normalized_create_col_specs
+            return self._create_col_specs
         else:
-            return dict([self._normalized_create_col_specs.items()
+            return dict([self._create_col_specs.items()
                          [current_step]])
 
     #TODO 重构
@@ -573,8 +590,6 @@ class ModelView(object):
         """
         create a form for creation using create columns
         """
-        create_col_specs = self._compose_create_col_specs(current_step)
-        assert isinstance(create_col_specs, dict)
         default_args = {}
         for k, v in request.args.iterlists():
             if self.modell.has_kolumne(k):
@@ -591,10 +606,12 @@ class ModelView(object):
         if default_args:
             obj = type("_temp", (object, ), default_args)()
 
-        if self.__create_form__ is None:
-            self.__create_form__ = self.scaffold_form(
+        if self._create_form is None:
+            create_col_specs = self._compose_create_col_specs(current_step)
+            assert isinstance(create_col_specs, dict)
+            self._create_form = self.scaffold_form(
                 itertools.chain(*create_col_specs.values()))
-        ret = self.__create_form__(obj=obj)
+        ret = self._create_form(obj=obj)
         # set the default args in form, otherwise the last step of
         # creation won't be finished
         for k, v in default_args.items():
@@ -728,24 +745,12 @@ class ModelView(object):
             records = [self.get_one(id_) for id_ in id_list]
             preprocessed_records = [self.preprocess(record) for record in records]
             self.try_view(preprocessed_records) # first, we test if we could view
-            model = None
-            if request.method == "GET":
-                model = type("_temp", (object,), {})()
-                for prop in self.modell.properties:
-                    attr = prop.key
-                    default_value = getattr(records[0], attr)
-                    if all(getattr(model_,
-                                   attr) == default_value for model_ in
-                           records):
-                        setattr(model, attr, default_value)
             try:
                 self.try_edit(preprocessed_records)
                 read_only = False
             except PermissionDenied:
                 read_only = True
-
-            fake_obj = model if model is not None else request.form
-            form = self.get_batch_edit_form(fake_obj, read_only)
+            form = self._compose_batch_edit_form(records)
             # we must validate batch edit as well
             if form.is_submitted():  # ON POST
                 ret = self.update_objs(form, records)
@@ -754,8 +759,6 @@ class ModelView(object):
                         return ret
                     else:
                         return redirect(request.url)
-            compound_form = self.get_compound_batch_edit_form(fake_obj, form)
-
             # ON GET
             hint_message = self.batch_edit_hint_message(preprocessed_records, read_only)
             all_customized_actions = self._get_customized_actions(preprocessed_records)
@@ -776,14 +779,6 @@ class ModelView(object):
 
         #form = compound_form or form
         kwargs = self._get_extra_params("form_view")
-
-        #for f in form:
-        #    if isinstance(f.widget, PlaceHolder):
-        #        f.widget.set_args(**kwargs)
-
-        #form_columns = self.get_form_columns(preprocessed_record) if len(id_list) == 1 else self.get_batch_form_columns(
-            #preprocessed_records)
-        #fieldset_list = self._get_fieldsets(form, form_columns)
 
         resp = self.render(self.get_edit_template(),
                            form=form,
@@ -833,35 +828,13 @@ class ModelView(object):
             self._edit_col_specs, self._info_col_specs = \
                 self._compose_normalized_col_specs(self.edit_columns)
         return self._edit_col_specs, self._info_col_specs
-        #form_columns = self._get_form_columns(obj)
-        #if not form_columns:
-            ## if no form columns given, use the model's attribute
-            #form_columns = self.modell.kolumnes
-
-        #if isinstance(form_columns, types.DictType):
-            #form_columns = list(itertools.chain(*form_columns.values()))
-        #ret = []
-        #model_clumns = set([p.key for p in self.modell.properties])
-        #for col in form_columns:
-            #if isinstance(col, InputColumnSpec):
-                #col_name = col.col_name
-                ## try_edit will override the field's read_only attribute
-            #elif isinstance(col, basestring) and (not '.' in col):
-                #col_name = col
-            #elif isinstance(col, FileColumnSpec):
-                #col_name = col.col_name
-            #else:
-                #continue
-            #if col_name in model_clumns:
-                #ret.append(col)
-        #return ret
 
     def get_create_form(self):
         create_columns = self._compose_create_col_specs()
-        if self.__create_form__ is None:
+        if self._create_form is None:
             if isinstance(create_columns, types.DictType):
                 create_columns = list(itertools.chain(*create_columns.values()))
-            self.__create_form__ = self.scaffold_form(create_columns)
+            self._create_form = self.scaffold_form(create_columns)
             # if request specify some fields, then use these fields
         default_args = {}
 
@@ -881,19 +854,20 @@ class ModelView(object):
                 if prop.key not in default_args:
                     default_args[prop.key] = None
             obj = type("_temp", (object, ), default_args)()
-            ret = self.__create_form__(obj=obj, **default_args)
+            ret = self._create_form(obj=obj, **default_args)
             # set the default args in form, otherwise the last step of creation won't be finished
             for k, v in default_args.items():
                 if v and hasattr(ret, k) and k not in request.form:
                     getattr(ret, k).data = v
             return ret
-        return self.__create_form__()
+        return self._create_form()
 
     def _compose_edit_form(self, record=None):
-        edit_col_specs, info_col_specs = self._compose_edit_col_specs(record)
-        assert isinstance(edit_col_specs, dict) and \
-            isinstance(info_col_specs, dict)
         if self._edit_form is None:
+            edit_col_specs, info_col_specs = \
+                self._compose_edit_col_specs(record)
+            assert isinstance(edit_col_specs, dict) and \
+                isinstance(info_col_specs, dict)
             self._edit_form = self.scaffold_form(
                 itertools.chain(*edit_col_specs.values()))
         # if request specify some fields, then we override fields with this
@@ -958,7 +932,7 @@ class ModelView(object):
         return ret
 
     def get_compound_batch_edit_form(self, obj, form):
-        batchly_form_columns = self.get_batch_form_columns()
+        batchly_form_columns = self._compose_batch_edit_col_specs()
         create_url_map = self._get_url_map(batchly_form_columns)
         if not batchly_form_columns:
             return FormProxy(form, create_url_map=create_url_map)
@@ -975,25 +949,38 @@ class ModelView(object):
         ret = self._get_fake_form_columns(form, form_columns, obj)
         return FormProxy(form, ret, create_url_map)
 
-    def get_batch_edit_form(self, fake_obj, read_only):
-        if self.__batch_edit_form__ is None:
-            batch_form_columns = self.get_batch_form_columns()
-            if isinstance(batch_form_columns, types.DictType):
-                batch_form_columns = list(itertools.chain(*batch_form_columns.values()))
-            processed_cols = []
-            for col in batch_form_columns:
-                if isinstance(col, InputColumnSpec):
-                    if col.col_name.find(".") == -1:
-                        if read_only:
-                            col.disabled = True
-                        processed_cols.append(col)
-                elif col.find(".") == -1:
-                    if read_only:
-                        processed_cols.append(InputColumnSpec(col, disabled=True))
-                    else:
-                        processed_cols.append(col)
-            self.__batch_edit_form__ = self.scaffold_form(processed_cols)
-        return self.__batch_edit_form__(obj=fake_obj)
+    def _compose_batch_edit_form(self, records):
+        if self._batch_edit_form is None:
+            batch_edit_col_specs, _ = self._compose_batch_edit_col_specs()
+            self._batch_edit_form = self.scaffold_form(
+                itertools.chain(*batch_edit_col_specs.values()))
+        fake_obj = None
+        if request.method == "GET":
+            fake_obj = type("_temp", (object,), {})()
+            for prop in self.modell.properties:
+                attr = prop.key
+                pivot_value = getattr(records[0], attr)
+                if all(getattr(record, attr) == pivot_value for record in
+                       records):
+                    setattr(fake_obj, attr, pivot_value)
+        if fake_obj is None:
+            fake_obj = request.form
+        ret = self._batch_edit_form(obj=fake_obj)
+        # compose bound_field sets, note! bound_field sets are our stuffs
+        # other than
+        # the standard wtforms.Form, they are ONLY use to generate form
+        # in html page
+        ret.fieldsets = OrderedDict()
+        focus_set = False
+        # only stuff bound fields take effects
+        for fs_name, fs_col_specs in batch_edit_col_specs.items():
+            for col_spec in fs_col_specs:
+                bound_field, focus_set = \
+                    self._composed_stuffed_field(fake_obj,
+                                                 ret[col_spec.col_name],
+                                                 col_spec, focus_set)
+                ret.fieldsets.setdefault(fs_name, []).append(bound_field)
+        return ret
 
     def _get_url(self, endpoint, **kwargs):
         if isinstance(self.blueprint, Flask):
@@ -1513,8 +1500,11 @@ class ModelView(object):
     def get_form_columns(self, obj=None):
         return []
 
-    def get_batch_form_columns(self, preprocessed_objs=None):
-        return self.__batch_form_columns__
+    def _compose_batch_edit_col_specs(self, preprocessed_objs=None):
+        if not self._batch_edit_col_specs:
+            self._batch_edit_col_specs = \
+                self._compose_normalized_col_specs(self.batch_edit_columns)
+        return self._batch_edit_col_specs
 
     def get_rows_action_desc(self, models):
         ret = {}
