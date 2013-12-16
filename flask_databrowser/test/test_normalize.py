@@ -5,7 +5,7 @@ from collections import namedtuple, OrderedDict
 from datetime import datetime
 from flask.ext.databrowser.test import basetest
 from flask.ext.databrowser import ModelView
-from flask.ext.databrowser.column_spec import InputColumnSpec, PlaceHolderColumnSpec, TableColumnSpec
+from flask.ext.databrowser.col_spec import InputColumnSpec, PlaceHolderColumnSpec, TableColumnSpec
 
 
 class TestNormalize(basetest.BaseTest):

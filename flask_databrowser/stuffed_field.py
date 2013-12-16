@@ -8,11 +8,15 @@ class StuffedField(object):
     '''
     this is a proxy of BOUND field used to generate html
     '''
-    def __init__(self, bound_field, col_spec, focus_set):
+    def __init__(self, obj, bound_field, col_spec, focus_set):
         self._col_spec = col_spec
         self.field = bound_field
         self._auto_focus = not focus_set and not self._col_spec.disabled
         self._render_kwargs = col_spec.render_kwargs
+        #TODO set flags here
+        # override default widget
+        if hasattr(col_spec, 'override_widget'):
+            self.field.widget = col_spec.override_widget(obj)
 
     def __getattr__(self, item):
         return getattr(self.field, item)

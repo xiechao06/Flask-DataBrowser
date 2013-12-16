@@ -23,7 +23,7 @@ from wtforms_components.widgets import (ColorInput, EmailInput, DateInput,
 from flask.ext.databrowser.kolumne import Kolumne
 from flask.ext.databrowser.sa import sa_utils
 from flask.ext.databrowser import extra_widgets, utils
-from flask.ext.databrowser.column_spec import InputColumnSpec
+from flask.ext.databrowser.col_spec import InputColSpec
 from flask.ext.databrowser.sa.sa_fields import GroupedQuerySelectField, QuerySelectField, QuerySelectMultipleField
 
 
@@ -117,7 +117,7 @@ class SAKolumne(Kolumne):
         return self._property.direction.name
 
     def make_field(self, col_spec):
-        assert isinstance(col_spec, InputColumnSpec)
+        assert isinstance(col_spec, InputColSpec)
         col_spec_kwargs = self._get_col_spec_args(col_spec)
         column_kwargs = self._get_property_specific_args()
         kwargs = self._merge_with_column_args(col_spec_kwargs, column_kwargs)

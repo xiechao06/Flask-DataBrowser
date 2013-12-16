@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-from flask.ext.databrowser.column_spec import ColumnSpec
+from flask.ext.databrowser.col_spec import ColSpec
 
 
-class ListColumnSpec(ColumnSpec):
+class ListColumnSpec(ColSpec):
 
     def __init__(self, col_name, item_col_spec=None, doc=None,
                  formatter=None, label=None,

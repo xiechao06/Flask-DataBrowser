@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
-from flask.ext.databrowser.column_spec import ColumnSpec
+from flask.ext.databrowser.col_spec import ColSpec
 
 
 # we should provide a non-hacker way to hack them in template
-class InputColumnSpec(ColumnSpec):
+class InputColSpec(ColSpec):
 
     def __init__(self, col_name, group_by=None, disabled=False, doc=None,
                  formatter=None, label=None, filter_=None,
@@ -43,7 +43,7 @@ class InputColumnSpec(ColumnSpec):
             discover which keys are accepted
         :type render_kwargs: dict
         """
-        super(InputColumnSpec, self).__init__(col_name, doc=doc,
+        super(InputColSpec, self).__init__(col_name, doc=doc,
                                               formatter=formatter, label=label,
                                               render_kwargs=render_kwargs)
         self.group_by = group_by
@@ -79,4 +79,4 @@ class InputColumnSpec(ColumnSpec):
 
 
 def input_column_spec_from_kolumne(k):
-    return InputColumnSpec(k.key, doc=k.doc, kolumne=k)
+    return InputColSpec(k.key, doc=k.doc, kolumne=k)

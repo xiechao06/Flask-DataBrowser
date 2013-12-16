@@ -1,5 +1,5 @@
 """
-    Useful form fields for use with SQLAlchemy ORM.
+Useful form fields for use with SQLAlchemy ORM.
 """
 import operator
 

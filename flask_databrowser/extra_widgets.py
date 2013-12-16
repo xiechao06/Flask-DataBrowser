@@ -13,7 +13,7 @@ from wtforms import fields, widgets
 from wtforms.widgets import HTMLString, html_params, Select, TextInput
 from wtforms.compat import text_type
 from flask.ext.databrowser.sa.sa_utils import get_primary_key
-from flask.ext.databrowser.column_spec import ColumnSpec
+#from flask.ext.databrowser.column_spec import ColumnSpec
 
 
 class Image(object):
@@ -52,9 +52,10 @@ class PlainText(object):
         if self.max_len:
             if len(field.value) > self.max_len:
                 abbrev = field._value[:self.max_len - 3]
-        return render_template(self.template, value=field.value,
+        return render_template(self.template, value=field._value(),
                                abbrev=abbrev,
                                html_params=html_params(**kwargs))
+
 
 class TableWidget(object):
     def __init__(self, rows, model_view, col_specs=None, sum_fields=None, preprocess=None):
@@ -400,5 +401,25 @@ class PlaceHolder(object):
         else:
             options = None
 
-        return render_template(self.template_fname, field_value=self.field_value, record=self.record, options=options,
+        return render_template(self.template_fname,
+                               field_value=self.field_value, record=self.record, options=options,
                                **self.extra_kwargs)
+
+
+class HtmlSnippet(object):
+
+    def __init__(self, template, obj, render_kwargs):
+        self.template = template
+        self.obj = obj
+        self.render_kwargs = render_kwargs
+
+    def __call__(self, field, **kwargs):
+
+        if 'query_factory' in kwargs:
+            options = kwargs['query_factory'].all()
+        else:
+            options = None
+
+        return render_template(self.template, field_value=field._value(),
+                               obj=self.obj, options=options,
+                               **self.render_kwargs)

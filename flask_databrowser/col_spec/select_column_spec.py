@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-from .column_spec import ColumnSpec
+from .column_spec import ColSpec
 
 
-class SelectColumnSpec(ColumnSpec):
+class SelectColumnSpec(ColSpec):
 
     def __init__(self, col_name, read_only=False, doc=None, formatter=None,
                  label=None, render_kwargs={}, validators=None,

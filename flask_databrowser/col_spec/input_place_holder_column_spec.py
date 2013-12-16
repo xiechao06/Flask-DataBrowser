@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
-from . import InputColumnSpec
+from . import InputColSpec
 
 
-class InputPlaceHolderColumnSpec(InputColumnSpec):
+class InputPlaceHolderColumnSpec(InputColSpec):
     #TODO render_kwargs is enough
     def __init__(self, col_name, template_fname, label=None, doc=None,
                  validators=None, filter_=None, opt_filter=None, kolumne=None,
                  place_holder_kwargs=None):
-        InputColumnSpec.__init__(self, col_name=col_name, doc=doc,
+        InputColSpec.__init__(self, col_name=col_name, doc=doc,
                                  label=label, validators=validators,
                                  filter_=filter_, opt_filter=opt_filter,
                                  kolumne=kolumne)

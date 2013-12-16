@@ -92,8 +92,8 @@
 
 {% macro render_form_fields(form, focus_set=False, current_step=None) %}
   {{ form.hidden_tag() if form.hidden_tag is defined }}
-  {% if form.fieldsets|length == 1 %}
-    {% set fs_name, fs_fields = form.fieldsets.items() %}
+  {% if form.fieldsets|length == 1 and form.fieldsets.has_key('') %}
+    {% set fs_fields = form.fieldsets[''] %}
     <fieldset>
       {% if fs_name %}
         <legend>{% if current_step is not none %}{{ gettext('Step %(step)d', step=current_step + 1) }}
@@ -152,9 +152,9 @@
     {% if field.__as_input__ %}
       {% set input_width_class = 'col-lg-3' %}
     {% elif field.label.text %}
-      {% set input_width_class = 'col-lg-10' %}
+      {% set input_width_class = 'col-lg-3' %}
     {% else %}
-      {% set input_width_class = 'col-lg-12' %}
+      {% set input_width_class = 'col-lg-3' %}
     {% endif %}
   {% endif %}
   <div class="{{ input_width_class }}">

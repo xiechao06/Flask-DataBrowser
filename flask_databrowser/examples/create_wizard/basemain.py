@@ -30,7 +30,7 @@ app.config["CSRF_ENABLED"] = False
 from flask.ext.babel import Babel
 Babel(app)
 
-from flask.ext.databrowser.column_spec import PlaceHolderColumnSpec
+from flask.ext.databrowser.col_spec import PlaceHolderColumnSpec
 
 
 class UserModelView(databrowser.ModelView):

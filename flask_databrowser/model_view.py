@@ -19,8 +19,8 @@ from flask.ext.principal import PermissionDenied
 from flask.ext.sqlalchemy import Pagination
 
 from flask.ext.databrowser import filters
-from flask.ext.databrowser.column_spec import (LinkColumnSpec, ColumnSpec,
-                                               InputColumnSpec, FileColumnSpec,
+from flask.ext.databrowser.col_spec import (LinkColumnSpec, ColSpec,
+                                               InputColSpec, FileColumnSpec,
                                                input_column_spec_from_kolumne)
 from flask.ext.databrowser.convert import ValueConverter
 from flask.ext.databrowser.exceptions import ValidationError
@@ -94,6 +94,8 @@ class ModelView(object):
         besides, all columns could be grouped in field sets, so the return
         value could be an OrderedDict
 
+        note!!! don't put primary key here if only you mean to
+
         :return: a list of kolumnes returned by modell, or an OrderedDict
         """
         return [input_column_spec_from_kolumne(k) for k in
@@ -109,6 +111,8 @@ class ModelView(object):
             * InputColumnSpec
         besides, all columns could be grouped in field sets, so the return
         value could be an OrderedDict
+
+        note!!! don't put primary key here if only you mean to
 
         :return: a list of kolumnes returned by modell, or an OrderedDict
         """
@@ -172,10 +176,9 @@ class ModelView(object):
             fieldsets = {"": columns}
 
         for fieldset_name, columns in fieldsets.items():
-            normalized_col_specs[fieldset_name] = []
             for col in columns:
                 is_str = isinstance(col, basestring)
-                is_input = isinstance(col, InputColumnSpec)
+                is_input = isinstance(col, InputColSpec)
                 col_name = col if is_str else col.col_name
                 if (is_str or is_input) and self.modell.has_kolumne(col_name):
                     kol = self.modell.get_kolumne(col_name)
@@ -187,12 +190,14 @@ class ModelView(object):
                     if col_spec.doc is None:
                         col_spec.doc = self.modell.get_column_doc(col_name)
                     col_spec.data_browser = self.data_browser
-                    normalized_col_specs[fieldset_name].append(col_spec)
+                    normalized_col_specs.setdefault(fieldset_name, []).append(
+                        col_spec)
                 else:
                     col_spec = col
                     if isinstance(col, basestring):
                         col_spec = self._col_spec_from_str(col)
-                    extra_col_specs[fieldset_name].append(col_spec)
+                    extra_col_specs.setdefault(fieldset_name, []).append(
+                        col_spec)
         return normalized_col_specs, extra_col_specs
 
     @property
@@ -306,14 +311,15 @@ class ModelView(object):
         get column specification from string
         """
         doc = self.modell.get_column_doc(col)
-        if self.modell.primary_key == col:
-            formatter = lambda x, obj: self.url_for_object(obj, url=request.url)
-            col_spec = LinkColumnSpec(col, doc=doc, anchor=lambda x: x,
-                                      formatter=formatter,
-                                      css_class="control-text")
-        else:
-            formatter = self.column_formatters.get(col, lambda x, obj: unicode(x))
-            col_spec = ColumnSpec(col, doc=doc, formatter=formatter, css_class="control-text")
+        col_spec = ColSpec(col, doc=doc, css_class="control-text")
+        #if self.modell.primary_key == col:
+            #formatter = lambda x, obj: self.url_for_object(obj, url=request.url)
+            #col_spec = LinkColumnSpec(col, doc=doc, anchor=lambda x: x,
+                                      #formatter=formatter,
+                                      #css_class="control-text")
+        #else:
+            #formatter = self.column_formatters.get(col, lambda x, obj: unicode(x))
+            #col_spec = ColSpec(col, doc=doc, formatter=formatter, css_class="control-text")
         return col_spec
 
     def generate_model_string(self, link):
@@ -491,7 +497,7 @@ class ModelView(object):
         if isinstance(columns, types.DictType):
             for fieldset, cols in columns.items():
                 fieldset_list.append(
-                    (fieldset, [form[col.col_name if isinstance(col, ColumnSpec) else col] for col in cols]))
+                    (fieldset, [form[col.col_name if isinstance(col, ColSpec) else col] for col in cols]))
         else:
             fieldset_list.append(("", form))
         return fieldset_list
@@ -578,10 +584,6 @@ class ModelView(object):
         """
         create_col_specs = self._compose_create_col_specs(current_step)
         assert isinstance(create_col_specs, dict)
-        if self.__create_form__ is None:
-            self.__create_form__ = self.scaffold_form(
-                itertools.chain(*create_col_specs.values()))
-
         default_args = {}
         for k, v in request.args.iterlists():
             if self.modell.has_kolumne(k):
@@ -594,16 +596,19 @@ class ModelView(object):
                         default_args[k] = [q.one(i) for i in v]
                 else:
                     default_args[k] = v[0]
+        obj = None
         if default_args:
             obj = type("_temp", (object, ), default_args)()
-            ret = self.__create_form__(obj=obj, **default_args)
-            # set the default args in form, otherwise the last step of
-            # creation won't be finished
-            for k, v in default_args.items():
-                if v and hasattr(ret, k) and k not in request.form:
-                    ret.k.data = v
-            ret = ret
-        ret = self.__create_form__()
+
+        if self.__create_form__ is None:
+            self.__create_form__ = self.scaffold_form(
+                itertools.chain(*create_col_specs.values()))
+        ret = self.__create_form__(obj=obj)
+        # set the default args in form, otherwise the last step of
+        # creation won't be finished
+        for k, v in default_args.items():
+            if v and hasattr(ret, k) and k not in request.form:
+                getattr(ret, k).data = v
         # compose field sets, note! field sets are our stuffs other than
         # the standard wtforms.Form, they are ONLY use to generate form
         # in html page
@@ -612,8 +617,11 @@ class ModelView(object):
         # only stuff bound fields take effects
         for fs_name, fs_col_specs in create_col_specs.items():
             for col_spec in fs_col_specs:
-                field, focus_set = self._composed_stuffed_field(
-                    ret[col_spec.col_name], col_spec, focus_set)
+                field, focus_set = \
+                    self._composed_stuffed_field(obj,
+                                                 ret[col_spec.col_name],
+                                                 col_spec,
+                                                 focus_set)
                 ret.fieldsets.setdefault(fs_name, []).append(field)
         return ret
 
@@ -708,7 +716,7 @@ class ModelView(object):
                 read_only = False
             except PermissionDenied:
                 read_only = True
-            form = self._compose_edit_form(record=record)
+            form = self._compose_edit_form(record=preprocessed_record)
             if form.validate_on_submit():  # ON POST
                 ret = self.update_objs(form, [record])
                 if ret:
@@ -718,7 +726,7 @@ class ModelView(object):
                     else:
                         return redirect(request.url)
                 # ON GET
-            compound_form = self.get_compound_edit_form(obj=record, form=form)
+            #compound_form = self.get_compound_edit_form(obj=record, form=form)
             hint_message = self.edit_hint_message(preprocessed_record,
                                                   read_only)
             all_customized_actions = self._get_customized_actions(
@@ -763,33 +771,31 @@ class ModelView(object):
             help_message = self.get_edit_help(preprocessed_objs)
             actions = all_customized_actions
         grouper_info = {}
-        model_columns = self._compose_edit_col_specs(model)
+        model_columns, _ = self._compose_edit_col_specs(record)
 
         for col in model_columns:
             grouper_2_cols = {}
             #TODO why many to one?
-            if isinstance(col, InputColumnSpec) and col.group_by and col.kolumne.direction == "MANYTOONE":
+            if isinstance(col, InputColSpec) and col.group_by and col.kolumne.direction == "MANYTOONE":
                 rows = [row for row in col.filter_(col.kolumne.remote_side.query) if col.opt_filter(row)]
                 for row in rows:
                     key = col.group_by.group(row)
                     grouper_2_cols.setdefault(key, []).append(dict(id=row.id, text=unicode(row)))
                 grouper_info[col.grouper_input_name] = grouper_2_cols
 
-        form = compound_form or form
+        #form = compound_form or form
         kwargs = self._get_extra_params("form_view")
 
         #for f in form:
         #    if isinstance(f.widget, PlaceHolder):
         #        f.widget.set_args(**kwargs)
 
-        form_columns = self.get_form_columns(preprocessed_record) if len(id_list) == 1 else self.get_batch_form_columns(
-            preprocessed_objs)
-        fieldset_list = self._get_fieldsets(form, form_columns)
+        #form_columns = self.get_form_columns(preprocessed_record) if len(id_list) == 1 else self.get_batch_form_columns(
+            #preprocessed_objs)
+        #fieldset_list = self._get_fieldsets(form, form_columns)
 
         resp = self.render(self.get_edit_template(),
-                           obj=self.preprocess(model) if len(id_list) == 1 else None,
                            form=form,
-                           fieldset_list=fieldset_list,
                            grouper_info=grouper_info,
                            actions=actions,
                            return_url=return_url,
@@ -823,12 +829,12 @@ class ModelView(object):
                           col_specs)
         return type(self.model.__name__ + 'Form', (BaseForm, ), field_dict)
 
-    def _composed_stuffed_field(self, bound_field, col_spec, focus_set):
+    def _composed_stuffed_field(self, obj, bound_field, col_spec, focus_set):
         # why we stuff our own goods in field here? since it's the
         # framework's duty, not the one who implements other backends
 
         # if focus not set, then it is determined by if the field is disabled
-        field = StuffedField(bound_field, col_spec, focus_set)
+        field = StuffedField(obj, bound_field, col_spec, focus_set)
         return field, field.__auto_focus__
 
     def _compose_edit_col_specs(self, obj):
@@ -915,19 +921,22 @@ class ModelView(object):
         # in html page
         ret.fieldsets = {}
         focus_set = False
-        # only stuff bound fields take effects
-        for fs_name, fs_col_specs in edit_col_specs.items():
-            for col_spec in fs_col_specs:
-                bound_field, focus_set = self._composed_stuffed_field(
-                    ret[col_spec.col_name], col_spec, focus_set)
-                ret.fieldsets.setdefault(fs_name, []).append(bound_field)
         # stuff the info fields
         for fs_name, fs_col_specs in info_col_specs.items():
             for col_spec in fs_col_specs:
                 value = operator.attrgetter(col_spec.col_name)(record)
                 field = col_spec.field
-                field.value = value
-                ret.fieldsets.setdefault(fs_name, []).append(field)
+                bound_field = field.bind(ret, col_spec.col_name)
+                bound_field.process_data(value)
+                ret.fieldsets.setdefault(fs_name, []).append(bound_field)
+        # only stuff bound fields take effects
+        for fs_name, fs_col_specs in edit_col_specs.items():
+            for col_spec in fs_col_specs:
+                bound_field, focus_set = \
+                    self._composed_stuffed_field(record,
+                                                 ret[col_spec.col_name],
+                                                 col_spec, focus_set)
+                ret.fieldsets.setdefault(fs_name, []).append(bound_field)
         return ret
 
     def _get_fake_form_columns(self, form, form_columns, original_obj):
@@ -1015,17 +1024,20 @@ class ModelView(object):
             page, order_by, desc = self._parse_args()
             column_filters = self.parse_filters()
             #TODO 通过配置template的css文件实现
-            kwargs = {"__list_columns__": self.scaffold_list_columns(order_by, desc),
-                      "__filters__": column_filters,
-                      "__actions__": self.scaffold_actions()}
+            kwargs = {
+                "__list_columns__": self.scaffold_list_columns(order_by, desc),
+                "__filters__": column_filters,
+                "__actions__": self.scaffold_actions()
+            }
 
             #TODO 直接使用action对象
             kwargs["__action_2_forbidden_message_formats__"] = dict(
                 (action["name"], action["forbidden_msg_formats"]) for action in
                 kwargs["__actions__"])
-            count, data = self.modell.get_list(order_by, desc, column_filters + self._get_default_list_filters(),
-                                                (page - 1) * self.page_size,
-                                                self.page_size)
+            filters_ = column_filters + self._get_default_list_filters()
+            count, data = self.modell.get_list(order_by, desc, filters_,
+                                               (page - 1) * self.page_size,
+                                               self.page_size)
             #TODO 重构：判断action是否可以执行
             kwargs["__rows_action_desc__"] = self.get_rows_action_desc(data)
             kwargs["__count__"] = count
@@ -1041,7 +1053,8 @@ class ModelView(object):
             kwargs["model_view"] = self
             if desc:
                 kwargs["__desc__"] = desc
-            kwargs["__pagination__"] = Pagination(None, page, self.page_size, count, None)
+            kwargs["__pagination__"] = Pagination(None, page, self.page_size,
+                                                  count, None)
             kwargs["help_message"] = self.get_list_help()
             for k, v in self._extra_params.get("list_view", {}).items():
                 if isinstance(v, types.FunctionType):
@@ -1429,13 +1442,17 @@ class ModelView(object):
         def g():
             for idx, r in enumerate(objs):
                 r = self.preprocess(r)
-                converter = ValueConverter(r, self)
+                #converter = ValueConverter(r, self)
                 pk = self.modell.get_pk_value(r)
                 fields = []
                 for c in self.list_column_specs:
                     raw_value = operator.attrgetter(c.col_name)(r)
-                    formatted_value = converter(raw_value, c)
-                    fields.append(formatted_value)
+                    field = c.field
+                    bound_field = field.bind(None, c.col_name)
+                    bound_field.process_data(raw_value)
+                    fields.append(bound_field)
+                    #formatted_value = converter(raw_value, c)
+                    #fields.append(formatted_value)
 
                 yield dict(pk=pk, fields=fields,
                            css=self.patch_row_css(idx, r) or "",

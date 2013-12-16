@@ -9,10 +9,11 @@ from flask.ext.login import LoginManager
 from flask.ext.principal import Permission, RoleNeed
 from flask.ext.databrowser import filters
 from collections import OrderedDict
-from flask.ext.databrowser.column_spec import FileColumnSpec, InputPlaceHolderColumnSpec
+from flask.ext.databrowser.col_spec import FileColumnSpec, InputHtmlSnippetColSpec
 from flask.ext.databrowser.grouper import SAPropertyGrouper
 from flask.ext.databrowser.sa import SAModell
-from flask.ext.databrowser.column_spec import ImageColumnSpec, TableColumnSpec, PlaceHolderColumnSpec, InputColumnSpec
+from flask.ext.databrowser.col_spec import (ImageColumnSpec, TableColumnSpec,
+    PlaceHolderColumnSpec, InputColSpec, HtmlSnippetColSpec)
 
 admin_permission = Permission(RoleNeed("Admin"))
 
@@ -105,46 +106,59 @@ def main():
 
         @property
         def list_columns(self):
-            return ["id", "name", "group", "password", "roll_called", "group.name", "create_time",
-                            ImageColumnSpec("avatar", alt=u"头像",
-                                            formatter=lambda v,
-                                                             model: "http://farm9.staticflickr"
-                                                                    ".com/8522/8478415115_152c6f5e55_m.jpg",
-                                            doc=u"头像，^_^！"), "good"]
+            return ["id", "name", "group", "password", "roll_called", "group.name",
+                    "create_time", "good"]
+            #return ["id", "name", "group", "password", "roll_called", "group.name",
+                    #"create_time",
+                    #ImageColumnSpec("avatar", alt=u"头像",
+                                    #formatter=lambda v,
+                                    #model: "http://farm9.staticflickr"
+                                    #".com/8522/8478415115_152c6f5e55_m.jpg",
+                                    #doc=u"头像，^_^！"), "good"]
         @property
         def create_columns(self):
             ret = OrderedDict()
             ret["primary"] = ["name", "group", "password"]
             ret["secondary"] = [
-                InputPlaceHolderColumnSpec("age", template_fname="/accounts/age-snippet.html"),
+                InputHtmlSnippetColSpec("age", template="/accounts/age-snippet.html"),
                 "roll_called", "birthday", "create_time", "car_list"]
             return ret
 
-        def get_form_columns(self, obj=None):
+        @property
+        def edit_columns(self, obj=None):
             ret = OrderedDict()
-            ret[u"主要的"] = ["id", InputColumnSpec("name", disabled=True),
-                           PlaceHolderColumnSpec("group", template_fname="/accounts/group-snippet.html",
-                                                 render_kwargs={'form_width_class': "col-lg-3"})
-                , "password",
-                                        PlaceHolderColumnSpec("foo", template_fname="/accounts/foo-snippet.html")]
-            ret[u"次要的"] = ["roll_called", "good",
-                                        PlaceHolderColumnSpec("age", template_fname="/accounts/age-snippet.html"), "create_time",
-                                        ImageColumnSpec("avatar", alt=u"头像",
-                                                        formatter=lambda v,
-                                                                         model: "http://farm9.staticflickr"
-                                                                                ".com/8522/8478415115_152c6f5e55_m.jpg",
-                                                        doc=u"头像， ^_^!")]
-            ret[u"额外的"] = [
-                TableColumnSpec("dogs", css_class="table table-striped table-hover table-condensed table-bordered"),
-                InputColumnSpec("car_list", css_class="alert alert-info", group_by=lambda x: x.model[0],
-                                disabled=False),
-                # "car_list"
+            ret[u'主要的'] = [
+                'pic_url',
+                HtmlSnippetColSpec('group',
+                                   template='/accounts/group-snippet.html',
+                                   render_kwargs={
+                                       'form_width_class': "col-lg-3"}),
+                'group.name',
+                'password',
             ]
+            #ret[u"主要的"] = ["id", InputColumnSpec("name", disabled=True),
+                           #PlaceHolderColumnSpec("group", template_fname="/accounts/group-snippet.html",
+                                                 #render_kwargs={'form_width_class': "col-lg-3"})
+                #, "password",
+                                        #PlaceHolderColumnSpec("foo", template_fname="/accounts/foo-snippet.html")]
+            #ret[u"次要的"] = ["roll_called", "good",
+                                        #PlaceHolderColumnSpec("age", template_fname="/accounts/age-snippet.html"), "create_time",
+                                        #ImageColumnSpec("avatar", alt=u"头像",
+                                                        #formatter=lambda v,
+                                                                         #model: "http://farm9.staticflickr"
+                                                                                #".com/8522/8478415115_152c6f5e55_m.jpg",
+                                                        #doc=u"头像， ^_^!")]
+            #ret[u"额外的"] = [
+                #TableColumnSpec("dogs", css_class="table table-striped table-hover table-condensed table-bordered"),
+                #InputColumnSpec("car_list", css_class="alert alert-info", group_by=lambda x: x.model[0],
+                                #disabled=False),
+                ## "car_list"
+            #]
 
-            ret[u"头像"] = [
-                ImageColumnSpec("pic_url", label=u"头像"),
-                FileColumnSpec("pic_path", label=u"上传")
-            ]
+            #ret[u"头像"] = [
+                #ImageColumnSpec("pic_url", label=u"头像"),
+                #FileColumnSpec("pic_path", label=u"上传")
+            #]
             return ret
 
         #__batch_form_columns__ = OrderedDict()
