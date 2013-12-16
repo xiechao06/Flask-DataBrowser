@@ -27,6 +27,7 @@ from flask.ext.databrowser.exceptions import ValidationError
 from flask.ext.databrowser.form import FormProxy, BaseForm
 from flask.ext.databrowser.constants import WEB_SERVICE, WEB_PAGE
 from .stuffed_field import StuffedField
+from flask.ext.databrowser.extra_widgets import Link
 
 
 class ModelView(object):
@@ -310,17 +311,7 @@ class ModelView(object):
         """
         get column specification from string
         """
-        doc = self.modell.get_column_doc(col)
-        col_spec = ColSpec(col, doc=doc, css_class="control-text")
-        #if self.modell.primary_key == col:
-            #formatter = lambda x, obj: self.url_for_object(obj, url=request.url)
-            #col_spec = LinkColumnSpec(col, doc=doc, anchor=lambda x: x,
-                                      #formatter=formatter,
-                                      #css_class="control-text")
-        #else:
-            #formatter = self.column_formatters.get(col, lambda x, obj: unicode(x))
-            #col_spec = ColSpec(col, doc=doc, formatter=formatter, css_class="control-text")
-        return col_spec
+        return ColSpec(col, doc=self.modell.get_column_doc(col))
 
     def generate_model_string(self, link):
         return re.sub(r"([A-Z])+", lambda m: link + m.group(0).lower(),
@@ -612,7 +603,7 @@ class ModelView(object):
         # compose field sets, note! field sets are our stuffs other than
         # the standard wtforms.Form, they are ONLY use to generate form
         # in html page
-        ret.fieldsets = {}
+        ret.fieldsets = OrderedDict()
         focus_set = False
         # only stuff bound fields take effects
         for fs_name, fs_col_specs in create_col_specs.items():
@@ -734,21 +725,21 @@ class ModelView(object):
             help_message = self.get_edit_help(preprocessed_record)
             actions = all_customized_actions
         else:
-            model_list = [self.get_one(id_) for id_ in id_list]
-            preprocessed_objs = [self.preprocess(obj) for obj in model_list]
-            self.try_view(preprocessed_objs) # first, we test if we could view
+            records = [self.get_one(id_) for id_ in id_list]
+            preprocessed_records = [self.preprocess(record) for record in records]
+            self.try_view(preprocessed_records) # first, we test if we could view
             model = None
             if request.method == "GET":
                 model = type("_temp", (object,), {})()
                 for prop in self.modell.properties:
                     attr = prop.key
-                    default_value = getattr(model_list[0], attr)
+                    default_value = getattr(records[0], attr)
                     if all(getattr(model_,
                                    attr) == default_value for model_ in
-                           model_list):
+                           records):
                         setattr(model, attr, default_value)
             try:
-                self.try_edit(preprocessed_objs)
+                self.try_edit(preprocessed_records)
                 read_only = False
             except PermissionDenied:
                 read_only = True
@@ -757,7 +748,7 @@ class ModelView(object):
             form = self.get_batch_edit_form(fake_obj, read_only)
             # we must validate batch edit as well
             if form.is_submitted():  # ON POST
-                ret = self.update_objs(form, model_list)
+                ret = self.update_objs(form, records)
                 if ret:
                     if isinstance(ret, werkzeug.wrappers.BaseResponse) and ret.status_code == 302:
                         return ret
@@ -766,9 +757,9 @@ class ModelView(object):
             compound_form = self.get_compound_batch_edit_form(fake_obj, form)
 
             # ON GET
-            hint_message = self.batch_edit_hint_message(preprocessed_objs, read_only)
-            all_customized_actions = self._get_customized_actions(preprocessed_objs)
-            help_message = self.get_edit_help(preprocessed_objs)
+            hint_message = self.batch_edit_hint_message(preprocessed_records, read_only)
+            all_customized_actions = self._get_customized_actions(preprocessed_records)
+            help_message = self.get_edit_help(preprocessed_records)
             actions = all_customized_actions
         grouper_info = {}
         model_columns, _ = self._compose_edit_col_specs(record)
@@ -791,7 +782,7 @@ class ModelView(object):
         #        f.widget.set_args(**kwargs)
 
         #form_columns = self.get_form_columns(preprocessed_record) if len(id_list) == 1 else self.get_batch_form_columns(
-            #preprocessed_objs)
+            #preprocessed_records)
         #fieldset_list = self._get_fieldsets(form, form_columns)
 
         resp = self.render(self.get_edit_template(),
@@ -919,16 +910,8 @@ class ModelView(object):
         # other than
         # the standard wtforms.Form, they are ONLY use to generate form
         # in html page
-        ret.fieldsets = {}
+        ret.fieldsets = OrderedDict()
         focus_set = False
-        # stuff the info fields
-        for fs_name, fs_col_specs in info_col_specs.items():
-            for col_spec in fs_col_specs:
-                value = operator.attrgetter(col_spec.col_name)(record)
-                field = col_spec.field
-                bound_field = field.bind(ret, col_spec.col_name)
-                bound_field.process_data(value)
-                ret.fieldsets.setdefault(fs_name, []).append(bound_field)
         # only stuff bound fields take effects
         for fs_name, fs_col_specs in edit_col_specs.items():
             for col_spec in fs_col_specs:
@@ -937,7 +920,21 @@ class ModelView(object):
                                                  ret[col_spec.col_name],
                                                  col_spec, focus_set)
                 ret.fieldsets.setdefault(fs_name, []).append(bound_field)
+        # stuff the info fields
+        for fs_name, fs_col_specs in info_col_specs.items():
+            for col_spec in fs_col_specs:
+                bound_field = self._compose_pseudo_field(ret, record, col_spec)
+                ret.fieldsets.setdefault(fs_name, []).append(bound_field)
         return ret
+
+    def _compose_pseudo_field(self, form, record, col_spec):
+        value = operator.attrgetter(col_spec.col_name)(record)
+        field = col_spec.field
+        bound_field = field.bind(form, col_spec.col_name)
+        bound_field.process_data(value)
+        if hasattr(col_spec, 'override_widget'):
+            bound_field.widget = col_spec.override_widget(record)
+        return bound_field
 
     def _get_fake_form_columns(self, form, form_columns, original_obj):
         processed_obj = self.preprocess(original_obj)
@@ -1450,9 +1447,11 @@ class ModelView(object):
                     field = c.field
                     bound_field = field.bind(None, c.col_name)
                     bound_field.process_data(raw_value)
+                    # override widget if c is primary key
+                    if self.modell.primary_key == c.col_name:
+                        href = self.url_for_object(r, url=request.url)
+                        bound_field.widget = Link(anchor=raw_value, href=href)
                     fields.append(bound_field)
-                    #formatted_value = converter(raw_value, c)
-                    #fields.append(formatted_value)
 
                 yield dict(pk=pk, fields=fields,
                            css=self.patch_row_css(idx, r) or "",

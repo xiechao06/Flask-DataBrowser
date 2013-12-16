@@ -127,27 +127,28 @@ def main():
         @property
         def edit_columns(self, obj=None):
             ret = OrderedDict()
-            ret[u'主要的'] = [
-                'pic_url',
-                HtmlSnippetColSpec('group',
-                                   template='/accounts/group-snippet.html',
+            ret[u"主要的"] = [
+                InputColSpec("id", disabled=True),
+                InputColSpec("name", disabled=True),
+                HtmlSnippetColSpec("group",
+                                   template="/accounts/group-snippet.html",
                                    render_kwargs={
                                        'form_width_class': "col-lg-3"}),
-                'group.name',
-                'password',
+                "password",
+                HtmlSnippetColSpec("foo",
+                                   template="/accounts/foo-snippet.html")]
+            ret[u"次要的"] = [
+                "roll_called",
+                "good",
+                HtmlSnippetColSpec("age",
+                                   template="/accounts/age-snippet.html"),
+                "create_time",
+                #ImageColumnSpec("avatar", alt=u"头像",
+                #formatter=lambda v,
+                #model: "http://farm9.staticflickr"
+                #".com/8522/8478415115_152c6f5e55_m.jpg",
+                #doc=u"头像， ^_^!")
             ]
-            #ret[u"主要的"] = ["id", InputColumnSpec("name", disabled=True),
-                           #PlaceHolderColumnSpec("group", template_fname="/accounts/group-snippet.html",
-                                                 #render_kwargs={'form_width_class': "col-lg-3"})
-                #, "password",
-                                        #PlaceHolderColumnSpec("foo", template_fname="/accounts/foo-snippet.html")]
-            #ret[u"次要的"] = ["roll_called", "good",
-                                        #PlaceHolderColumnSpec("age", template_fname="/accounts/age-snippet.html"), "create_time",
-                                        #ImageColumnSpec("avatar", alt=u"头像",
-                                                        #formatter=lambda v,
-                                                                         #model: "http://farm9.staticflickr"
-                                                                                #".com/8522/8478415115_152c6f5e55_m.jpg",
-                                                        #doc=u"头像， ^_^!")]
             #ret[u"额外的"] = [
                 #TableColumnSpec("dogs", css_class="table table-striped table-hover table-condensed table-bordered"),
                 #InputColumnSpec("car_list", css_class="alert alert-info", group_by=lambda x: x.model[0],
