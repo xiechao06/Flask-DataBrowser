@@ -14,6 +14,7 @@ from flask.ext.databrowser.grouper import SAPropertyGrouper
 from flask.ext.databrowser.sa import SAModell
 from flask.ext.databrowser.col_spec import (ImageColumnSpec, TableColumnSpec,
     PlaceHolderColumnSpec, InputColSpec, HtmlSnippetColSpec)
+from flask.ext.databrowser.action import BaseAction
 
 admin_permission = Permission(RoleNeed("Admin"))
 
@@ -209,44 +210,43 @@ def main():
         #return [filters.NotEqualTo("name", value=u"Type")]
 
 
-        from flask.ext.databrowser.action import BaseAction
-
-        class RollCall(BaseAction):
-
-            def op(self, model):
-                model.roll_call()
-
-            def test_enabled(self, model):
-                if model.roll_called:
-                    return -1
-                return 0
-
-                #def try_(self):
-                #roll_call_perm.test()
-
-        class MyDeleteAction(DeleteAction):
-
-            def test_enabled(self, model):
-                if model.name == "Spock":
-                    return -3
-                elif model.name == "Tyde":
-                    return -2
-                return 0
-
-            def get_forbidden_msg_formats(self):
-                return {-3: "[%s]是我的偶像, 不要删除他们",
-                        -2: "[%s]是好狗，不要伤害他们"}
 
         def patch_row_attr(self, idx, row):
             if row.name == "Tyde":
                 return {"title": u"测试"}
 
-        class _ReadOnlyAction(RedirectAction):
-
-            def op_upon_list(self, model, model_view):
-                return redirect("http://www.u148.com")
-
         def get_actions(self, processed_objs=None):
+            class MyDeleteAction(DeleteAction):
+
+                def test_enabled(self, model):
+                    if model.name == "Spock":
+                        return -3
+                    elif model.name == "Tyde":
+                        return -2
+                    return 0
+
+                def get_forbidden_msg_formats(self):
+                    return {-3: "[%s]是我的偶像, 不要删除他们",
+                            -2: "[%s]是好狗，不要伤害他们"}
+
+            class RollCall(BaseAction):
+
+                def op(self, model):
+                    model.roll_call()
+
+                def test_enabled(self, model):
+                    if model.roll_called:
+                        return -1
+                    return 0
+
+                    #def try_(self):
+                    #roll_call_perm.test()
+
+            class _ReadOnlyAction(RedirectAction):
+
+                def op_upon_list(self, model, model_view):
+                    return redirect("http://www.u148.com")
+
             return [
                 MyDeleteAction(u"删除", None, data_icon="fa fa-times"),
                 RollCall(u"点名", warn_msg=u"点名后就是弱智！"), RollCall(u"点名", warn_msg=u"点名后就是弱智！"),
