@@ -1358,7 +1358,6 @@ class ModelView(object):
         """
         shadow_column_filters = copy.copy(self._get_list_filters())
         #如果不用copy的话，会修改原来的filter
-
         op_id_2_filter = dict(
             (fltr.op.id, fltr) for fltr in shadow_column_filters)
         # initialize filter's value with default value

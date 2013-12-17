@@ -21,12 +21,15 @@ class BaseFilter(TemplateParam):
     multiple = False
 
     def __init__(self, col_name, name="", options=None, opt_formatter=None,
-                 value=None, display_col_name=None, hidden=False, default_value=None):
+                 label=None, hidden=False,
+                 default_value=None):
         # TODO datetime unsupported
-        self.op = namedtuple("op", ["name", "id"])(name, col_name + self.__notation__)
+        self.op = namedtuple("op",
+                             ["name", "id"])(name,
+                                             col_name + self.__notation__)
         self.col_name = col_name
-        self.__display_col_name = display_col_name
-        self.value = value
+        self.label = label
+        self.value = None
         self.model_view = None
         self.__options = options or []
         self.opt_formatter = opt_formatter
@@ -40,10 +43,6 @@ class BaseFilter(TemplateParam):
         return self.model_view.modell.model
 
     @property
-    def label(self):
-        return self.__display_col_name or self.model_view.__column_labels__.get(self.col_name, self.col_name)
-
-    @property
     @_raised_when_model_unset
     def data_type(self):
         return 'numeric'
@@ -51,7 +50,8 @@ class BaseFilter(TemplateParam):
     @property
     @_raised_when_model_unset
     def input_type(self):
-        """ 用tuple 是因为有可能返回 类似于(number, number)的双控件
+        """
+        用tuple 是因为有可能返回 类似于(number, number)的双控件
         """
         if self.options:
             return "select",
@@ -72,6 +72,7 @@ class BaseFilter(TemplateParam):
 
     @cached_property
     def attr(self):
+        # TODO no sa
         attrs = self.col_name.split(".")
         last_join_model = self.model
         for rel in attrs[:-1]:
@@ -79,8 +80,10 @@ class BaseFilter(TemplateParam):
         attr = getattr(last_join_model, attrs[-1])
         return attr
 
+    # TODO seemed no need any more
     @cached_property
     def joined_tables(self):
+        # TODO no sa
         ret = []
         attrs = self.col_name.split(".")
         last_join_model = self.model
@@ -125,6 +128,7 @@ class BaseFilter(TemplateParam):
         else:
             return self.value not in (None, "") and self.value != (self.options and self.options[0][0])
 
+    # TODO it seemd that it is no need any more
     def set_sa_criterion(self, q):
         """
         set the query filter/join criterions
@@ -143,8 +147,8 @@ class BaseFilter(TemplateParam):
         set the query filter/join criterions
         """
         # NOTE! we don't join table here
+        # TODO no sa
         if hasattr(self.attr.property, 'direction'):
-            # translate the relation
             filter_criterion = self.__operator__(self.attr.property.local_remote_pairs[0][0], self.value)
         else:
             filter_criterion = self.__operator__(self.attr, self.value)
@@ -190,7 +194,7 @@ class Contains(BaseFilter):
 class Between(BaseFilter):
     def __init__(self, col_name, name="", sep="--", default_value=None, display_col_name=None):
         super(Between, self).__init__(col_name=col_name, name=name, default_value=default_value,
-                                      display_col_name=display_col_name)
+                                      label=display_col_name)
         self.sep = sep
 
     def __operator__(self, attr, value_list):
@@ -225,7 +229,7 @@ class In_(BaseFilter):
 class Only(BaseFilter):
     def __init__(self, col_name, display_col_name, test, notation, default_value=False):
         self.__notation__ = notation
-        super(Only, self).__init__(col_name=col_name, default_value=default_value, display_col_name=display_col_name)
+        super(Only, self).__init__(col_name=col_name, default_value=default_value, label=display_col_name)
         self.test = test
         self._value = None
 
