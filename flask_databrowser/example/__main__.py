@@ -41,7 +41,7 @@ def main():
 
 
     from flask.ext import databrowser
-    from flask.ext.databrowser.action import DeleteAction, DirectAction
+    from flask.ext.databrowser.action import DeleteAction, RedirectAction
 
     from models import User, Car
 
@@ -130,10 +130,11 @@ def main():
             ret[u"主要的"] = [
                 InputColSpec("id", disabled=True),
                 InputColSpec("name", disabled=True),
-                HtmlSnippetColSpec("group",
-                                   template="/accounts/group-snippet.html",
-                                   render_kwargs={
-                                       'form_width_class': "col-lg-3"}),
+                'group',
+                #HtmlSnippetColSpec("group",
+                                   #template="/accounts/group-snippet.html",
+                                   #render_kwargs={
+                                       #'form_width_class': "col-lg-3"}),
                 "password",
                 HtmlSnippetColSpec("foo",
                                    template="/accounts/foo-snippet.html")]
@@ -249,7 +250,7 @@ def main():
             if row.name == "Tyde":
                 return {"title": u"测试"}
 
-        class _ReadOnlyAction(DirectAction):
+        class _ReadOnlyAction(RedirectAction):
 
             def op_upon_list(self, model, model_view):
                 return redirect("http://www.u148.com")

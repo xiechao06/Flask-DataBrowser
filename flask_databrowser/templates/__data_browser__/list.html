@@ -206,7 +206,7 @@
   {% if __can_create__ %}
       <a id="create-btn" class="btn btn-success" href="{{ "?url=".join([__object_url__, request.url|urlencode]) }}">
         <span class="fa fa-plus"></span>
-        {{ _("create") + ' ' + model_view._model_name }}
+        {{ _("create") + ' ' + model_view.modell.name }}
       </a>
     {% endif %}
     {% if help_message %}

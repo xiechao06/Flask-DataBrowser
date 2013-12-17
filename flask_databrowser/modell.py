@@ -23,6 +23,9 @@ class Modell(object):
             * one()
             refer to `flask.ext.databrowser.Backend.get_list`_
 
+        NOTE!!! there's an implicit requirment: if the objects returned from
+        these aforementioned methods are modified and after commit, the
+        alternations will be persisted
         """
         raise NotImplementedError
 
@@ -85,4 +88,11 @@ class Modell(object):
         raise NotImplementedError
 
     def has_kolumne(self, col_name):
+        raise NotImplementedError
+
+    def new_model(self):
+        '''
+        NOTE!!! there's an implicit requirment: if the object returned are
+        modified and after commit, the alternations will be persisted
+        '''
         raise NotImplementedError

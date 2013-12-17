@@ -1,4 +1,5 @@
 # -*- coding: UTF-8 -*-
+import os
 import copy
 import itertools
 import json
@@ -13,15 +14,15 @@ import werkzeug
 from werkzeug.utils import secure_filename
 
 from flask import (render_template, flash, request, url_for, redirect, Flask,
-                   make_response, jsonify)
+                   make_response, jsonify, abort)
 from flask.ext.babel import _
 from flask.ext.principal import PermissionDenied
 from flask.ext.sqlalchemy import Pagination
 
 from flask.ext.databrowser import filters
 from flask.ext.databrowser.col_spec import (LinkColumnSpec, ColSpec,
-                                               InputColSpec, FileColumnSpec,
-                                               input_column_spec_from_kolumne)
+                                            InputColSpec, FileColumnSpec,
+                                            input_column_spec_from_kolumne)
 from flask.ext.databrowser.convert import ValueConverter
 from flask.ext.databrowser.exceptions import ValidationError
 from flask.ext.databrowser.form import BaseForm
@@ -71,7 +72,6 @@ class ModelView(object):
 
     def __init__(self, modell, page_size=16):
         self.modell = modell
-        self.model = self.modell.model
         self.blueprint = None
         self.extra_params = {}
         self.data_browser = None
@@ -143,13 +143,17 @@ class ModelView(object):
         get all the *NORMALIZED* create column specs for model view.
         """
         if not self._create_col_specs:
-            self._create_col_specs, _ = \
-                self._compose_normalized_col_specs(self.create_columns)
+            self._create_col_specs = \
+                self._compose_normalized_col_specs(self.create_columns)[0]
         if current_step is None:
             return self._create_col_specs
         else:
             return dict([self._create_col_specs.items()
                          [current_step]])
+
+    @property
+    def _config(self):
+        return self.data_browser.app.config
 
     #TODO 重构
     @property
@@ -266,7 +270,7 @@ class ModelView(object):
     @property
     def object_view_url(self):
         return "/" + re.sub(r"([A-Z]+)", lambda m: "-" + m.groups()[0].lower(),
-                            self.model.__name__).lstrip("-")
+                            self.modell.name).lstrip("-")
 
     @property
     def list_column_specs(self):
@@ -286,7 +290,7 @@ class ModelView(object):
     @property
     def object_view_endpoint(self):
         return re.sub(r"([A-Z]+)", lambda m: "_" + m.groups()[0].lower(),
-                      self.model.__name__).lstrip("_")
+                      self.modell.name).lstrip("_")
 
     def before_request_hook(self):
         pass
@@ -332,10 +336,11 @@ class ModelView(object):
 
     def generate_model_string(self, link):
         return re.sub(r"([A-Z])+", lambda m: link + m.group(0).lower(),
-                      self.model.__name__).lstrip(link) + link + "list"
+                      self.modell.name).lstrip(link) + link + "list"
 
     def get_one(self, id_):
-        return self.model.query.get_or_404(id_)
+        return self.modell.query.get(id_) or abort(404)
+
 
     def object_view(self, id_=None):
         if id_:
@@ -373,7 +378,7 @@ class ModelView(object):
             raise
 
     def populate_obj(self, form):
-        model = self.model()
+        model = self.modell.new_model()
         form.populate_obj(model)
         return model
 
@@ -397,11 +402,11 @@ class ModelView(object):
 
     def update_objs(self, form, objs):
         """
-            Update objs from form.
-            :param form:
-                Form instance
-            :param objs:
-                a list of Model instance
+        Update objs from form.
+        :param form:
+            Form instance
+        :param objs:
+            a list of Model instance
         """
 
         action_name = request.form.get("__action__")
@@ -414,11 +419,12 @@ class ModelView(object):
                     for obj in processed_objs:
                         ret_code = action.test_enabled(obj)
                         if ret_code != 0:
-                            flash(_(u"can't apply %(action)s due to %(reason)s",
-                                    action=action.name,
-                                    reason=action.get_forbidden_msg_formats()[
-                                               ret_code] % unicode(obj)),
-                                  'error')
+                            flash(
+                                _(u"can't apply %(action)s due to %(reason)s",
+                                  action=action.name,
+                                  reason=action.get_forbidden_msg_formats()[
+                                      ret_code] % unicode(obj)),
+                                'error')
                             return False
                     try:
                         ret = action.op_upon_list(processed_objs, self)
@@ -427,27 +433,33 @@ class ModelView(object):
                             return False
 
                         self.modell.commit()
-                        if isinstance(ret, werkzeug.wrappers.BaseResponse) and ret.status_code == 302:
-                            if not action.direct:
-                                flash(action.success_message(processed_objs), 'success')
+                        if not action.readonly:
+                            flash(action.success_message(processed_objs),
+                                  'success')
+                        if isinstance(ret, werkzeug.wrappers.BaseResponse) \
+                           and ret.status_code == 302:
                             return ret
-                        if not action.direct:
-                            flash(action.success_message(processed_objs), 'success')
                         return True
                     except Exception, ex:
-                        flash(
-                            _('Failed to update %(model_name)s %(objs)s due to %(error)s', model_name=self._model_name,
-                              objs=",".join(unicode(obj) for obj in processed_objs), error=unicode(ex)), 'error')
+                        msg = ('Failed to update %(model_name)s %(objs)s due '
+                               'to %(error)s')
+                        msg = _(msg,
+                                model_name=self.modell.name,
+                                objs=",".join(unicode(obj) for obj in
+                                              processed_objs),
+                                error=unicode(ex))
+                        flash(msg, 'error')
                         self.modell.rollback()
                         raise
             raise ValidationError(
                 _('invalid action %(action)s', action=action_name))
-            # normal modify
+        # normal update
         try:
             self.try_edit(processed_objs)
             # compute the field should be holded
-            holded_fields = set(name[len("hold-value-"):] for name, field in request.form.iteritems() if
-                                name.startswith("hold-value-"))
+            untouched_fields = set(name[len("hold-value-"):] for name, field in
+                                   request.form.iteritems() if
+                                   name.startswith("hold-value-"))
             for obj in objs:
                 for name, field in form._fields.iteritems():
                     from wtforms.fields import FileField
@@ -456,27 +468,27 @@ class ModelView(object):
                         file_ = request.files[field.name]
                         if file_:
                             filename = secure_filename(file_.filename)
-                            import os
-
-                            upload_folder = self.data_browser.app.config.get("UPLOAD_FOLDER", "")
+                            upload_folder = self._config.get("UPLOAD_FOLDER",
+                                                             "")
                             if not os.path.isdir(upload_folder):
                                 os.makedirs(upload_folder)
-                            file_.save(os.path.join(self.data_browser.app.config.get("UPLOAD_FOLDER", ""), filename))
+                            file_.save(os.path.join(upload_folder, filename))
                             setattr(obj, field.name, filename)
                         continue
-                    if name not in holded_fields and not field.is_unique() and field.data is not None:
+                    if name not in untouched_fields and field.raw_data:
                         field.populate_obj(obj, name)
 
                 self.do_update_log(obj, _("update"))
                 flash(_(u"%(model_name)s %(obj)s was updated and saved",
-                        model_name=self._model_name, obj=unicode(obj)))
+                        model_name=self.modell.name, obj=unicode(obj)))
                 self.on_model_change(form, obj)
                 self.modell.commit()
             return True
         except Exception, ex:
             flash(
                 _('Failed to update %(model_name)s %(obj)s due to %(error)s',
-                  model_name=self._model_name, obj=",".join([unicode(obj) for obj in objs]),
+                  model_name=self.modell.name,
+                  obj=",".join([unicode(obj) for obj in objs]),
                   error=unicode(ex)), 'error')
             self.modell.rollback()
             return False
@@ -484,8 +496,8 @@ class ModelView(object):
     def try_view(self, processed_objs=None):
         """
         control if user could view objects list or object
-        NOTE!!! don't return anything, if you determine that something should't be viewed,
-        throw PermissionDenied
+        NOTE!!! don't return anything, if you determine that something
+        should't be viewed, throw PermissionDenied
 
         :param objs: the objs to be viewed, is None, we are in list view
         """
@@ -525,14 +537,14 @@ class ModelView(object):
             if model:
                 self.do_create_log(model)
                 flash(_(u'%(model_name)s %(model)s was created successfully',
-                        model_name=self._model_name, model=unicode(model)))
+                        model_name=self.modell.name, model=unicode(model)))
                 if request.form.get("__builtin_action__") == _("add another"):
                     return redirect(self.url_for_object(url=return_url))
                 else:
                     if on_fly:
                         return render_template(
                             "__data_browser__/on_fly_result.html",
-                            model_cls=self._model_name,
+                            model_cls=self.modell.name,
                             obj=unicode(model),
                             obj_pk=self.modell.get_pk_value(model),
                             target=request.args.get("target"))
@@ -606,9 +618,9 @@ class ModelView(object):
         if default_args:
             obj = type("_temp", (object, ), default_args)()
 
+        create_col_specs = self._compose_create_col_specs(current_step)
+        assert isinstance(create_col_specs, dict)
         if self._create_form is None:
-            create_col_specs = self._compose_create_col_specs(current_step)
-            assert isinstance(create_col_specs, dict)
             self._create_form = self.scaffold_form(
                 itertools.chain(*create_col_specs.values()))
         ret = self._create_form(obj=obj)
@@ -653,7 +665,7 @@ class ModelView(object):
 
         self.data_browser.logger.debug(
             _('%(model_name)s %(model)s was created successfully',
-              model_name=self._model_name, model=unicode(obj)),
+              model_name=self.modell.name, model=unicode(obj)),
             extra={"obj": obj, "obj_pk": self.modell.get_pk_value(obj),
                    "action": _(u"create"), "actor": current_user})
 
@@ -662,11 +674,11 @@ class ModelView(object):
             return _(
                 u"you are viewing %(model_name)s-%(obj)s, "
                 u"since you have only read permission",
-                model_name=self._model_name,
+                model_name=self.modell.name,
                 obj=",".join(unicode(model) for model in objs))
         else:
             return _(u"edit %(model_name)s-%(objs)s",
-                     model_name=self._model_name,
+                     model_name=self.modell.name,
                      objs=",".join(unicode(model) for model in objs))
 
     def edit_hint_message(self, obj, read_only=False):
@@ -674,15 +686,15 @@ class ModelView(object):
             return _(
                 u"you are viewing %(model_name)s-%(obj)s, "
                 u"since you have only read permission",
-                model_name=self._model_name, obj=unicode(obj))
+                model_name=self.modell.name, obj=unicode(obj))
         else:
             return _(u"edit %(model_name)s-%(obj)s",
-                     model_name=self._model_name,
+                     model_name=self.modell.name,
                      obj=unicode(obj))
 
     @property
     def create_hint_message(self):
-        return _(u"create %(model_name)s", model_name=self._model_name)
+        return _(u"create %(model_name)s", model_name=self.modell.name)
 
     def _get_url_map(self, normalized_columns):
         create_url_map = {}
@@ -733,8 +745,6 @@ class ModelView(object):
                         return ret
                     else:
                         return redirect(request.url)
-                # ON GET
-            #compound_form = self.get_compound_edit_form(obj=record, form=form)
             hint_message = self.edit_hint_message(preprocessed_record,
                                                   read_only)
             all_customized_actions = self._get_customized_actions(
@@ -809,11 +819,11 @@ class ModelView(object):
 
     def scaffold_form(self, col_specs):
         """
-        Create form from the model.
+        Create form from the model
         """
         field_dict = dict((col_spec.col_name, col_spec.field) for col_spec in
                           col_specs)
-        return type(self.model.__name__ + 'Form', (BaseForm, ), field_dict)
+        return type(self.modell.name + 'Form', (BaseForm, ), field_dict)
 
     def _composed_stuffed_field(self, obj, bound_field, col_spec, focus_set):
         # why we stuff our own goods in field here? since it's the
@@ -863,13 +873,19 @@ class ModelView(object):
         return self._create_form()
 
     def _compose_edit_form(self, record=None):
+        edit_col_specs, info_col_specs = self._compose_edit_col_specs(record)
+        assert isinstance(edit_col_specs, dict) and \
+            isinstance(info_col_specs, dict)
         if self._edit_form is None:
-            edit_col_specs, info_col_specs = \
-                self._compose_edit_col_specs(record)
-            assert isinstance(edit_col_specs, dict) and \
-                isinstance(info_col_specs, dict)
-            self._edit_form = self.scaffold_form(
-                itertools.chain(*edit_col_specs.values()))
+            col_specs = []
+            uneditable_col_specs = []
+            for c in itertools.chain(*edit_col_specs.values()):
+                if c.disabled:
+                    uneditable_col_specs.append(c)
+                else:
+                    col_specs.append(c)
+            self._edit_form = self.scaffold_form(col_specs)
+            self._uneditable_form = self.scaffold_form(uneditable_col_specs)
         # if request specify some fields, then we override fields with this
         # value
         for k, v in request.args.items():
@@ -880,6 +896,7 @@ class ModelView(object):
                 else:
                     setattr(record, k, v)
         ret = self._edit_form(obj=record)
+        uneditable_bound_form = self._uneditable_form(obj=record)
         # compose bound_field sets, note! bound_field sets are our stuffs
         # other than
         # the standard wtforms.Form, they are ONLY use to generate form
@@ -889,9 +906,13 @@ class ModelView(object):
         # only stuff bound fields take effects
         for fs_name, fs_col_specs in edit_col_specs.items():
             for col_spec in fs_col_specs:
+                try:
+                    bound_field = ret[col_spec.col_name]
+                except KeyError:
+                    bound_field = uneditable_bound_form[col_spec.col_name]
                 bound_field, focus_set = \
                     self._composed_stuffed_field(record,
-                                                 ret[col_spec.col_name],
+                                                 bound_field,
                                                  col_spec, focus_set)
                 ret.fieldsets.setdefault(fs_name, []).append(bound_field)
         # stuff the info fields
@@ -950,8 +971,9 @@ class ModelView(object):
         return FormProxy(form, ret, create_url_map)
 
     def _compose_batch_edit_form(self, records):
+        batch_edit_col_specs = self._compose_batch_edit_col_specs()[0]
+        assert isinstance(batch_edit_col_specs, dict)
         if self._batch_edit_form is None:
-            batch_edit_col_specs, _ = self._compose_batch_edit_col_specs()
             self._batch_edit_form = self.scaffold_form(
                 itertools.chain(*batch_edit_col_specs.values()))
         fake_obj = None
@@ -1372,11 +1394,11 @@ class ModelView(object):
     def scaffold_actions(self):
         return [dict(name=action.name, value=action.name, css_class=action.css_class, data_icon=action.data_icon,
                      forbidden_msg_formats=action.get_forbidden_msg_formats(), warn_msg=action.warn_msg,
-                     direct=action.direct) for action in self._get_customized_actions()]
+                     direct=action.readonly) for action in self._get_customized_actions()]
 
     def query_data(self, order_by, desc, filters, offset, limit):
 
-        q = self.model.query
+        q = self.modell.query
         joined_tables = []
 
         for filter_ in self.__list_filters__():
@@ -1577,10 +1599,6 @@ class ModelView(object):
             if isinstance(v, types.FunctionType):
                 kwargs[k] = v(self)
         return kwargs
-
-    @property
-    def _model_name(self):
-        return self.modell.model_name
 
     @property
     def _extra_params(self):

@@ -1,7 +1,7 @@
 # -*- coding: UTF-8 -*-
 from wtforms.validators import Required
 from wtforms_components import Unique
-from wtforms import widgets
+from wtforms import widgets, validators
 
 
 class StuffedField(object):
@@ -24,9 +24,11 @@ class StuffedField(object):
     def __call__(self, *args, **kwargs):
         if self._col_spec.disabled:
             kwargs['disabled'] = True
+            self.field.validators = [v for v in self.field.validators if not
+                                     isinstance(v, validators.DataRequired)]
         if self._auto_focus:
             kwargs['autofocus'] = 'autofocus'
-        if self.__required__:
+        if self.__required__ and not self._col_spec.disabled:
             kwargs['required'] = True
         return self.field(**kwargs)
 

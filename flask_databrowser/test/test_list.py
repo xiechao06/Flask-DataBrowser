@@ -99,7 +99,7 @@ class TestList(BaseTest):
         class UserModelView(ModelView):
             def get_customized_actions(self, processed_objs=None):
                 if not processed_objs:
-                    return [action.DirectAction("test")]
+                    return [action.RedirectAction("test")]
                 else:
                     return [action.DeleteAction()]
 

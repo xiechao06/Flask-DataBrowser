@@ -13,8 +13,13 @@ class InputHtmlSnippetColSpec(InputColSpec, HtmlSnippetColSpec):
     def __init__(self, col_name, template, label=None, doc=None,
                  validators=None, filter_=None, opt_filter=None, kolumne=None,
                  render_kwargs={}):
-        InputColSpec.__init__(self, col_name=col_name, doc=doc,
-                              label=label, validators=validators,
-                              filter_=filter_, opt_filter=opt_filter,
-                              kolumne=kolumne, render_kwargs=render_kwargs)
+        super(InputHtmlSnippetColSpec, self).__init__(
+            col_name=col_name,
+            doc=doc,
+            label=label,
+            validators=validators,
+            filter_=filter_,
+            opt_filter=opt_filter,
+            kolumne=kolumne,
+            render_kwargs=render_kwargs)
         self.template = template

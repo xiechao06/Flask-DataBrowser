@@ -43,9 +43,9 @@ class InputColSpec(ColSpec):
             discover which keys are accepted
         :type render_kwargs: dict
         """
-        super(InputColSpec, self).__init__(col_name, doc=doc,
-                                              formatter=formatter, label=label,
-                                              render_kwargs=render_kwargs)
+        ColSpec.__init__(self, col_name, doc=doc,
+                         formatter=formatter, label=label,
+                         render_kwargs=render_kwargs)
         self.group_by = group_by
         self.disabled = disabled
         self.filter_ = filter_ or (lambda v: v)

@@ -148,3 +148,6 @@ class SAModell(Modell):
     @property
     def session(self):
         return self.db.session
+
+    def new_model(self):
+        return self.model()

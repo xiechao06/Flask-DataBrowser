@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from .column_spec import ColSpec
+from .col_spec import ColSpec
 from .input_column_spec import InputColSpec, input_column_spec_from_kolumne
 from .image_column_spec import ImageColumnSpec
 from .link_column_spec import LinkColumnSpec

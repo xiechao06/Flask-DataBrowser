@@ -3,11 +3,13 @@ from flask import redirect, request
 from flask.ext.babel import _
 from .utils import raised_when
 
-_raised_when_model_view_unset = raised_when(lambda inst, *args, **kwargs: not inst.model_view, 
+_raised_when_model_view_unset = raised_when(lambda inst, *args, **kwargs: not inst.model_view,
                                        RuntimeError(r'field "model view" unset, you should set it'))
 
 
 class BaseAction(object):
+
+    readonly = False
 
     def __init__(self, name, css_class="btn btn-info", data_icon="", warn_msg=""):
         self.name = name
@@ -15,7 +17,6 @@ class BaseAction(object):
         self.css_class = css_class
         self.data_icon = data_icon
         self.warn_msg = warn_msg
-        self.direct = False
 
     def op_upon_list(self, objs, model_view):
         for obj in objs:
@@ -35,9 +36,9 @@ class BaseAction(object):
     @_raised_when_model_view_unset
     def success_message(self, models):
         """
-        will be called when all operations done 
+        will be called when all operations done
         """
-        return _(u"operation %(action)s applied upon %(model_name)s - [%(models)s] successfully", 
+        return _(u"operation %(action)s applied upon %(model_name)s - [%(models)s] successfully",
                  action=self.name, model_name=self._model_name, models=",".join(unicode(model) for model in models))
 
     @_raised_when_model_view_unset
@@ -45,7 +46,7 @@ class BaseAction(object):
         """
         will be called when operations break
         """
-        return _(u"operation %(action)s failed to apply upon %(model_name)s - [%(models)s]", 
+        return _(u"operation %(action)s failed to apply upon %(model_name)s - [%(models)s]",
                  action=self.name, model_name=self._model_name, models=",".join(unicode(model) for model in models))
 
     def try_(self, processed_objs):
@@ -63,10 +64,14 @@ class BaseAction(object):
         return 0
 
 
-class DirectAction(BaseAction):
-    def __init__(self, name, css_class="btn btn-info", data_icon="", warn_msg=""):
-        super(DirectAction, self).__init__(name, css_class, data_icon, warn_msg)
-        self.direct = True
+class RedirectAction(BaseAction):
+
+    readonly = True
+
+    def __init__(self, name, css_class="btn btn-info", data_icon="",
+                 warn_msg=""):
+        super(RedirectAction, self).__init__(name, css_class, data_icon,
+                                             warn_msg)
 
 
 class DeleteAction(BaseAction):
