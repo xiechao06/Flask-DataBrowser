@@ -4,7 +4,7 @@
 @version: $
 """
 
-from flask import redirect, Blueprint,url_for, send_from_directory
+from flask import redirect, Blueprint, url_for, send_from_directory
 from flask.ext.login import LoginManager
 from flask.ext.principal import Permission, RoleNeed
 from flask.ext.databrowser import filters
@@ -183,19 +183,10 @@ def main():
 
         #__sortable_columns__ = ["id", "name", "group"]
 
-        column_labels = {
-            "age": u"年龄",
-            "name": u"姓名",
-            "create_time": u"创建于",
-            "group": u"用户组",
-            "roll_called": u"点名过",
-            "group.name": u"用户组名称",
-        }
-
         default_order = ("name", "desc")
 
         @property
-        def list_filters(self):
+        def filters(self):
             from datetime import datetime, timedelta
 
             today = datetime.today()
@@ -255,11 +246,14 @@ def main():
             def op_upon_list(self, model, model_view):
                 return redirect("http://www.u148.com")
 
-        __customized_actions__ = [MyDeleteAction(u"删除", None, data_icon="fa fa-times"),
-                                  RollCall(u"点名", warn_msg=u"点名后就是弱智！"), RollCall(u"点名", warn_msg=u"点名后就是弱智！"),
-                                  RollCall(u"点名", warn_msg=u"点名后就是弱智！"), RollCall(u"点名", warn_msg=u"点名后就是弱智！"),
-                                  RollCall(u"点名", warn_msg=u"点名后就是弱智！"), RollCall(u"点名", warn_msg=u"点名后就是弱智！"),
-                                  RollCall(u"点名", warn_msg=u"点名后就是弱智！"), _ReadOnlyAction(u"打酱油的")]
+        def get_actions(self, processed_objs=None):
+            return [
+                MyDeleteAction(u"删除", None, data_icon="fa fa-times"),
+                RollCall(u"点名", warn_msg=u"点名后就是弱智！"), RollCall(u"点名", warn_msg=u"点名后就是弱智！"),
+                RollCall(u"点名", warn_msg=u"点名后就是弱智！"), RollCall(u"点名", warn_msg=u"点名后就是弱智！"),
+                RollCall(u"点名", warn_msg=u"点名后就是弱智！"), RollCall(u"点名", warn_msg=u"点名后就是弱智！"),
+                RollCall(u"点名", warn_msg=u"点名后就是弱智！"), _ReadOnlyAction(u"打酱油的")
+            ]
 
     user_model_view = UserModelView(SAModell(User, db, u"用户"))
     browser.register_model_view(user_model_view, accounts_bp,

@@ -72,7 +72,8 @@ class InputColSpec(ColSpec):
 
     @property
     def remote_create_url(self):
-        if self.kolumne.is_relationship():
+        if self.kolumne.is_relationship() and \
+           self.kolumne.direction == 'MANYTOONE':
             remote_side = self.kolumne.remote_side
             return self.data_browser.search_create_url(remote_side,
                                                        self.col_name)

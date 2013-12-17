@@ -193,7 +193,7 @@
 
 {% macro _render_afflicated_create_url(field) -%}
   {% if not __read_only__ and field.create_url %}
-    <a href="{{ f.create_url }}" data-role="new-related-obj" data-target="{{ field.name }}" class="btn btn-primary">{{ _("create") }}</a>
+    <a href="{{ field.create_url }}" data-role="new-related-obj" data-target="{{ field.name }}" class="btn btn-primary">{{ _("create") }}</a>
   {% endif %}
 {%- endmacro %}
 

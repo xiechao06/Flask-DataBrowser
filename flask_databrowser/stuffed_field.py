@@ -17,6 +17,8 @@ class StuffedField(object):
         # override default widget
         if hasattr(col_spec, 'override_widget'):
             self.field.widget = col_spec.override_widget(obj)
+        if not col_spec.disabled:
+            self.create_url = col_spec.remote_create_url
 
     def __getattr__(self, item):
         return getattr(self.field, item)
