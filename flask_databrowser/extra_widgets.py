@@ -17,8 +17,7 @@ from flask.ext.databrowser.sa.sa_utils import get_primary_key
 
 
 class Image(object):
-    def __init__(self, src, alt):
-        self.src = src
+    def __init__(self, alt):
         self.alt = alt
 
     # field is used here to compatiple with wtform's widgets
@@ -29,7 +28,7 @@ class Image(object):
             kwargs["class"] = "img-responsive"
         return HTMLString(
             '<a href="%s" class="fancybox control-text" rel="group" title="%s"><img  %s /></a>' % (
-                self.src, self.alt, html_params(src=self.src, alt=self.alt, **kwargs)))
+                field._value(), self.alt, html_params(src=field._value(), alt=self.alt, **kwargs)))
 
 
 class Link(object):

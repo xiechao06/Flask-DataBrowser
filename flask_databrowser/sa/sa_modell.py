@@ -9,10 +9,10 @@ from flask.ext.databrowser.sa import SAKolumne
 
 class SAModell(Modell):
 
-    def __init__(self, model, db, model_name="", hide_back_ref=True):
+    def __init__(self, model, db, label="", hide_back_ref=True):
         self.model = model
         self.db = db
-        super(SAModell, self).__init__(model_name or model.__name__)
+        super(SAModell, self).__init__(label or model.__name__)
         self._hide_back_ref = hide_back_ref
         self._primary_key = None
 

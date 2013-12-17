@@ -30,24 +30,24 @@ class BaseAction(object):
         return ""
 
     @property
-    def _model_name(self):
-        return self.model_view.modell.model_name
+    def _model_label(self):
+        return self.model_view.modell.label
 
     @_raised_when_model_view_unset
     def success_message(self, models):
         """
         will be called when all operations done
         """
-        return _(u"operation %(action)s applied upon %(model_name)s - [%(models)s] successfully",
-                 action=self.name, model_name=self._model_name, models=",".join(unicode(model) for model in models))
+        return _(u"operation %(action)s applied upon %(model_label)s - [%(models)s] successfully",
+                 action=self.name, model_label=self._model_label, models=",".join(unicode(model) for model in models))
 
     @_raised_when_model_view_unset
     def error_message(self, models):
         """
         will be called when operations break
         """
-        return _(u"operation %(action)s failed to apply upon %(model_name)s - [%(models)s]",
-                 action=self.name, model_name=self._model_name, models=",".join(unicode(model) for model in models))
+        return _(u"operation %(action)s failed to apply upon %(model_label)s - [%(models)s]",
+                 action=self.name, model_label=self._model_label, models=",".join(unicode(model) for model in models))
 
     def try_(self, processed_objs):
         pass
@@ -57,7 +57,7 @@ class BaseAction(object):
 
     def get_forbidden_msg_formats(self):
         ret = self._get_forbidden_msg_formats()
-        ret[-1] = self._model_name + _(u'%(action)s can\'t apply upon %(model_name)s [%%s]', action=self.name, model_name=self._model_name) # the default forbidden message
+        ret[-1] = self._model_label + _(u'%(action)s can\'t apply upon %(model_label)s [%%s]', action=self.name, model_label=self._model_label) # the default forbidden message
         return ret
 
     def test_enabled(self, model):

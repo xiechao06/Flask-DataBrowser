@@ -236,37 +236,37 @@ class ModelView(object):
         from flask.ext.login import current_user
 
         self.data_browser.logger.debug(
-            _('%(model_name)s %(model)s was created successfully',
-              model_name=self.modell.name, model=unicode(obj)),
+            _('%(model_label)s %(model)s was created successfully',
+              model_label=self.modell.label, model=unicode(obj)),
             extra={"obj": obj, "obj_pk": self.modell.get_pk_value(obj),
                    "action": _(u"create"), "actor": current_user})
 
     def batch_edit_hint_message(self, objs, read_only=False):
         if read_only:
             return _(
-                u"you are viewing %(model_name)s-%(obj)s, "
+                u"you are viewing %(model_label)s-[%(obj)s], "
                 u"since you have only read permission",
-                model_name=self.modell.name,
+                model_label=self.modell.label,
                 obj=",".join(unicode(model) for model in objs))
         else:
-            return _(u"edit %(model_name)s-%(objs)s",
-                     model_name=self.modell.name,
+            return _(u"edit %(model_label)s-[%(objs)s]",
+                     model_label=self.modell.label,
                      objs=",".join(unicode(model) for model in objs))
 
     def edit_hint_message(self, obj, read_only=False):
         if read_only:
             return _(
-                u"you are viewing %(model_name)s-%(obj)s, "
+                u"you are viewing %(model_label)s-[%(obj)s], "
                 u"since you have only read permission",
-                model_name=self.modell.name, obj=unicode(obj))
+                model_label=self.modell.label, obj=unicode(obj))
         else:
-            return _(u"edit %(model_name)s-%(obj)s",
-                     model_name=self.modell.name,
+            return _(u"edit %(model_label)s-[%(obj)s]",
+                     model_label=self.modell.label,
                      obj=unicode(obj))
 
     @property
     def create_hint_message(self):
-        return _(u"create %(model_name)s", model_name=self.modell.name)
+        return _(u"create %(model_label)s", model_label=self.modell.label)
 
     def edit_view(self, id_):
         """
@@ -415,8 +415,8 @@ class ModelView(object):
             model = self._create_model(form)
             if model:
                 self.do_create_log(model)
-                flash(_(u'%(model_name)s %(model)s was created successfully',
-                        model_name=self.modell.name, model=unicode(model)))
+                flash(_(u'%(model_label)s %(model)s was created successfully',
+                        model_label=self.modell.label, model=unicode(model)))
                 if request.form.get("__builtin_action__") == _("add another"):
                     return redirect(self.url_for_object(url=return_url))
                 else:
@@ -1133,10 +1133,10 @@ class ModelView(object):
                             return ret
                         return True
                     except Exception, ex:
-                        msg = ('Failed to update %(model_name)s %(objs)s due '
+                        msg = ('Failed to update %(model_label)s %(objs)s due '
                                'to %(error)s')
                         msg = _(msg,
-                                model_name=self.modell.name,
+                                model_label=self.modell.label,
                                 objs=",".join(unicode(obj) for obj in
                                               processed_objs),
                                 error=unicode(ex))
@@ -1171,15 +1171,15 @@ class ModelView(object):
                         field.populate_obj(obj, name)
 
                 self.do_update_log(obj, _("update"))
-                flash(_(u"%(model_name)s %(obj)s was updated and saved",
-                        model_name=self.modell.name, obj=unicode(obj)))
+                flash(_(u"%(model_label)s %(obj)s was updated and saved",
+                        model_label=self.modell.label, obj=unicode(obj)))
                 self.on_model_change(form, obj)
                 self.modell.commit()
             return True
         except Exception, ex:
             flash(
-                _('Failed to update %(model_name)s %(obj)s due to %(error)s',
-                  model_name=self.modell.name,
+                _('Failed to update %(model_label)s %(obj)s due to %(error)s',
+                  model_label=self.modell.label,
                   obj=",".join([unicode(obj) for obj in objs]),
                   error=unicode(ex)), 'error')
             self.modell.rollback()

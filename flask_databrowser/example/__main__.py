@@ -63,7 +63,6 @@ def main():
         column_hide_backrefs = False
         list_template = "accounts/list.html"
         edit_template = create_template = "accounts/form.html"
-        can_create = True
         #can_batchly_edit = False
         on_fly = False
 

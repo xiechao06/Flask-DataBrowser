@@ -24,7 +24,8 @@ class DataBrowser(object):
         self.app.jinja_env.filters['urlencode'] = urlencode_filter
         self.app.jinja_env.filters['truncate'] = truncate_str
         # register it for using the templates of data browser
-        self.app.register_blueprint(self.blueprint, url_prefix="/__data_browser__")
+        self.app.register_blueprint(self.blueprint,
+                                    url_prefix="/__data_browser__")
 
     def register_modell(self, modell, blueprint=None):
         from flask.ext.databrowser.model_view import ModelView
