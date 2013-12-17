@@ -79,5 +79,5 @@ class InputColSpec(ColSpec):
                                                        self.col_name)
 
 
-def input_column_spec_from_kolumne(k):
+def input_col_spec_from_kolumne(k):
     return InputColSpec(k.key, doc=k.doc, kolumne=k)

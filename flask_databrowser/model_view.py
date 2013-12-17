@@ -21,7 +21,7 @@ from flask.ext.sqlalchemy import Pagination
 
 from flask.ext.databrowser import filters
 from flask.ext.databrowser.col_spec import (ColSpec, InputColSpec,
-                                            input_column_spec_from_kolumne)
+                                            input_col_spec_from_kolumne)
 from flask.ext.databrowser.exceptions import ValidationError
 from flask.ext.databrowser.form import BaseForm
 from flask.ext.databrowser.constants import WEB_SERVICE, WEB_PAGE
@@ -91,7 +91,7 @@ class ModelView(object):
 
         :return: a list of kolumnes returned by modell, or an OrderedDict
         """
-        return [input_column_spec_from_kolumne(k) for k in
+        return [input_col_spec_from_kolumne(k) for k in
                 self.modell.kolumnes if not k.is_primary_key()]
 
     @property
@@ -109,7 +109,7 @@ class ModelView(object):
 
         :return: a list of kolumnes returned by modell, or an OrderedDict
         """
-        return [input_column_spec_from_kolumne(k) for k in
+        return [input_col_spec_from_kolumne(k) for k in
                 self.modell.kolumnes if not k.is_primary_key()]
 
     @property
@@ -127,7 +127,7 @@ class ModelView(object):
 
         :return: a list of kolumnes returned by modell, or an OrderedDict
         """
-        return [input_column_spec_from_kolumne(k) for k in
+        return [input_col_spec_from_kolumne(k) for k in
                 self.modell.kolumnes if not k.is_primary_key()]
 
     @property
@@ -989,7 +989,7 @@ class ModelView(object):
                 if (is_str or is_input) and self.modell.has_kolumne(col_name):
                     kol = self.modell.get_kolumne(col_name)
                     if is_str:
-                        col_spec = input_column_spec_from_kolumne(kol)
+                        col_spec = input_col_spec_from_kolumne(kol)
                     else:
                         col_spec = col
                         col_spec.kolumne = kol
