@@ -17,7 +17,7 @@ def do_commit(obj, action="add"):
 db.create_all()
 
 group = do_commit(Group(name="Tom&Jerry"))
-tom = do_commit(User(name="Tom Cat", password="tc", group=group, age=12))
+tom = do_commit(User(name="Tom Cat", password="tc", group=group, age=12, pic_path='a.jpg'))
 do_commit(User(name="Jerry Mouse", password="jm", group=group, age=13))
 do_commit(User(name="Spike", password="s", group=group, age=14))
 do_commit(User(name="Tyde", password="t", group=group, age=15))

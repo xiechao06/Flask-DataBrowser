@@ -1,6 +1,6 @@
 #-*- coding:utf-8 -*-
 from wtforms import fields, Form
-from flask.ext.databrowser.column_spec import InputColumnSpec
+from flask.ext.databrowser.col_spec import InputColumnSpec
 from flask.ext.databrowser.sa import SAKolumne
 from flask.ext.databrowser.sa_test import BaseTest, ClassModel
 

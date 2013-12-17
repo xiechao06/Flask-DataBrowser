@@ -1,0 +1,10 @@
+{# bootstrap version #}
+{% if abbrev %}
+  <span style="display:inline-block" data-toggle="tooltip" data-html="true" data-placement="bottom" title="{{ value }}" {{ html_params|safe }}>
+    {{ abbrev }}<a href="#" >...</a>
+  </span>
+{% else %}
+  <span {{ html_params|safe }} style="display:inline-block">
+    {{ value }}
+  </span>
+{% endif %}

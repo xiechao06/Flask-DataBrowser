@@ -4,15 +4,17 @@
 @version: $
 """
 
-from flask import redirect, Blueprint,url_for, send_from_directory
+from flask import redirect, Blueprint, url_for, send_from_directory
 from flask.ext.login import LoginManager
 from flask.ext.principal import Permission, RoleNeed
 from flask.ext.databrowser import filters
 from collections import OrderedDict
-from flask.ext.databrowser.column_spec import FileColumnSpec, InputPlaceHolderColumnSpec
+from flask.ext.databrowser.col_spec import FileColumnSpec, InputHtmlSnippetColSpec
 from flask.ext.databrowser.grouper import SAPropertyGrouper
 from flask.ext.databrowser.sa import SAModell
-from flask.ext.databrowser.column_spec import ImageColumnSpec, TableColumnSpec, PlaceHolderColumnSpec, InputColumnSpec
+from flask.ext.databrowser.col_spec import (ImageColumnSpec, TableColumnSpec,
+    PlaceHolderColumnSpec, InputColSpec, HtmlSnippetColSpec)
+from flask.ext.databrowser.action import BaseAction
 
 admin_permission = Permission(RoleNeed("Admin"))
 
@@ -40,7 +42,7 @@ def main():
 
 
     from flask.ext import databrowser
-    from flask.ext.databrowser.action import DeleteAction, DirectAction
+    from flask.ext.databrowser.action import DeleteAction, RedirectAction
 
     from models import User, Car
 
@@ -105,51 +107,69 @@ def main():
 
         @property
         def list_columns(self):
-            return ["id", "name", "group", "password", "roll_called", "group.name", "create_time",
-                            ImageColumnSpec("avatar", alt=u"头像",
-                                            formatter=lambda v,
-                                                             model: "http://farm9.staticflickr"
-                                                                    ".com/8522/8478415115_152c6f5e55_m.jpg",
-                                            doc=u"头像，^_^！"), "good"]
+            return ["id", "name", "group", "password", "roll_called", "group.name",
+                    "create_time", "good"]
+            #return ["id", "name", "group", "password", "roll_called", "group.name",
+                    #"create_time",
+                    #ImageColumnSpec("avatar", alt=u"头像",
+                                    #formatter=lambda v,
+                                    #model: "http://farm9.staticflickr"
+                                    #".com/8522/8478415115_152c6f5e55_m.jpg",
+                                    #doc=u"头像，^_^！"), "good"]
         @property
         def create_columns(self):
             ret = OrderedDict()
             ret["primary"] = ["name", "group", "password"]
             ret["secondary"] = [
-                InputPlaceHolderColumnSpec("age", template_fname="/accounts/age-snippet.html"),
+                InputHtmlSnippetColSpec("age", template="/accounts/age-snippet.html"),
                 "roll_called", "birthday", "create_time", "car_list"]
             return ret
 
-        def get_form_columns(self, obj=None):
+        @property
+        def edit_columns(self, obj=None):
             ret = OrderedDict()
-            ret[u"主要的"] = ["id", InputColumnSpec("name", disabled=True),
-                           PlaceHolderColumnSpec("group", template_fname="/accounts/group-snippet.html",
-                                                 form_width_class="col-lg-3")
-                , "password",
-                                        PlaceHolderColumnSpec("foo", template_fname="/accounts/foo-snippet.html")]
-            ret[u"次要的"] = ["roll_called", "good",
-                                        PlaceHolderColumnSpec("age", template_fname="/accounts/age-snippet.html"), "create_time",
-                                        ImageColumnSpec("avatar", alt=u"头像",
-                                                        formatter=lambda v,
-                                                                         model: "http://farm9.staticflickr"
-                                                                                ".com/8522/8478415115_152c6f5e55_m.jpg",
-                                                        doc=u"头像， ^_^!")]
-            ret[u"额外的"] = [
-                TableColumnSpec("dogs", css_class="table table-striped table-hover table-condensed table-bordered"),
-                InputColumnSpec("car_list", css_class="alert alert-info", group_by=lambda x: x.model[0],
-                                disabled=False),
-                # "car_list"
+            ret[u"主要的"] = [
+                InputColSpec("id", disabled=True),
+                InputColSpec("name", disabled=True),
+                'group',
+                #HtmlSnippetColSpec("group",
+                                   #template="/accounts/group-snippet.html",
+                                   #render_kwargs={
+                                       #'form_width_class': "col-lg-3"}),
+                "password",
+                HtmlSnippetColSpec("foo",
+                                   template="/accounts/foo-snippet.html")]
+            ret[u"次要的"] = [
+                "roll_called",
+                "good",
+                HtmlSnippetColSpec("age",
+                                   template="/accounts/age-snippet.html"),
+                "create_time",
+                #ImageColumnSpec("avatar", alt=u"头像",
+                #formatter=lambda v,
+                #model: "http://farm9.staticflickr"
+                #".com/8522/8478415115_152c6f5e55_m.jpg",
+                #doc=u"头像， ^_^!")
             ]
+            #ret[u"额外的"] = [
+                #TableColumnSpec("dogs", css_class="table table-striped table-hover table-condensed table-bordered"),
+                #InputColumnSpec("car_list", css_class="alert alert-info", group_by=lambda x: x.model[0],
+                                #disabled=False),
+                ## "car_list"
+            #]
 
-            ret[u"头像"] = [
-                ImageColumnSpec("pic_url", label=u"头像"),
-                FileColumnSpec("pic_path", label=u"上传")
-            ]
+            #ret[u"头像"] = [
+                #ImageColumnSpec("pic_url", label=u"头像"),
+                #FileColumnSpec("pic_path", label=u"上传")
+            #]
             return ret
 
-        #__batch_form_columns__ = OrderedDict()
-        #__batch_form_columns__["primary"] = ["name", InputColumnSpec("group", read_only=True)]
-        #__batch_form_columns__["secondary"] = ["age", "roll_called"]
+        @property
+        def batch_edit_columns(self):
+            ret = OrderedDict()
+            ret["primary"] = ["name", InputColSpec("group", label=u'用户组')]
+            ret["secondary"] = ["age", "roll_called"]
+            return ret
 
         column_formatters = {
             "create_time": lambda v, model: v.strftime("%Y-%m-%d %H") + u"点",
@@ -164,19 +184,10 @@ def main():
 
         #__sortable_columns__ = ["id", "name", "group"]
 
-        column_labels = {
-            "age": u"年龄",
-            "name": u"姓名",
-            "create_time": u"创建于",
-            "group": u"用户组",
-            "roll_called": u"点名过",
-            "group.name": u"用户组名称",
-        }
-
         default_order = ("name", "desc")
 
         @property
-        def list_filters(self):
+        def filters(self):
             from datetime import datetime, timedelta
 
             today = datetime.today()
@@ -199,48 +210,50 @@ def main():
         #return [filters.NotEqualTo("name", value=u"Type")]
 
 
-        from flask.ext.databrowser.action import BaseAction
-
-        class RollCall(BaseAction):
-
-            def op(self, model):
-                model.roll_call()
-
-            def test_enabled(self, model):
-                if model.roll_called:
-                    return -1
-                return 0
-
-                #def try_(self):
-                #roll_call_perm.test()
-
-        class MyDeleteAction(DeleteAction):
-
-            def test_enabled(self, model):
-                if model.name == "Spock":
-                    return -3
-                elif model.name == "Tyde":
-                    return -2
-                return 0
-
-            def get_forbidden_msg_formats(self):
-                return {-3: "[%s]是我的偶像, 不要删除他们",
-                        -2: "[%s]是好狗，不要伤害他们"}
 
         def patch_row_attr(self, idx, row):
             if row.name == "Tyde":
                 return {"title": u"测试"}
 
-        class _ReadOnlyAction(DirectAction):
+        def get_actions(self, processed_objs=None):
+            class MyDeleteAction(DeleteAction):
 
-            def op_upon_list(self, model, model_view):
-                return redirect("http://www.u148.com")
+                def test_enabled(self, model):
+                    if model.name == "Spock":
+                        return -3
+                    elif model.name == "Tyde":
+                        return -2
+                    return 0
 
-        __customized_actions__ = [MyDeleteAction(u"删除", None, data_icon="fa fa-times"),
-                                  RollCall(u"点名", warn_msg=u"点名后就是弱智！"), RollCall(u"点名", warn_msg=u"点名后就是弱智！"),
-                                  RollCall(u"点名", warn_msg=u"点名后就是弱智！"), RollCall(u"点名", warn_msg=u"点名后就是弱智！"),
-                                  RollCall(u"点名", warn_msg=u"点名后就是弱智！"), RollCall(u"点名", warn_msg=u"点名后就是弱智！"),
-                                  RollCall(u"点名", warn_msg=u"点名后就是弱智！"), _ReadOnlyAction(u"打酱油的")]
+                def get_forbidden_msg_formats(self):
+                    return {-3: "[%s]是我的偶像, 不要删除他们",
+                            -2: "[%s]是好狗，不要伤害他们"}
+
+            class RollCall(BaseAction):
+
+                def op(self, model):
+                    model.roll_call()
+
+                def test_enabled(self, model):
+                    if model.roll_called:
+                        return -1
+                    return 0
+
+                    #def try_(self):
+                    #roll_call_perm.test()
+
+            class _ReadOnlyAction(RedirectAction):
+
+                def op_upon_list(self, model, model_view):
+                    return redirect("http://www.u148.com")
+
+            return [
+                MyDeleteAction(u"删除", None, data_icon="fa fa-times"),
+                RollCall(u"点名", warn_msg=u"点名后就是弱智！"), RollCall(u"点名", warn_msg=u"点名后就是弱智！"),
+                RollCall(u"点名", warn_msg=u"点名后就是弱智！"), RollCall(u"点名", warn_msg=u"点名后就是弱智！"),
+                RollCall(u"点名", warn_msg=u"点名后就是弱智！"), RollCall(u"点名", warn_msg=u"点名后就是弱智！"),
+                RollCall(u"点名", warn_msg=u"点名后就是弱智！"), _ReadOnlyAction(u"打酱油的")
+            ]
 
     user_model_view = UserModelView(SAModell(User, db, u"用户"))
     browser.register_model_view(user_model_view, accounts_bp,

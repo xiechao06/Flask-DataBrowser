@@ -36,7 +36,8 @@ class BaseFilter(TemplateParam):
     @property
     @_raised_when_model_unset
     def model(self):
-        return self.model_view.model
+        # TODO obviously don't use
+        return self.model_view.modell.model
 
     @property
     def label(self):

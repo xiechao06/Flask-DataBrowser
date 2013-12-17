@@ -7,7 +7,7 @@ from flask import Flask, Blueprint, url_for
 from flask.ext.databrowser.sa import SAModell
 from flask.ext.databrowser.test import basetest
 from flask.ext.databrowser import ModelView, DataBrowser
-from flask.ext.databrowser.column_spec import InputColumnSpec
+from flask.ext.databrowser.col_spec import InputColumnSpec
 
 
 class TestCreateAPI(basetest.BaseTest):

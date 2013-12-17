@@ -23,7 +23,7 @@ from wtforms_components.widgets import (ColorInput, EmailInput, DateInput,
 from flask.ext.databrowser.kolumne import Kolumne
 from flask.ext.databrowser.sa import sa_utils
 from flask.ext.databrowser import extra_widgets, utils
-from flask.ext.databrowser.column_spec import InputColumnSpec
+from flask.ext.databrowser.col_spec import InputColSpec
 from flask.ext.databrowser.sa.sa_fields import GroupedQuerySelectField, QuerySelectField, QuerySelectMultipleField
 
 
@@ -117,7 +117,7 @@ class SAKolumne(Kolumne):
         return self._property.direction.name
 
     def make_field(self, col_spec):
-        assert isinstance(col_spec, InputColumnSpec)
+        assert isinstance(col_spec, InputColSpec)
         col_spec_kwargs = self._get_col_spec_args(col_spec)
         column_kwargs = self._get_property_specific_args()
         kwargs = self._merge_with_column_args(col_spec_kwargs, column_kwargs)
@@ -131,8 +131,6 @@ class SAKolumne(Kolumne):
             kwargs.update(sa_utils.get_column_default_value(column))
             kwargs.update(self._format_args(column))
             ret = self._get_field(column, **kwargs)
-        if col_spec.disabled:
-            ret = utils.make_field_disabled(ret)
         return ret
 
     def _merge_with_column_args(self, col_spec_args, column_args):
@@ -216,10 +214,32 @@ class SAKolumne(Kolumne):
 
     def _query_factory_args(self, col_spec):
         remote_model = self._property.mapper.class_
-        query = self._db.session.query(remote_model)
-        query_factory = lambda: query
-        if col_spec.filter_:
-            query_factory = lambda: col_spec.filter_(query)
+        #query = self._db.session.query(remote_model)
+        #query_factory = lambda: query
+        #if col_spec.filter_:
+            #query_factory = lambda: col_spec.filter_(query)
+        # !!!important, why bother to do this? because flask sqlalchemy will
+        # close the session after each request. so if we only remember query
+        # here, then after one request, the query is obseleted!, so don't do
+        # this:
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        #       query = self._db.session.query(remote_model)
+        #       query_factory = lambda: query
+        #       if col_spec.filter_:
+        #           query_factory = lambda: col_spec.filter_(query)
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        class QueryFactory(object):
+
+            def __init__(self, db, remote_model, filter):
+                self._db = db
+                self._remote_model = remote_model
+                self._filter = filter or (lambda q: q)
+
+            def __call__(self):
+                return self._filter(self._db.session.query(self._remote_model))
+
+        query_factory = QueryFactory(self._db, remote_model, col_spec.filter_)
         return {'query_factory': query_factory}
 
     def _format_args(self, column):

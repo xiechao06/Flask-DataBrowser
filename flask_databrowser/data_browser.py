@@ -2,7 +2,7 @@
 from flask import request, Blueprint
 from flask.ext.principal import PermissionDenied
 
-from flask.ext.databrowser.column_spec import LinkColumnSpec
+from flask.ext.databrowser.col_spec import LinkColumnSpec
 from flask.ext.databrowser.utils import (url_for_other_page,
                                          urlencode_filter,
                                          truncate_str)

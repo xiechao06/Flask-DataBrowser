@@ -1,8 +1,6 @@
-/flask_databrowser/.ropeproject/config.py
-/flask_databrowser/.ropeproject/globalnames
-/flask_databrowser/.ropeproject/history
-/flask_databrowser/.ropeproject/objectdb
+*/.ropeproject/*
 *.py[cod]
+**/*/temp.db
 
 # C extensions
 *.so

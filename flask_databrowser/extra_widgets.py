@@ -13,7 +13,7 @@ from wtforms import fields, widgets
 from wtforms.widgets import HTMLString, html_params, Select, TextInput
 from wtforms.compat import text_type
 from flask.ext.databrowser.sa.sa_utils import get_primary_key
-from flask.ext.databrowser.column_spec import ColumnSpec
+#from flask.ext.databrowser.column_spec import ColumnSpec
 
 
 class Image(object):
@@ -42,27 +42,19 @@ class Link(object):
 
 
 class PlainText(object):
-    def __init__(self, s, trunc):
-        self.s = s
-        self.trunc = trunc
+    def __init__(self, max_len=None,
+                 template='/__data_browser__/snippets/plain-text.html'):
+        self.max_len = max_len
+        self.template = template
 
     def __call__(self, field, **kwargs):
-        need_trunc = False
-        s = self.s
-        if self.trunc:
-            if len(self.s) > self.trunc:
-                s = self.s[:self.trunc - 3]
-                need_trunc = True
-        content = []
-        for i in xrange(0, len(self.s), 24):
-            content.append(self.s[i:i + 24])
-        if not need_trunc:
-            return HTMLString('<span %s style="display:inline-block">%s</span>' % (html_params(**kwargs), s))
-        else:
-            return HTMLString(
-                '<span style="display:inline-block" data-toggle="tooltip" data-html="true" data-placement="bottom" '
-                'title="%s" %s>%s<a href="#" >...</a></span>' % (
-                    "\n".join(content), html_params(**kwargs), s))
+        abbrev = None
+        if self.max_len:
+            if len(field.value) > self.max_len:
+                abbrev = field._value[:self.max_len - 3]
+        return render_template(self.template, value=field._value(),
+                               abbrev=abbrev,
+                               html_params=html_params(**kwargs))
 
 
 class TableWidget(object):
@@ -409,5 +401,25 @@ class PlaceHolder(object):
         else:
             options = None
 
-        return render_template(self.template_fname, field_value=self.field_value, record=self.record, options=options,
+        return render_template(self.template_fname,
+                               field_value=self.field_value, record=self.record, options=options,
                                **self.extra_kwargs)
+
+
+class HtmlSnippet(object):
+
+    def __init__(self, template, obj, render_kwargs):
+        self.template = template
+        self.obj = obj
+        self.render_kwargs = render_kwargs
+
+    def __call__(self, field, **kwargs):
+
+        if 'query_factory' in kwargs:
+            options = kwargs['query_factory'].all()
+        else:
+            options = None
+
+        return render_template(self.template, field_value=field._value(),
+                               obj=self.obj, options=options,
+                               **self.render_kwargs)

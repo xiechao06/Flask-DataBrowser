@@ -183,7 +183,7 @@ class TestCreate(basetest.BaseTest):
             @property
             def create_columns(self):
                 ret = OrderedDict()
-                from flask.ext.databrowser.column_spec import InputColumnSpec
+                from flask.ext.databrowser.col_spec import InputColumnSpec
 
                 ret["group"] = ["group"]
                 ret["name"] = [InputColumnSpec("name", disabled=True)]
@@ -202,7 +202,7 @@ class TestCreate(basetest.BaseTest):
         class UserModelView(ModelView):
             @property
             def create_columns(self):
-                from flask.ext.databrowser.column_spec import InputColumnSpec
+                from flask.ext.databrowser.col_spec import InputColumnSpec
 
                 return ["name", InputColumnSpec("group", label="group")]
 

@@ -1,14 +1,16 @@
 # -*- coding: utf-8 -*-
 from wtforms.fields import Field
-from flask.ext.databrowser.column_spec import ColumnSpec
+from flask.ext.databrowser.col_spec import ColSpec
 
 
-class PlaceHolderColumnSpec(ColumnSpec):
+class PlaceHolderColumnSpec(ColSpec):
     def __init__(self, col_name, template_fname, label=None, doc=None,
-                 form_width_class=None,
                  place_holder_kwargs=None,
-                 record=None):
-        super(PlaceHolderColumnSpec, self).__init__(col_name, label=label, doc=doc, form_width_class=form_width_class)
+                 record=None, render_kwargs={}):
+        super(PlaceHolderColumnSpec, self).__init__(col_name, label=label,
+                                                    doc=doc,
+                                                    render_kwargs=
+                                                    render_kwargs)
         self.template_fname = template_fname
         self.place_holder_kwargs = place_holder_kwargs
         self.record = record
