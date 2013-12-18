@@ -1049,25 +1049,43 @@ class ModelView(object):
 
     def _create_model(self, form):
         """
-            Create model from form.
+            Create obj from form.
 
             :param form:
                 Form instance
         """
         try:
-            model = self._populate_obj(form)
-            self.on_model_change(form, model)
-            self.modell.add(model)
+            obj = self._populate_obj(form)
+            self.modell.add(obj)
             self.modell.commit()
-            return model
+            self.on_record_created(obj)
+            return obj
         except Exception:
             self.modell.rollback()
             raise
 
     def _populate_obj(self, form):
-        model = self.modell.new_model()
-        form.populate_obj(model)
-        return model
+        obj = self.modell.new_model()
+        for name, field in form._fields.iteritems():
+            if isinstance(field, FileField):
+                if field.data:
+                    filename = secure_filename(field.data.filename)
+                    save_path = field.save_path
+                    if not save_path:
+                        save_path = posixpath.join(
+                            self.data_browser.upload_folder, filename)
+                    if isinstance(save_path, types.FunctionType):
+                        save_path = save_path(obj)
+                    field.data.save(save_path)
+                    field.data.close()
+                    setattr(obj, field.name, save_path)
+                continue
+            if field.raw_data:
+                field.populate_obj(obj, name)
+        return obj
+
+    def on_record_created(self, obj):
+        pass
 
     def _get_list_filters(self):
         ret = []
@@ -1180,9 +1198,7 @@ class ModelView(object):
                                 save_path = save_path(obj)
                             field.data.save(save_path)
                             field.data.close()
-                            import time
-                            time.sleep(0.5)
-                            setattr(obj, field.name, filename)
+                            setattr(obj, field.name, save_path)
                         continue
                     if name not in untouched_fields and field.raw_data:
                         field.populate_obj(obj, name)
