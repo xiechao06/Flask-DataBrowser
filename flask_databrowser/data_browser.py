@@ -1,4 +1,5 @@
 #-*- coding:utf-8 -*-
+import os
 from flask import request, Blueprint
 from flask.ext.principal import PermissionDenied
 
@@ -10,7 +11,7 @@ from flask.ext.databrowser.constants import WEB_PAGE, WEB_SERVICE
 
 
 class DataBrowser(object):
-    def __init__(self, app, logger=None):
+    def __init__(self, app, logger=None, upload_folder='uploads'):
         self.logger = logger or app.logger
         self.blueprint = Blueprint("__data_browser__", __name__,
                                    static_folder="static",
@@ -18,6 +19,9 @@ class DataBrowser(object):
         self.app = app
         self._init_app()
         self.__registered_view_map = {}
+        self.upload_folder = upload_folder
+        if not os.path.exists(upload_folder):
+            os.makedirs(upload_folder)
 
     def _init_app(self):
         self.app.jinja_env.globals['url_for_other_page'] = url_for_other_page

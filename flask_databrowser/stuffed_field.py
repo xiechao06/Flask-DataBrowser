@@ -9,9 +9,9 @@ class StuffedField(object):
     this is a proxy of BOUND field used to generate html
     '''
     def __init__(self, obj, bound_field, col_spec, focus_set):
-        self._col_spec = col_spec
+        self.col_spec = col_spec
         self.field = bound_field
-        self._auto_focus = not focus_set and not self._col_spec.disabled
+        self._auto_focus = not focus_set and not self.col_spec.disabled
         self._render_kwargs = col_spec.render_kwargs
         #TODO set flags here
         # override default widget
@@ -24,13 +24,13 @@ class StuffedField(object):
         return getattr(self.field, item)
 
     def __call__(self, *args, **kwargs):
-        if self._col_spec.disabled:
+        if self.col_spec.disabled:
             kwargs['disabled'] = True
             self.field.validators = [v for v in self.field.validators if not
                                      isinstance(v, validators.DataRequired)]
         if self._auto_focus:
             kwargs['autofocus'] = 'autofocus'
-        if self.__required__ and not self._col_spec.disabled:
+        if self.__required__ and not self.col_spec.disabled:
             kwargs['required'] = True
         return self.field(**kwargs)
 
@@ -44,7 +44,7 @@ class StuffedField(object):
 
     @property
     def __read_only__(self):
-        return self._col_spec.disabled
+        return self.col_spec.disabled
 
     @property
     def __as_input__(self):

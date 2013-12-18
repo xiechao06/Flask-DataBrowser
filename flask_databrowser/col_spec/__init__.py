@@ -4,6 +4,7 @@ from .col_spec import ColSpec
 from .input_col_spec import InputColSpec, input_col_spec_from_kolumne
 from .html_snippet_col_spec import HtmlSnippetColSpec
 from .input_html_snippet_col_spec import InputHtmlSnippetColSpec
+from .file_col_spec import FileColSpec
 
 from .image_column_spec import ImageColumnSpec
 from .link_column_spec import LinkColumnSpec

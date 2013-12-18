@@ -9,6 +9,7 @@ class InputHtmlSnippetColSpec(InputColSpec, HtmlSnippetColSpec):
     to ColSpec, that's because, HtmlSnippet is very special, it accepts more
     information other than just field to generate html
     '''
+
     #TODO render_kwargs is enough
     def __init__(self, col_name, template, label=None, doc=None,
                  validators=None, filter_=None, opt_filter=None, kolumne=None,

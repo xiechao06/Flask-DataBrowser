@@ -5,6 +5,8 @@ from flask.ext.databrowser.col_spec import ColSpec
 # we should provide a non-hacker way to hack them in template
 class InputColSpec(ColSpec):
 
+    as_input = True
+
     def __init__(self, col_name, group_by=None, disabled=False, doc=None,
                  formatter=None, label=None, filter_=None,
                  opt_filter=None,  validators=None,

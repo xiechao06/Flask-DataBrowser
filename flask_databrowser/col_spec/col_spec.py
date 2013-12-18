@@ -5,6 +5,7 @@ from flask.ext.databrowser.pseudo_field import PseudoField
 class ColSpec(object):
 
     # tell I am not an input
+    as_input = False
     disabled = True
 
     def __init__(self, col_name, doc=None,

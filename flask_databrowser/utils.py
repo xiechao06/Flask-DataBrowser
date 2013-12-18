@@ -1,4 +1,6 @@
 # -*- coding: UTF-8 -*-
+import string
+import random
 import types
 import urllib
 from functools import wraps
@@ -163,3 +165,7 @@ def truncate_str(s, length=255, killwords=False, end='...', href="#"):
         result.append(word)
     result.append(a_)
     return u' '.join(result)
+
+
+def random_str(size=6, chars=string.ascii_uppercase + string.digits):
+    return ''.join(random.choice(chars) for x in range(size))

@@ -1,5 +1,4 @@
 # -*- coding: UTF-8 -*-
-import os
 import copy
 import itertools
 import json
@@ -9,10 +8,11 @@ import sys
 import types
 from collections import OrderedDict
 import urlparse
+import posixpath
 
 import werkzeug
 from werkzeug.utils import secure_filename
-
+from flask_wtf.file import FileField
 from flask import (render_template, flash, request, url_for, redirect, Flask,
                    make_response, jsonify, abort)
 from flask.ext.babel import _
@@ -213,7 +213,11 @@ class ModelView(object):
     def default_filters(self):
         return []
 
-    def preprocess(self, obj):
+    def expand_model(self, obj):
+        '''
+        this function is very important if you want your model not just
+        include underlying modell's fields
+        '''
         return obj
 
     def do_update_log(self, obj, action):
@@ -287,7 +291,7 @@ class ModelView(object):
         if not in_batch_mode:
             record = self._get_one(id_list[0])
             self.try_view([record])  # first, we test if we could view
-            preprocessed_record = self.preprocess(record)
+            preprocessed_record = self.expand_model(record)
             try:
                 self.try_edit([preprocessed_record])
                 read_only = False
@@ -310,7 +314,7 @@ class ModelView(object):
             actions = all_customized_actions
         else:
             records = [self._get_one(_id_) for _id_ in id_list]
-            preprocessed_records = [self.preprocess(record) for record in
+            preprocessed_records = [self.expand_model(record) for record in
                                     records]
             self.try_view(preprocessed_records)
             try:
@@ -546,7 +550,7 @@ class ModelView(object):
                 request.form.getlist('selected-ids'))
             for action in self._compose_actions():
                 if action.name == action_name:
-                    processed_objs = [self.preprocess(obj) for obj in models]
+                    processed_objs = [self.expand_model(obj) for obj in models]
                     action.try_(processed_objs)
                     try:
                         ret = action.op_upon_list(processed_objs, self)
@@ -843,6 +847,7 @@ class ModelView(object):
         return offset, limit, order_by, desc
 
     def _compose_edit_form(self, record=None):
+        # TODO  reserve order
         edit_col_specs, info_col_specs = self._compose_edit_col_specs(record)
         assert isinstance(edit_col_specs, dict) and \
             isinstance(info_col_specs, dict)
@@ -873,6 +878,8 @@ class ModelView(object):
         # other than
         # the standard wtforms.Form, they are ONLY use to generate form
         # in html page
+        # actually, there're 2 forms, one for generate html, one for handle
+        # data
         ret.fieldsets = OrderedDict()
         focus_set = False
         # only stuff bound fields take effects
@@ -984,10 +991,13 @@ class ModelView(object):
         for fieldset_name, columns in fieldsets.items():
             for col in columns:
                 is_str = isinstance(col, basestring)
-                is_input = isinstance(col, InputColSpec)
+                is_input = isinstance(col, ColSpec) and col.as_input
                 col_name = col if is_str else col.col_name
-                if (is_str or is_input) and self.modell.has_kolumne(col_name):
-                    kol = self.modell.get_kolumne(col_name)
+                #if (is_str or is_input) and self.modell.has_kolumne(col_name):
+                if (is_str and self.modell.has_kolumne(col_name)) or is_input:
+                    kol = None
+                    if self.modell.has_kolumne(col_name):
+                        kol = self.modell.get_kolumne(col_name)
                     if is_str:
                         col_spec = input_col_spec_from_kolumne(kol)
                     else:
@@ -1102,7 +1112,7 @@ class ModelView(object):
         """
 
         action_name = request.form.get("__action__")
-        processed_objs = [self.preprocess(obj) for obj in objs]
+        processed_objs = [self.expand_model(obj) for obj in objs]
 
         if action_name:
             for action in self._compose_actions(processed_objs):
@@ -1152,19 +1162,22 @@ class ModelView(object):
             untouched_fields = set(name[len("hold-value-"):] for name, field in
                                    request.form.iteritems() if
                                    name.startswith("hold-value-"))
-            for obj in objs:
+            for obj in processed_objs:
                 for name, field in form._fields.iteritems():
-                    from wtforms.fields import FileField
 
                     if isinstance(field, FileField):
-                        file_ = request.files[field.name]
-                        if file_:
-                            filename = secure_filename(file_.filename)
-                            upload_folder = self._config.get("UPLOAD_FOLDER",
-                                                             "")
-                            if not os.path.isdir(upload_folder):
-                                os.makedirs(upload_folder)
-                            file_.save(os.path.join(upload_folder, filename))
+                        if field.data:
+                            filename = secure_filename(field.data.filename)
+                            save_path = field.save_path
+                            if not save_path:
+                                save_path = posixpath.join(
+                                    self.data_browser.upload_folder, filename)
+                            if isinstance(save_path, types.FunctionType):
+                                save_path = save_path(obj)
+                            field.data.save(save_path)
+                            field.data.close()
+                            import time
+                            time.sleep(0.5)
                             setattr(obj, field.name, filename)
                         continue
                     if name not in untouched_fields and field.raw_data:
@@ -1326,7 +1339,7 @@ class ModelView(object):
 
         def g():
             for idx, r in enumerate(objs):
-                r = self.preprocess(r)
+                r = self.expand_model(r)
                 #converter = ValueConverter(r, self)
                 pk = self.modell.get_pk_value(r)
                 fields = []
@@ -1401,7 +1414,7 @@ class ModelView(object):
         if customized_actions:
             for model in models:
                 id = self.modell.get_pk_value(model)
-                preprocessed_model = self.preprocess(model)
+                preprocessed_model = self.expand_model(model)
                 d = {"name": unicode(model), "actions": {}}
                 for action in customized_actions:
                     error_code = action.test_enabled(preprocessed_model)

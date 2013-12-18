@@ -2,6 +2,8 @@
 """
 extra widgets beside wtform's widgets
 """
+import urllib
+import urlparse
 import operator
 import datetime
 
@@ -13,12 +15,18 @@ from wtforms import fields, widgets
 from wtforms.widgets import HTMLString, html_params, Select, TextInput
 from wtforms.compat import text_type
 from flask.ext.databrowser.sa.sa_utils import get_primary_key
+from flask.ext.databrowser.utils import random_str
 #from flask.ext.databrowser.column_spec import ColumnSpec
 
 
 class Image(object):
-    def __init__(self, alt):
-        self.alt = alt
+
+    SMALL = 1
+    NORMAL = 2
+    LARGE = 3
+
+    def __init__(self, size_type=NORMAL):
+        self.size_type = size_type
 
     # field is used here to compatiple with wtform's widgets
     def __call__(self, field, **kwargs):
@@ -26,9 +34,25 @@ class Image(object):
             kwargs["class"] = " ".join(["img-responsive", kwargs["class"]])
         else:
             kwargs["class"] = "img-responsive"
-        return HTMLString(
-            '<a href="%s" class="fancybox control-text" rel="group" title="%s"><img  %s /></a>' % (
-                field._value(), self.alt, html_params(src=field._value(), alt=self.alt, **kwargs)))
+        # TODO shrink using class, and proportinalize
+        if self.size_type == Image.SMALL:
+            kwargs['style'] = 'width: 128px; height: 128px'
+        html = ('<a href="%s" class="fancybox control-text" rel="group"'
+                'title="%s"><img  %s /></a>')
+
+        # why do this? force browser to refresh the images
+        url = field._value()
+        params = {'random': random_str()}
+        url_parts = list(urlparse.urlparse(url))
+        query = dict(urlparse.parse_qsl(url_parts[4]))
+        query.update(params)
+        url_parts[4] = urllib.urlencode(query)
+        url = urlparse.urlunparse(url_parts)
+
+        return HTMLString(html % (url, field.label.text,
+                                  html_params(src=url,
+                                              alt=field.label.text,
+                                              **kwargs)))
 
 
 class Link(object):
@@ -47,6 +71,7 @@ class PlainText(object):
         self.template = template
 
     def __call__(self, field, **kwargs):
+        # TODO just hand code
         abbrev = None
         if self.max_len:
             if len(field.value) > self.max_len:
