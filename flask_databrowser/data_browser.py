@@ -57,6 +57,7 @@ class DataBrowser(object):
             model_view = self.__registered_view_map[modell.token]
             model_view.try_view(modell)
 
+            #TODO no link here
             return LinkColumnSpec(col_name=model_view.modell.primary_key,
                                   formatter=lambda v, obj:
                                   model_view.url_for_object(obj, label=label,
