@@ -96,7 +96,6 @@
           $("[name=__action__]").each(function () {
             var tooltip = "";
             if ($(this).val() in action_2_rows) {
-              $(this).attr("disabled", true);
               var forbidden_code_2_rows = action_2_rows[$(this).val()];
               for (var forbidden_code in forbidden_code_2_rows) {
                 var rows = forbidden_code_2_rows[forbidden_code];
@@ -107,10 +106,12 @@
                 tooltip += sprintf(format, rows.toString()) + '\n';
               }
               tooltip = tooltip.substr(0, tooltip.length - 1);
+              $(this).attr("title", tooltip);
+              $(this).attr("disabled", true);
             } else {
               $(this).attr("disabled", false);
+              $(this).attr("title", tooltip);
             }
-            $(this).attr("title", tooltip);
           });
         }
         $("#list-table-body input").bind("select change", actions_status);

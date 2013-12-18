@@ -96,3 +96,6 @@ class Modell(object):
         modified and after commit, the alternations will be persisted
         '''
         raise NotImplementedError
+
+    def delete_record(self, record):
+        raise NotImplementedError

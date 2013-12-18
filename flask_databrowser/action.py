@@ -87,7 +87,7 @@ class DeleteAction(BaseAction):
 
     def op(self, obj):
         # even a model-like object could be deleted
-        self.model_view._session.delete(obj)
+        return self.model_view.modell.delete_record(obj)
 
     def try_(self, processed_objs):
         if self.permission is not None:

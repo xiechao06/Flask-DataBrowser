@@ -151,3 +151,6 @@ class SAModell(Modell):
 
     def new_model(self):
         return self.model()
+
+    def delete_record(self, record):
+        self.db.session.delete(record)

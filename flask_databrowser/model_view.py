@@ -554,16 +554,19 @@ class ModelView(object):
                     action.try_(processed_objs)
                     try:
                         ret = action.op_upon_list(processed_objs, self)
+                        if isinstance(ret, tuple):
+                            flash(ret[-1], "error")
+                            return redirect(request.url)
+                        if not action.readonly:
+                            self.modell.commit()
+                            flash(action.success_message(processed_objs),
+                                  'success')
                         if isinstance(ret, werkzeug.wrappers.BaseResponse) \
                            and ret.status_code == 302:
-                            if not action.direct:
+                            if not action.readonly:
                                 flash(action.success_message(processed_objs),
                                       'success')
                             return ret
-                        self.modell.commit()
-                        if not action.direct:
-                            flash(action.success_message(processed_objs),
-                                  'success')
                     except Exception:
                         self.modell.rollback()
                         raise
@@ -606,7 +609,7 @@ class ModelView(object):
             # NOTE!!! direct action shouldn't be passed, they're
             # meaningless to client
             actions = [_action_to_dict(action) for action in
-                       self._compose_actions() if not action.direct]
+                       self._compose_actions() if not action.readonly]
 
             can_create = False
             try:
@@ -1130,12 +1133,13 @@ class ModelView(object):
                             return False
                     try:
                         ret = action.op_upon_list(processed_objs, self)
+
                         if isinstance(ret, tuple):
                             flash(ret[-1], "error")
                             return False
 
-                        self.modell.commit()
                         if not action.readonly:
+                            self.modell.commit()
                             flash(action.success_message(processed_objs),
                                   'success')
                         if isinstance(ret, werkzeug.wrappers.BaseResponse) \
