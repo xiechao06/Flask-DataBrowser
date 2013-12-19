@@ -1,6 +1,7 @@
 #-*- coding:utf-8 -*-
 from flask.ext.wtf import Form
-from wtforms import FileField
+from flask.ext.wtf.file import FileField
+from flask.ext.upload2.fields import FileField as FileField2
 from flask.ext.databrowser.utils import wrap_form_field
 
 
@@ -22,7 +23,7 @@ class BaseForm(Form):
         for f in self:
             if f.name.startswith("_"):
                 continue
-            if isinstance(f, FileField):
+            if isinstance(f, (FileField, FileField2)):
                 return True
             else:
                 try:

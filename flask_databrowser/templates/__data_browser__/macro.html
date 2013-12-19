@@ -150,7 +150,11 @@
 {% macro _render_field_input(field) -%}
   {% if not field.__render_kwargs__.input_width_class %}
     {% if field.__as_input__ %}
-      {% set input_width_class = 'col-lg-3' %}
+      {% if field.type == 'FileField' %}
+        {% set input_width_class = 'col-lg-8' %}
+      {% else %}
+        {% set input_width_class = 'col-lg-3' %}
+      {% endif %}
     {% elif field.label.text %}
       {% set input_width_class = 'col-lg-3' %}
     {% else %}

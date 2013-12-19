@@ -85,3 +85,5 @@ class Select2TagsField(fields.TextField):
 
     def _value(self):
         return u', '.join(self.data) if isinstance(self.data, list) else self.data
+
+
