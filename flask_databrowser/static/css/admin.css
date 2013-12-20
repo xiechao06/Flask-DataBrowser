@@ -61,6 +61,8 @@ table td .accordion-inner {
 body {
     padding-top: 10px;
     padding-bottom: 70px;
+    padding-left: 10px;
+    padding-right: 10px;
 }
 
 /*#main-form .nav-stacked li {*/
@@ -71,6 +73,7 @@ body {
 #main-form .navbar-fixed-bottom {
     text-align: center;
 }
+
 
 #list-table-body {
     min-width: 60%;

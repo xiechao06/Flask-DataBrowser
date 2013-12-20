@@ -11,7 +11,7 @@ class InputColSpec(ColSpec):
                  formatter=None, label=None, filter_=None,
                  opt_filter=None,  validators=None,
                  kolumne=None, data_browser=None, entry_formatter=None,
-                 render_kwargs={}):
+                 render_kwargs={}, widget=None):
         """
         :param col_name: name of the kolumne
         :param group_by: should be instance of Grouper
@@ -56,6 +56,7 @@ class InputColSpec(ColSpec):
         self.kolumne = kolumne
         self.data_browser = data_browser
         self.entry_formatter = entry_formatter
+        self.widget = widget
 
     @property
     def grouper_input_name(self):
@@ -70,7 +71,10 @@ class InputColSpec(ColSpec):
         convert to field
         """
         # note!!! use copy here, otherwise col_spec.validators will be changed
-        return self.kolumne.make_field(self)
+        ret = self.kolumne.make_field(self)
+        if self.widget:
+            ret.kwargs['widget'] = self.widget
+        return ret
 
     @property
     def remote_create_url(self):

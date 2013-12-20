@@ -24,7 +24,8 @@ from flask.ext.databrowser.col_spec import (ColSpec, InputColSpec,
                                             input_col_spec_from_kolumne)
 from flask.ext.databrowser.exceptions import ValidationError
 from flask.ext.databrowser.form import BaseForm
-from flask.ext.databrowser.constants import WEB_SERVICE, WEB_PAGE
+from flask.ext.databrowser.constants import (WEB_SERVICE, WEB_PAGE,
+                                             BACK_URL_PARAM)
 from .stuffed_field import StuffedField
 from flask.ext.databrowser.extra_widgets import Link
 
@@ -281,7 +282,7 @@ class ModelView(object):
         else:
             id_list = [i for i in id_.split(",") if i]
 
-        return_url = request.args.get('url') or \
+        return_url = request.args.get(BACK_URL_PARAM) or \
             url_for('.' + self.list_view_endpoint)
 
         if id_list is None:
@@ -305,7 +306,12 @@ class ModelView(object):
                        ret.status_code == 302:
                         return ret
                     else:
-                        return redirect(request.url)
+                        url_parts = list(urlparse.urlparse(request.url))
+                        queries = url_parts[4].split('&')
+                        queries = '&'.join(q for q in queries if not
+                                           q.startswith(BACK_URL_PARAM))
+                        url = urlparse.urlunparse(url_parts)
+                        return redirect(url)
             hint_message = self.edit_hint_message(preprocessed_record,
                                                   read_only)
             all_customized_actions = self._compose_actions(
@@ -408,7 +414,7 @@ class ModelView(object):
     def create_view(self):
         self.try_create()
 
-        return_url = request.args.get('url',
+        return_url = request.args.get(BACK_URL_PARAM,
                                       url_for('.' + self.list_view_endpoint))
         on_fly = int(request.args.get("on_fly", 0))
         current_step = int(request.args.get('__step__', 0)) if \
@@ -422,7 +428,8 @@ class ModelView(object):
                 flash(_(u'%(model_label)s %(model)s was created successfully',
                         model_label=self.modell.label, model=unicode(model)))
                 if request.form.get("__builtin_action__") == _("add another"):
-                    return redirect(self.url_for_object(url=return_url))
+                    return redirect(self.url_for_object(**{
+                        BACK_URL_PARAM: return_url}))
                 else:
                     if on_fly:
                         return render_template(
@@ -700,8 +707,9 @@ class ModelView(object):
                "has_next": page * self.page_size < count}
         for idx, row in enumerate(self._scaffold_list(data)):
             cdx = (page - 1) * self.page_size + idx + 1
-            obj_url = self.url_for_object(row["obj"], url=request.url,
-                                          cdx=cdx)
+            obj_url = self.url_for_object(row["obj"],
+                                          **{BACK_URL_PARAM: request.url,
+                                             cdx: cdx})
             ret["data"].append(dict(pk=row["pk"], repr_=row["repr_"],
                                     forbidden_actions=row["forbidden_actions"],
                                     obj_url=obj_url))
@@ -872,7 +880,7 @@ class ModelView(object):
             if self.modell.has_kolumne(k):
                 kol = self.modell.get_kolumne(k)
                 if kol.is_relationship():  # relationship
-                    setattr(record, k, kol.query.get(v))
+                    setattr(record, k, kol.remote_side.query.get(v))
                 else:
                     setattr(record, k, v)
         ret = self._edit_form(obj=record)
@@ -1191,19 +1199,24 @@ class ModelView(object):
                                    name.startswith("hold-value-"))
             for obj in processed_objs:
                 for name, field in form._fields.iteritems():
-
                     if isinstance(field, FileField):
-                        if field.data:
-                            filename = secure_filename(field.data.filename)
-                            save_path = field.save_path
-                            if not save_path:
-                                save_path = posixpath.join(
-                                    self.data_browser.upload_folder, filename)
-                            if isinstance(save_path, types.FunctionType):
-                                save_path = save_path(obj)
-                            field.data.save(save_path)
-                            field.data.close()
-                            setattr(obj, field.name, save_path)
+                        if field.has_file():
+                            save_paths = []
+                            for fs in field.data:
+                                if fs.filename and fs.filename != '<fdopen>':
+                                    filename = secure_filename(fs.filename)
+                                    save_path = field.save_path
+                                    if not save_path:
+                                        save_path = posixpath.join(
+                                            self.data_browser.upload_folder,
+                                            filename)
+                                    if isinstance(save_path,
+                                                  types.FunctionType):
+                                        save_path = save_path(obj, filename)
+                                    fs.save(save_path)
+                                    save_paths.append(save_path)
+                            setattr(obj, field.name, save_paths if
+                                    field.multiple else save_paths[0])
                         continue
                     if name not in untouched_fields and field.raw_data:
                         field.populate_obj(obj, name)
@@ -1265,7 +1278,7 @@ class ModelView(object):
             if self.modell.has_kolumne(k):
                 kol = self.modell.get_kolumne(k)
                 if kol.is_relationship():
-                    q = self.modell.query
+                    q = kol.remote_side.query
                     if kol.direction == 'MANYTOONE':
                         default_args[k] = q.one(v[0])
                     else:
@@ -1375,7 +1388,9 @@ class ModelView(object):
                     bound_field.process_data(raw_value)
                     # override widget if c is primary key
                     if self.modell.primary_key == c.col_name:
-                        href = self.url_for_object(r, url=request.url)
+                        href = self.url_for_object(r,
+                                                   **{BACK_URL_PARAM:
+                                                      request.url})
                         bound_field.widget = Link(anchor=raw_value, href=href)
                     fields.append(bound_field)
 

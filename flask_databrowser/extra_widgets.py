@@ -82,9 +82,9 @@ class PlainText(object):
         # TODO just hand code
         abbrev = None
         if self.max_len:
-            if len(field.value) > self.max_len:
-                abbrev = field._value[:self.max_len - 3]
-        return render_template(self.template, value=field._value(),
+            if field._value() and len(field._value()) > self.max_len:
+                abbrev = field._value()[:self.max_len - 3]
+        return render_template(self.template, value=field._value() or '',
                                abbrev=abbrev,
                                html_params=html_params(**kwargs))
 

@@ -13,7 +13,7 @@
         }
         window.location = "{{__object_url__}}" + "/" + $.map(checked,function (e) {
           return $(e).val()
-        }).join() + "?url=" + encodeURIComponent(window.location);
+        }).join() + "?__back_url__=" + encodeURIComponent(window.location);
         return false;
       });
       {% for filter in __filters__ %}
@@ -186,7 +186,7 @@
 {% macro mobile_header_action_bar() %}
   <div id="header-action-bar" class="navbar alert alert-info">
     {% if __can_create__ %}
-      <a class="btn btn-success btn-large" href="{{ "?url=".join([__object_url__, request.url|urlencode]) }}">
+      <a class="btn btn-success btn-large" href="{{ "?__back_url__=".join([__object_url__, request.url|urlencode]) }}">
         <span class="add-on fa fa-plus"></span>
       </a>
     {% endif %}
@@ -205,7 +205,7 @@
 {% endmacro %}
 {% macro desktop_header_action_bar() %}
   {% if __can_create__ %}
-      <a id="create-btn" class="btn btn-success" href="{{ "?url=".join([__object_url__, request.url|urlencode]) }}">
+      <a id="create-btn" class="btn btn-success" href="{{ "?__back_url__=".join([__object_url__, request.url|urlencode]) }}">
         <span class="fa fa-plus"></span>
         {{ _("create") + ' ' + model_view.modell.label }}
       </a>
@@ -229,7 +229,7 @@
 {% macro render_list() %}
   <div id="list-table-body" class="list-group">
     {% for row in __data__ %}
-      <a class="list-group-item" href="{{ model_view.url_for_object(row.obj, url=request.url, cdx=loop.index) }}">
+      <a class="list-group-item" href="{{ model_view.url_for_object(row.obj, __back_url__=request.url, cdx=loop.index) }}">
         {% if model_view.can_batchly_edit %}
           <input type="checkbox" value="{{ row.pk }}" name="selected-ids" id="checkbox-{{ row.pk }}"/>
         {% elif __actions__ %}
