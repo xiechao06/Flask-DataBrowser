@@ -184,7 +184,10 @@ class SAKolumne(Kolumne):
             check_type = column.type
         for type_ in self.TYPE_MAP:
             if isinstance(check_type, type_):
-                return self.TYPE_MAP[type_](**kwargs)
+                field_cls = self.TYPE_MAP[type_]
+                widget = self._widget(column, field_cls)
+                kwargs['widget'] = widget
+                return field_cls(**kwargs)
         return None
 
     def _get_col_spec_args(self, col_spec):
@@ -252,6 +255,20 @@ class SAKolumne(Kolumne):
         if date_format:
             kwargs['format'] = date_format
         return kwargs
+
+    def _widget(self, column, field_cls):
+        """
+        Returns WTForms widget for given column.
+
+        :param column: SQLAlchemy Column object
+        """
+        kwargs = {}
+        if isinstance(column.type, sa_types.Numeric):
+            if column.type.scale is not None:
+                kwargs['step'] = self.scale_to_step(column.type.scale)
+
+        widget_class = self.WIDGET_MAP[field_cls]
+        return widget_class(**kwargs)
 
     def _choices_args(self):
         kwargs = {}

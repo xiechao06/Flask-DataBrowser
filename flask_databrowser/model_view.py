@@ -414,8 +414,6 @@ class ModelView(object):
         current_step = int(request.args.get('__step__', 0)) if \
             self.create_in_steps else None
 
-        import pudb; pudb.set_trace()
-
         form = self._compose_create_form(current_step)
         if form.validate_on_submit():
             model = self._create_model(form)
@@ -1074,15 +1072,16 @@ class ModelView(object):
                 if field.has_file():
                     save_paths = []
                     for fs in field.data:
-                        filename = secure_filename(fs.filename)
-                        save_path = field.save_path
-                        if not save_path:
-                            save_path = posixpath.join(
-                                self.data_browser.upload_folder, filename)
-                        if isinstance(save_path, types.FunctionType):
-                            save_path = save_path(obj, filename)
-                        fs.save(save_path)
-                        save_paths.append(save_path)
+                        if fs.filename and fs.filename != '<fdopen>':
+                            filename = secure_filename(fs.filename)
+                            save_path = field.save_path
+                            if not save_path:
+                                save_path = posixpath.join(
+                                    self.data_browser.upload_folder, filename)
+                            if isinstance(save_path, types.FunctionType):
+                                save_path = save_path(obj, filename)
+                            fs.save(save_path)
+                            save_paths.append(save_path)
                     setattr(obj, field.name, save_paths if field.multiple else
                             save_paths[0])
                 continue

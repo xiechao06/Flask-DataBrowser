@@ -151,7 +151,7 @@
   {% if not field.__render_kwargs__.input_width_class %}
     {% if field.__as_input__ %}
       {% if field.type == 'FileField' %}
-        {% set input_width_class = 'col-lg-8' %}
+        {% set input_width_class = 'col-lg-6' %}
       {% else %}
         {% set input_width_class = 'col-lg-3' %}
       {% endif %}
@@ -282,7 +282,7 @@
         {% if next_step is undefined or next_step is none %}
           <div data-role="trivial-control-group">
             {% if not __read_only__ %}
-              <button id="submit-btn" name="__builtin_action__" class="btn btn-primary">{{ _('commit') }}</button>
+              <button id="submit-btn" type='submit' name="__builtin_action__" class="btn btn-primary">{{ _('commit') }}</button>
               <button id="reset-btn" type="reset" class="btn btn-danger">{{ _('reset') }}</button>
             {% endif %}
             {% if cancel_url %}
