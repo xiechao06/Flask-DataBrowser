@@ -566,8 +566,6 @@ class ModelView(object):
                             return redirect(request.url)
                         if not action.readonly:
                             self.modell.commit()
-                            flash(action.success_message(processed_objs),
-                                  'success')
                         if isinstance(ret, werkzeug.wrappers.BaseResponse) \
                            and ret.status_code == 302:
                             if not action.readonly:

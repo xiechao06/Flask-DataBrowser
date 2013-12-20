@@ -39,7 +39,8 @@ class BaseAction(object):
         will be called when all operations done
         """
         return _(u"operation %(action)s applied upon %(model_label)s - [%(models)s] successfully",
-                 action=self.name, model_label=self._model_label, models=",".join(unicode(model) for model in models))
+                 action=self.name, model_label=self._model_label,
+                 models=",".join(unicode(model) for model in models))
 
     @_raised_when_model_view_unset
     def error_message(self, models):
