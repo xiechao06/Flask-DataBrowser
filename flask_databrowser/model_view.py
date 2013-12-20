@@ -12,12 +12,12 @@ import posixpath
 
 import werkzeug
 from werkzeug.utils import secure_filename
-from flask_wtf.file import FileField
 from flask import (render_template, flash, request, url_for, redirect, Flask,
                    make_response, jsonify, abort)
 from flask.ext.babel import _
 from flask.ext.principal import PermissionDenied
 from flask.ext.sqlalchemy import Pagination
+from flask_upload2.fields import FileField
 
 from flask.ext.databrowser import filters
 from flask.ext.databrowser.col_spec import (ColSpec, InputColSpec,
@@ -1068,17 +1068,22 @@ class ModelView(object):
         obj = self.modell.new_model()
         for name, field in form._fields.iteritems():
             if isinstance(field, FileField):
-                if field.data:
-                    filename = secure_filename(field.data.filename)
-                    save_path = field.save_path
-                    if not save_path:
-                        save_path = posixpath.join(
-                            self.data_browser.upload_folder, filename)
-                    if isinstance(save_path, types.FunctionType):
-                        save_path = save_path(obj)
-                    field.data.save(save_path)
-                    field.data.close()
-                    setattr(obj, field.name, save_path)
+
+                if field.has_file():
+                    save_paths = []
+                    for fs in field.data:
+                        if fs.filename and fs.filename != '<fdopen>':
+                            filename = secure_filename(fs.filename)
+                            save_path = field.save_path
+                            if not save_path:
+                                save_path = posixpath.join(
+                                    self.data_browser.upload_folder, filename)
+                            if isinstance(save_path, types.FunctionType):
+                                save_path = save_path(obj, filename)
+                            fs.save(save_path)
+                            save_paths.append(save_path)
+                    setattr(obj, field.name, save_paths if field.multiple else
+                            save_paths[0])
                 continue
             if field.raw_data:
                 field.populate_obj(obj, name)

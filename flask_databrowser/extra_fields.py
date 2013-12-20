@@ -85,3 +85,9 @@ class Select2TagsField(fields.TextField):
 
     def _value(self):
         return u', '.join(self.data) if isinstance(self.data, list) else self.data
+
+class FileField(FileField):
+
+    def __init__(self, save_path=None, *args, **kwargs):
+        super(FileField, self).__init__(*args, **kwargs)
+        self.save_path = save_path

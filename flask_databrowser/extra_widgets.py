@@ -30,6 +30,8 @@ class Image(object):
 
     # field is used here to compatiple with wtform's widgets
     def __call__(self, field, **kwargs):
+        # TODO use a more advanced library, such as:
+        # http://brutaldesign.github.io/swipebox
         if "class" in kwargs:
             kwargs["class"] = " ".join(["img-responsive", kwargs["class"]])
         else:
@@ -37,23 +39,29 @@ class Image(object):
         # TODO shrink using class, and proportinalize
         if self.size_type == Image.SMALL:
             kwargs['style'] = 'width: 128px; height: 128px'
+        elif self.size_type == Image.NORMAL:
+            kwargs['style'] = 'width: 256px; height: 256px'
         html = ('<a href="%s" class="fancybox control-text" rel="group"'
                 'title="%s"><img  %s /></a>')
 
         # why do this? force browser to refresh the images
-        url = field._value()
-        params = {'random': random_str()}
-        url_parts = list(urlparse.urlparse(url))
-        query = dict(urlparse.parse_qsl(url_parts[4]))
-        query.update(params)
-        url_parts[4] = urllib.urlencode(query)
-        url = urlparse.urlunparse(url_parts)
+        value = field._value()
+        if isinstance(value, basestring):
+            value = [value]
+        htmls = []
+        for url in value:
+            params = {'random': random_str()}
+            url_parts = list(urlparse.urlparse(url))
+            query = dict(urlparse.parse_qsl(url_parts[4]))
+            query.update(params)
+            url_parts[4] = urllib.urlencode(query)
+            url = urlparse.urlunparse(url_parts)
 
-        return HTMLString(html % (url, field.label.text,
-                                  html_params(src=url,
-                                              alt=field.label.text,
-                                              **kwargs)))
-
+            htmls.append(HTMLString(html % (url, field.label.text,
+                                           html_params(src=url,
+                                                       alt=field.label.text,
+                                                       **kwargs))))
+        return ''.join(htmls)
 
 class Link(object):
     def __init__(self, anchor, href):

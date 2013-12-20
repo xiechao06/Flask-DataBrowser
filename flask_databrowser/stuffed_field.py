@@ -2,6 +2,7 @@
 from wtforms.validators import Required
 from wtforms_components import Unique
 from wtforms import widgets, validators
+from flask_upload2.widgets import FileInput
 
 
 class StuffedField(object):
@@ -49,9 +50,8 @@ class StuffedField(object):
     @property
     def __as_input__(self):
         allowable_widget_types = (widgets.Input, widgets.Select,
-                                  widgets.TextArea)
-        return isinstance(self.field.widget, allowable_widget_types) \
-            and self.field.type not in ["ReadOnlyField", "FileField"]
+                                  widgets.TextArea, FileInput)
+        return isinstance(self.field.widget, allowable_widget_types)
 
     @property
     def __required__(self):
