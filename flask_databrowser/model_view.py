@@ -1278,9 +1278,16 @@ class ModelView(object):
                 if kol.is_relationship():
                     q = kol.remote_side.query
                     if kol.direction == 'MANYTOONE':
-                        default_args[k] = q.one(v[0])
+                        v = q.get(v[0])
+                        if v is not None:
+                            default_args[k] = v
                     else:
-                        default_args[k] = [q.one(i) for i in v]
+                        values = []
+                        for i in v:
+                            v_ = q.get(i)
+                            if v_ is not None:
+                                values.append(v_)
+                        default_args[k] = values
                 else:
                     default_args[k] = v[0]
         obj = None
