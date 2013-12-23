@@ -15,8 +15,7 @@ class FileColSpec(ColSpec):
         self.save_path = save_path
         self.max_num = max_num
 
-    @property
-    def field(self):
+    def make_field(self, record=None, model_view=None):
         return FileField(save_path=self.save_path, max_num=self.max_num,
                          id=self.col_name,
                          validators=self.validators,

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from flask.ext.databrowser.col_spec import ColSpec
+from flask.ext.databrowser.pseudo_field import PseudoField
 from flask.ext.databrowser.extra_widgets import HtmlSnippet
 
 
@@ -12,9 +13,13 @@ class HtmlSnippetColSpec(ColSpec):
                                                  render_kwargs=render_kwargs)
         self.template = template
 
-    def override_widget(self, obj):
-        '''
-        only when the form is bound with object, HtmlSnippet could be created
-        '''
-        return HtmlSnippet(template=self.template, obj=obj,
+    def make_field(self, record, model_view):
+        widget = HtmlSnippet(template=self.template, obj=record,
+                             render_kwargs=self.render_kwargs)
+        return PseudoField(self.label, self.col_name,
+                           record=record,
+                           model_view=model_view,
+                           widget=widget,
+                           description=self.doc,
+                           col_spec=self,
                            render_kwargs=self.render_kwargs)

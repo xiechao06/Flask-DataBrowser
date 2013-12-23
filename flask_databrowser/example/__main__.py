@@ -9,11 +9,10 @@ from flask.ext.login import LoginManager
 from flask.ext.principal import Permission, RoleNeed
 from flask.ext.databrowser import filters
 from collections import OrderedDict
-from flask.ext.databrowser.col_spec import FileColumnSpec, InputHtmlSnippetColSpec
+from flask.ext.databrowser.col_spec import FileColSpec, InputHtmlSnippetColSpec
 from flask.ext.databrowser.grouper import SAPropertyGrouper
 from flask.ext.databrowser.sa import SAModell
-from flask.ext.databrowser.col_spec import (ImageColumnSpec, TableColumnSpec,
-    PlaceHolderColumnSpec, InputColSpec, HtmlSnippetColSpec)
+from flask.ext.databrowser.col_spec import (InputColSpec, HtmlSnippetColSpec)
 from flask.ext.databrowser.action import BaseAction
 
 admin_permission = Permission(RoleNeed("Admin"))
@@ -66,7 +65,7 @@ def main():
         #can_batchly_edit = False
         on_fly = False
 
-        def preprocess(self, obj):
+        def expand_model(self, obj):
             class _Proxy(object):
 
                 def __init__(self, obj):

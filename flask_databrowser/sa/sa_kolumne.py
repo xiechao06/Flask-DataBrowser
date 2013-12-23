@@ -154,7 +154,7 @@ class SAKolumne(Kolumne):
         direction_name = self._property.direction.name
         if direction_name == 'MANYTOONE':
             if col_spec.group_by:
-                ret = GroupedQuerySelectField(**kwargs)
+                ret = GroupedQuerySelectField(col_spec, **kwargs)
             else:
                 ret = QuerySelectField(**kwargs)
         elif direction_name == 'ONETOMANY':

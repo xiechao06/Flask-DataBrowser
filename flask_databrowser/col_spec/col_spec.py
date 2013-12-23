@@ -8,8 +8,8 @@ class ColSpec(object):
     as_input = False
     disabled = True
 
-    def __init__(self, col_name, doc=None,
-                 formatter=None, label=None, widget=None,
+    def __init__(self, col_name, label=None, doc=None,
+                 formatter=None, widget=None,
                  css_class="", render_kwargs={}):
         self.col_name = col_name
         self.formatter = formatter
@@ -20,7 +20,7 @@ class ColSpec(object):
         self.widget = widget
         self.render_kwargs = render_kwargs
 
-    def make_field(self, record, model_view):
+    def make_field(self, record=None, model_view=None):
         return PseudoField(self.label, self.col_name,
                            record=record,
                            model_view=model_view,

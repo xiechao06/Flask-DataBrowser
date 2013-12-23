@@ -7,8 +7,8 @@ class InputColSpec(ColSpec):
 
     as_input = True
 
-    def __init__(self, col_name, group_by=None, disabled=False, doc=None,
-                 formatter=None, label=None, filter_=None,
+    def __init__(self, col_name, label=None, group_by=None, disabled=False, doc=None,
+                 formatter=None, filter_=None,
                  opt_filter=None,  validators=None,
                  kolumne=None, data_browser=None, entry_formatter=None,
                  render_kwargs={}, widget=None):
@@ -39,10 +39,11 @@ class InputColSpec(ColSpec):
         :param validators: a list of wtforms' validators
         :param kolumne: underlying kolumne
         :param data_browser:
-        :param render_kwargs: arguments used to render field by template engine,
-            note, this argument is very important when you use your templates
-            to render fields. Read 'templates/__databrowser__/macro.html' to
-            discover which keys are accepted
+        :param render_kwargs: arguments used to render field by template
+        engine, note, this argument is very important when you use your
+        templates to render fields. Read
+        'templates/__databrowser__/macro.html' to discover which keys are
+        accepted
         :type render_kwargs: dict
         """
         ColSpec.__init__(self, col_name, doc=doc,
@@ -66,8 +67,7 @@ class InputColSpec(ColSpec):
         return self.col_name + "." + self.group_by.__class__.__name__
 
     # TODO should be make_field
-    @property
-    def field(self):
+    def make_field(self, record=None, model_view=None):
         """
         convert to field
         """

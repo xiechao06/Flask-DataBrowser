@@ -345,7 +345,7 @@ class ModelView(object):
             help_message = self.get_edit_help(preprocessed_records)
             actions = all_customized_actions
         grouper_info = {}
-        model_columns, _ = self._compose_edit_col_specs(record)
+        model_columns = self._compose_edit_col_specs(record)
 
         for col in model_columns:
             grouper_2_cols = {}
@@ -856,17 +856,17 @@ class ModelView(object):
 
     def _compose_edit_form(self, record=None):
         # TODO  reserve order
-        edit_col_specs, info_col_specs = self._compose_edit_col_specs(record)
-        assert isinstance(edit_col_specs, dict) and \
-            isinstance(info_col_specs, dict)
+        edit_col_specs = self._compose_edit_col_specs(record)
+        assert isinstance(edit_col_specs, dict)
         if self._edit_form is None:
             col_specs = []
             uneditable_col_specs = []
             for c in itertools.chain(*edit_col_specs.values()):
-                if c.disabled:
-                    uneditable_col_specs.append(c)
-                else:
-                    col_specs.append(c)
+                if c.as_input:  # some info columnes won't be put here
+                    if c.disabled:
+                        uneditable_col_specs.append(c)
+                    else:
+                        col_specs.append(c)
             # why split into 2 form, since only _edit_form will be validated
             # and populated
             self._edit_form = self._scaffold_form(col_specs)
@@ -893,20 +893,24 @@ class ModelView(object):
         # only stuff bound fields take effects
         for fs_name, fs_col_specs in edit_col_specs.items():
             for col_spec in fs_col_specs:
-                try:
-                    bound_field = ret[col_spec.col_name]
-                except KeyError:
-                    bound_field = uneditable_bound_form[col_spec.col_name]
-                bound_field, focus_set = \
-                    self._composed_stuffed_field(record,
-                                                 bound_field,
-                                                 col_spec, focus_set)
+                if col_spec.as_input:
+                    try:
+                        bound_field = ret[col_spec.col_name]
+                    except KeyError:
+                        bound_field = uneditable_bound_form[col_spec.col_name]
+                    bound_field, focus_set = \
+                        self._composed_stuffed_field(record,
+                                                    bound_field,
+                                                    col_spec, focus_set)
+                else:  # info fields
+                    bound_field = self._compose_pseudo_field(ret, record,
+                                                             col_spec)
                 ret.fieldsets.setdefault(fs_name, []).append(bound_field)
-        # stuff the info fields
-        for fs_name, fs_col_specs in info_col_specs.items():
-            for col_spec in fs_col_specs:
-                bound_field = self._compose_pseudo_field(ret, record, col_spec)
-                ret.fieldsets.setdefault(fs_name, []).append(bound_field)
+        ## stuff the info fields
+        #for fs_name, fs_col_specs in info_col_specs.items():
+            #for col_spec in fs_col_specs:
+                #bound_field = self._compose_pseudo_field(ret, record, col_spec)
+                #ret.fieldsets.setdefault(fs_name, []).append(bound_field)
         return ret
 
     def _compose_pseudo_field(self, form, record, col_spec):
@@ -958,7 +962,7 @@ class ModelView(object):
         """
         if not self._create_col_specs:
             self._create_col_specs = \
-                self._compose_normalized_col_specs(self.create_columns)[0]
+                self._compose_normalized_col_specs(self.create_columns)
         if current_step is None:
             return self._create_col_specs
         else:
@@ -984,12 +988,10 @@ class ModelView(object):
             * convert all the column of 'basestring' to InputColumn
             * fill the label and doc of each column
             * if the column is not defined in modell, wipe it
-        :return: 2 OrderedDict, the first's keys are fieldset's name,
-        whose values are a list InputColumnSpec (as input). the second contains
-        the remaining col_specs
+        :return: OrderedDict, the keys are fieldset's name,
+        whose values are a list InputColumnSpec (as input).
         """
         normalized_col_specs = OrderedDict()
-        extra_col_specs = OrderedDict()
 
         if isinstance(columns, types.DictType):
             fieldsets = columns
@@ -1001,7 +1003,9 @@ class ModelView(object):
                 is_str = isinstance(col, basestring)
                 is_input = isinstance(col, ColSpec) and col.as_input
                 col_name = col if is_str else col.col_name
-                #if (is_str or is_input) and self.modell.has_kolumne(col_name):
+                # if the user said the column should be an input, then it will
+                # be, only it may not infer column definition from underlying
+                # modell
                 if (is_str and self.modell.has_kolumne(col_name)) or is_input:
                     kol = None
                     if self.modell.has_kolumne(col_name):
@@ -1020,9 +1024,9 @@ class ModelView(object):
                     col_spec = col
                     if isinstance(col, basestring):
                         col_spec = self._col_spec_from_str(col)
-                    extra_col_specs.setdefault(fieldset_name, []).append(
+                    normalized_col_specs.setdefault(fieldset_name, []).append(
                         col_spec)
-        return normalized_col_specs, extra_col_specs
+        return normalized_col_specs
 
     def _compose_list_col_specs(self):
         if not self._list_col_specs:
@@ -1324,7 +1328,7 @@ class ModelView(object):
         """
         Create form from the model
         """
-        field_dict = dict((col_spec.col_name, col_spec.field) for col_spec in
+        field_dict = dict((col_spec.col_name, col_spec.make_field()) for col_spec in
                           col_specs)
         return type(self.modell.name + 'Form', (BaseForm, ), field_dict)
 
@@ -1338,9 +1342,9 @@ class ModelView(object):
 
     def _compose_edit_col_specs(self, obj):
         if not self._edit_col_specs:
-            self._edit_col_specs, self._info_col_specs = \
+            self._edit_col_specs = \
                 self._compose_normalized_col_specs(self.edit_columns)
-        return self._edit_col_specs, self._info_col_specs
+        return self._edit_col_specs
 
     def _get_url(self, endpoint, **kwargs):
         if isinstance(self.blueprint, Flask):
