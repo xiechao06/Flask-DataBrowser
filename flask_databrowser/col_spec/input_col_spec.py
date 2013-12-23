@@ -65,6 +65,7 @@ class InputColSpec(ColSpec):
         """
         return self.col_name + "." + self.group_by.__class__.__name__
 
+    # TODO should be make_field
     @property
     def field(self):
         """

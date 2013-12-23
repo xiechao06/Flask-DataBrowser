@@ -63,14 +63,23 @@ class Image(object):
                                                        **kwargs))))
         return ''.join(htmls)
 
+#class Link(object):
+    #def __init__(self, anchor, href):
+        #self.anchor = anchor
+        #self.href = href
+
+    #def __call__(self, field, **kwargs):
+        #return HTMLString('<a %s>%s</a>' % (html_params(href=self.href, **kwargs), self.anchor))
+
 class Link(object):
-    def __init__(self, anchor, href):
-        self.anchor = anchor
-        self.href = href
+
+    def __init__(self, target=''):
+        self.target = target
 
     def __call__(self, field, **kwargs):
-        return HTMLString('<a %s>%s</a>' % (html_params(href=self.href, **kwargs), self.anchor))
-
+        anchor, href = field._value()
+        return HTMLString('<a %s>%s</a>' %
+                          (html_params(href=href, target=self.target, **kwargs), anchor))
 
 class PlainText(object):
     def __init__(self, max_len=None,
@@ -84,7 +93,10 @@ class PlainText(object):
         if self.max_len:
             if field._value() and len(field._value()) > self.max_len:
                 abbrev = field._value()[:self.max_len - 3]
-        return render_template(self.template, value=field._value() or '',
+        v = field._value()
+        if v is None:
+            v = ''
+        return render_template(self.template, value=v,
                                abbrev=abbrev,
                                html_params=html_params(**kwargs))
 

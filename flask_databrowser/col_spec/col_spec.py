@@ -20,11 +20,13 @@ class ColSpec(object):
         self.widget = widget
         self.render_kwargs = render_kwargs
 
-    @property
-    def field(self):
+    def make_field(self, record, model_view):
         return PseudoField(self.label, self.col_name,
+                           record=record,
+                           model_view=model_view,
                            widget=self.widget,
                            description=self.doc,
+                           col_spec=self,
                            render_kwargs=self.render_kwargs)
 
 PlainTextColumnSpec = ColSpec  # alias to ColSpec

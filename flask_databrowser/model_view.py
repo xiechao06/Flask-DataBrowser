@@ -27,7 +27,6 @@ from flask.ext.databrowser.form import BaseForm
 from flask.ext.databrowser.constants import (WEB_SERVICE, WEB_PAGE,
                                              BACK_URL_PARAM)
 from .stuffed_field import StuffedField
-from flask.ext.databrowser.extra_widgets import Link
 
 
 class ModelView(object):
@@ -912,7 +911,7 @@ class ModelView(object):
 
     def _compose_pseudo_field(self, form, record, col_spec):
         value = operator.attrgetter(col_spec.col_name)(record)
-        field = col_spec.field
+        field = col_spec.make_field(record, self)
         bound_field = field.bind(form, col_spec.col_name)
         bound_field.process_data(value)
         if hasattr(col_spec, 'override_widget'):
@@ -1388,15 +1387,9 @@ class ModelView(object):
                 fields = []
                 for c in self._compose_list_col_specs():
                     raw_value = operator.attrgetter(c.col_name)(r)
-                    field = c.field
+                    field = c.make_field(r, self)
                     bound_field = field.bind(None, c.col_name)
                     bound_field.process_data(raw_value)
-                    # override widget if c is primary key
-                    if self.modell.primary_key == c.col_name:
-                        href = self.url_for_object(r,
-                                                   **{BACK_URL_PARAM:
-                                                      request.url})
-                        bound_field.widget = Link(anchor=raw_value, href=href)
                     fields.append(bound_field)
 
                 yield dict(pk=pk, fields=fields,
