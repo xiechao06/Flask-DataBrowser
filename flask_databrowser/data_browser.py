@@ -70,9 +70,22 @@ class DataBrowser(object):
     def search_create_url(self, modell, target, on_fly=1):
         try:
             model_view = self.__registered_view_map[modell.token]
-
             model_view.try_create()
             return model_view.url_for_object(None, url=request.url,
                                              on_fly=on_fly, target=target)
+        except (KeyError, PermissionDenied):
+            return None
+
+    def search_obj_url(self, modell):
+        '''
+        note!!! it actually return an object url generator
+        '''
+        try:
+            model_view = self.__registered_view_map[modell.token]
+            model_view.try_edit()
+            def f(pk):
+                obj = modell.query.get(pk)
+                return model_view.url_for_object(obj, url=request.url)
+            return f
         except (KeyError, PermissionDenied):
             return None

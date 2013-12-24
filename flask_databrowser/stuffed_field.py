@@ -25,6 +25,7 @@ class StuffedField(object):
         return getattr(self.field, item)
 
     def __call__(self, *args, **kwargs):
+        kwargs.update(**self._render_kwargs.get('html_params', {}))
         if self.col_spec.disabled:
             kwargs['disabled'] = True
             self.field.validators = [v for v in self.field.validators if not

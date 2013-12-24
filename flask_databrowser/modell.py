@@ -99,3 +99,6 @@ class Modell(object):
 
     def delete_record(self, record):
         raise NotImplementedError
+
+    def search_kolumne(self, col_name):
+        raise NotImplementedError

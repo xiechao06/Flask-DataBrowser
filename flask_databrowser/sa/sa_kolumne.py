@@ -6,6 +6,8 @@ from decimal import Decimal
 from sqlalchemy_utils import types as sa_util_types
 from wtforms import validators, fields, ValidationError, SelectField, TextAreaField, BooleanField, FloatField, \
     PasswordField
+from wtforms.fields.html5 import URLField
+from wtforms.widgets.html5 import URLInput
 from wtforms.widgets import HTMLString, html_params, CheckboxInput, TextArea
 from flask.ext.babel import _
 from sqlalchemy.orm.properties import RelationshipProperty, ColumnProperty
@@ -27,6 +29,7 @@ from flask.ext.databrowser.col_spec import InputColSpec
 from flask.ext.databrowser.sa.sa_fields import GroupedQuerySelectField, QuerySelectField, QuerySelectMultipleField
 
 
+# TODO should mainly use wtforms it self
 class SAKolumne(Kolumne):
     hidden_pk = False
 
@@ -54,6 +57,7 @@ class SAKolumne(Kolumne):
         (sa_util_types.PhoneNumberType, PhoneNumberField),
         (sa_util_types.ScalarListType, StringField),
         (sa_util_types.UUIDType, StringField),
+        (sa_util_types.URLType, URLField),
     ))
 
     WIDGET_MAP = OrderedDict((
@@ -68,7 +72,8 @@ class SAKolumne(Kolumne):
         (IntegerField, NumberInput),
         (TextAreaField, TextArea),
         (TimeField, TimeInput),
-        (StringField, TextInput)
+        (StringField, TextInput),
+        (URLField, URLInput),
     ))
 
     def __init__(self, property_, db):

@@ -1007,19 +1007,18 @@ class ModelView(object):
                 # be, only it may not infer column definition from underlying
                 # modell
                 if (is_str and self.modell.has_kolumne(col_name)) or is_input:
-                    kol = None
-                    if self.modell.has_kolumne(col_name):
-                        kol = self.modell.get_kolumne(col_name)
-                    if is_str:
-                        col_spec = input_col_spec_from_kolumne(kol)
-                    else:
-                        col_spec = col
-                        col_spec.kolumne = kol
-                    if col_spec.doc is None:
-                        col_spec.doc = self.modell.get_column_doc(col_name)
-                    col_spec.data_browser = self.data_browser
-                    normalized_col_specs.setdefault(fieldset_name, []).append(
-                        col_spec)
+                    kol = self.modell.get_kolumne(col_name)
+                    if kol:
+                        if is_str:
+                            col_spec = input_col_spec_from_kolumne(kol)
+                        else:
+                            col_spec = col
+                            col_spec.kolumne = kol
+                        if col_spec.doc is None:
+                            col_spec.doc = self.modell.get_column_doc(col_name)
+                        col_spec.data_browser = self.data_browser
+                        normalized_col_specs.setdefault(fieldset_name,
+                                                        []).append(col_spec)
                 else:
                     col_spec = col
                     if isinstance(col, basestring):

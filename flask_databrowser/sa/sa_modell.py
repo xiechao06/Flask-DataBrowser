@@ -83,6 +83,12 @@ class SAModell(Modell):
         except AttributeError:
             return None
 
+    def search_kolumne(self, col_name):
+        col_def = self._get_last_sa_criterion(col_name)
+        if col_def:
+            return SAKolumne(col_def, self.db)
+        return None
+
     #TODO NO NEED ANY MORE
     @property
     def columns(self):
@@ -140,7 +146,9 @@ class SAModell(Modell):
         return [SAKolumne(p, self.db) for p in self.model.__mapper__.iterate_properties]
 
     def get_kolumne(self, col_name):
-        return SAKolumne(getattr(self.model, col_name), self.db)
+        if self.has_kolumne(col_name):
+            return SAKolumne(getattr(self.model, col_name), self.db)
+        return None
 
     def has_kolumne(self, col_name):
         return hasattr(self.model, col_name) and isinstance(getattr(self.model, col_name), InstrumentedAttribute)
