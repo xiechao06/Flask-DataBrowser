@@ -13,7 +13,7 @@ class HtmlSnippetColSpec(ColSpec):
                                                  render_kwargs=render_kwargs)
         self.template = template
 
-    def make_field(self, record, model_view):
+    def make_field(self, record=None, model_view=None):
         widget = HtmlSnippet(template=self.template, obj=record,
                              render_kwargs=self.render_kwargs)
         return PseudoField(self.label, self.col_name,

@@ -24,3 +24,6 @@ class InputHtmlSnippetColSpec(InputColSpec, HtmlSnippetColSpec):
             kolumne=kolumne,
             render_kwargs=render_kwargs)
         self.template = template
+
+    def make_field(self, record=None, model_view=None):
+        return HtmlSnippetColSpec.make_field(self, record, model_view)

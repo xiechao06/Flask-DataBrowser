@@ -12,7 +12,7 @@ import uuid
 import time
 from flask.ext.babel import gettext, ngettext
 from wtforms import fields, widgets
-from wtforms.widgets import HTMLString, html_params, Select, TextInput
+from wtforms.widgets import (HTMLString, html_params, Select, TextInput)
 from wtforms.compat import text_type
 from flask.ext.databrowser.sa.sa_utils import get_primary_key
 from flask.ext.databrowser.utils import random_str
@@ -464,6 +464,6 @@ class HtmlSnippet(object):
         else:
             options = None
 
-        return render_template(self.template, field_value=field._value(),
+        return render_template(self.template, field=field,
                                obj=self.obj, options=options,
                                **self.render_kwargs)

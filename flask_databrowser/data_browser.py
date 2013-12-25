@@ -11,11 +11,14 @@ from flask.ext.databrowser.constants import WEB_PAGE, WEB_SERVICE
 
 
 class DataBrowser(object):
-    def __init__(self, app, logger=None, upload_folder='uploads'):
+    def __init__(self, app, logger=None, upload_folder='uploads',
+                 plugins=None):
         self.logger = logger or app.logger
         self.blueprint = Blueprint("__data_browser__", __name__,
                                    static_folder="static",
                                    template_folder="templates")
+        for plugin in plugins:
+            self._enable_plugin(plugin)
         self.app = app
         self._init_app()
         self.__registered_view_map = {}
@@ -83,9 +86,16 @@ class DataBrowser(object):
         try:
             model_view = self.__registered_view_map[modell.token]
             model_view.try_edit()
+
             def f(pk):
                 obj = modell.query.get(pk)
                 return model_view.url_for_object(obj, url=request.url)
             return f
         except (KeyError, PermissionDenied):
             return None
+
+    def _enable_plugin(self, plugin_name):
+
+        pkg = __import__('flask_databrowser.plugins.' + plugin_name,
+                         fromlist=[plugin_name])
+        pkg.setup(self)

@@ -1327,8 +1327,9 @@ class ModelView(object):
         """
         Create form from the model
         """
-        field_dict = dict((col_spec.col_name, col_spec.make_field()) for col_spec in
-                          col_specs)
+        field_dict = dict((col_spec.col_name,
+                           col_spec.make_field(model_view=self))
+                          for col_spec in col_specs)
         return type(self.modell.name + 'Form', (BaseForm, ), field_dict)
 
     def _composed_stuffed_field(self, obj, bound_field, col_spec, focus_set):
