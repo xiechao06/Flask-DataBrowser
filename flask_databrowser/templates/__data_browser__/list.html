@@ -280,9 +280,9 @@
       <tr{% if row.css %} class="{{ row.css }}" {% endif %}
       {% if row.attrs %} {% for k,v in row.attrs.items() %}{{ k }}="{{ v }}"{% endfor %}{% endif %}>
       {% if model_view.can_batchly_edit %}
-        <td><input type="checkbox" value="{{ row.pk }}" name="selected-ids"/></td>
+        <td style='width: 10px'><input type="checkbox" value="{{ row.pk }}" name="selected-ids"/></td>
       {% elif __actions__ %}
-        <td><input type="radio" value="{{ row.pk }}" name="selected-ids"/></td>
+        <td style='width: 10px'><input type="radio" value="{{ row.pk }}" name="selected-ids"/></td>
       {% endif %}
       {% for v in row.fields %}
         {% if v.link %}
