@@ -20,13 +20,14 @@ class StuffedField(object):
             self.field.widget = col_spec.override_widget(obj)
         if not col_spec.disabled:
             self.create_url = col_spec.remote_create_url
+        self.__read_only__ = self.col_spec.disabled
 
     def __getattr__(self, item):
         return getattr(self.field, item)
 
     def __call__(self, *args, **kwargs):
         kwargs.update(**self._render_kwargs.get('html_params', {}))
-        if self.col_spec.disabled:
+        if self.__read_only__:
             kwargs['disabled'] = True
             self.field.validators = [v for v in self.field.validators if not
                                      isinstance(v, validators.DataRequired)]
@@ -43,10 +44,6 @@ class StuffedField(object):
     @property
     def __render_kwargs__(self):
         return self._render_kwargs
-
-    @property
-    def __read_only__(self):
-        return self.col_spec.disabled
 
     @property
     def __as_input__(self):

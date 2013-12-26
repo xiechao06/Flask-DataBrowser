@@ -12,8 +12,9 @@ from werkzeug.utils import cached_property
 from .utils import TemplateParam, raised_when
 from flask.ext.databrowser.sa.sa_utils import get_primary_key
 
-_raised_when_model_unset = raised_when(lambda inst, *args, **kwargs: not inst.model_view,
-                                       RuntimeError(r'field "model view" unset, you should set it'))
+_runtime_error = RuntimeError(r'field "model view" unset, you should set it')
+_raised_when_model_unset = raised_when(lambda inst, *args, **kwargs:
+                                       not inst.model_view, _runtime_error)
 
 
 class BaseFilter(TemplateParam):
@@ -22,14 +23,14 @@ class BaseFilter(TemplateParam):
 
     def __init__(self, col_name, name="", options=None, opt_formatter=None,
                  label=None, hidden=False,
-                 default_value=None):
+                 default_value=None, value=None):
         # TODO datetime unsupported
         self.op = namedtuple("op",
                              ["name", "id"])(name,
                                              col_name + self.__notation__)
         self.col_name = col_name
         self.label = label
-        self.value = None
+        self.value = value
         self.model_view = None
         self.__options = options or []
         self.opt_formatter = opt_formatter
@@ -136,7 +137,8 @@ class BaseFilter(TemplateParam):
         # NOTE! we don't join table here
         if hasattr(self.attr.property, 'direction'):
             # translate the relation
-            filter_criterion = self.__operator__(self.attr.property.local_remote_pairs[0][0], self.value)
+            filter_criterion = self.__operator__(self.attr.property.local_remote_pairs[0][0],
+                                                 self.value)
         else:
             filter_criterion = self.__operator__(self.attr, self.value)
         q = q.filter(filter_criterion)
@@ -149,7 +151,11 @@ class BaseFilter(TemplateParam):
         # NOTE! we don't join table here
         # TODO no sa
         if hasattr(self.attr.property, 'direction'):
-            filter_criterion = self.__operator__(self.attr.property.local_remote_pairs[0][0], self.value)
+            value = self.value
+            if hasattr(self.value, '__mapper__'):
+                value = self.model_view.modell.get_pk_value(self.value)
+            filter_criterion = self.__operator__(
+                self.attr.property.local_remote_pairs[0][0], value)
         else:
             filter_criterion = self.__operator__(self.attr, self.value)
         q = q.filter(filter_criterion)

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from flask.ext.babel import _
+from sqlalchemy.orm.properties import RelationshipProperty, ColumnProperty
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 from flask.ext.databrowser.modell import Modell
 from flask.ext.databrowser.exceptions import InvalidArgumentError
@@ -79,7 +80,10 @@ class SAModell(Modell):
             for attr_name in attr_name_list[:-1]:
                 last_prop = getattr(last_model, attr_name).property
                 last_model = last_prop.mapper.class_
-            return getattr(last_model, attr_name_list[-1])
+            ret = getattr(last_model, attr_name_list[-1])
+            if isinstance(ret, (ColumnProperty, RelationshipProperty,
+                                InstrumentedAttribute)):
+                return ret
         except AttributeError:
             return None
 

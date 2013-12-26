@@ -15,7 +15,7 @@ from werkzeug.utils import secure_filename
 from flask import (render_template, flash, request, url_for, redirect, Flask,
                    make_response, jsonify, abort)
 from flask.ext.babel import _
-from flask.ext.principal import PermissionDenied
+from flask.ext.principal import PermissionDenied, Permission
 from flask.ext.sqlalchemy import Pagination
 from flask_upload2.fields import FileField
 
@@ -52,13 +52,12 @@ class ModelView(object):
     column_hide_backrefs = True
     list_template = "__data_browser__/list.html"
     create_template = edit_template = "__data_browser__/form.html"
-    can_batchly_edit = True
 
     hidden_pk = True
     create_in_steps = False
     step_create_templates = []
 
-    def __init__(self, modell, page_size=16):
+    def __init__(self, modell, page_size=16, permission_required=True):
         self.modell = modell
         self.blueprint = None
         self.extra_params = {}
@@ -71,6 +70,20 @@ class ModelView(object):
         self._create_form = self._edit_form = \
             self._batch_edit_form = None
         self.page_size = page_size
+        self.permission_required = permission_required
+
+        self.create_need = (_('create'), self.modell.label)
+        self.edit_need = lambda id_: (_('edit'), self.modell.label, id_)
+        self.edit_all_need = (_('edit'), _('all'), self.modell.label)
+        self.view_all_need = (_('view'), _('all'), self.modell.label)
+        self.view_need = lambda id_: (_('view'), self.modell.label, id_)
+        self.remove_need = lambda id_: (_('remove'), self.modell.label, id_)
+        self.remove_all_need = (_('remove'), _('all'), self.modell.label)
+
+
+    @property
+    def can_batchly_edit(self):
+        return False
 
     @property
     def list_columns(self):
@@ -294,10 +307,10 @@ class ModelView(object):
             preprocessed_record = self.expand_model(record)
             try:
                 self.try_edit([preprocessed_record])
-                read_only = False
+                readonly = False
             except PermissionDenied:
-                read_only = True
-            form = self._compose_edit_form(record=preprocessed_record)
+                readonly = True
+            form = self._compose_edit_form(preprocessed_record, readonly)
             if form.validate_on_submit():  # ON POST
                 ret = self._update_objs(form, [record])
                 if ret:
@@ -312,7 +325,7 @@ class ModelView(object):
                         url = urlparse.urlunparse(url_parts)
                         return redirect(url)
             hint_message = self.edit_hint_message(preprocessed_record,
-                                                  read_only)
+                                                  readonly)
             all_customized_actions = self._compose_actions(
                 [preprocessed_record])
             help_message = self.get_edit_help(preprocessed_record)
@@ -324,10 +337,10 @@ class ModelView(object):
             self.try_view(preprocessed_records)
             try:
                 self.try_edit(preprocessed_records)
-                read_only = False
+                readonly = False
             except PermissionDenied:
-                read_only = True
-            form = self._compose_batch_edit_form(records)
+                readonly = True
+            form = self._compose_batch_edit_form(records, readonly)
             # we must validate batch edit as well
             if form.is_submitted():  # ON POST
                 ret = self._update_objs(form, records)
@@ -339,7 +352,7 @@ class ModelView(object):
                         return redirect(request.url)
             # ON GET
             hint_message = self.batch_edit_hint_message(preprocessed_records,
-                                                        read_only)
+                                                        readonly)
             all_customized_actions = \
                 self._compose_actions(preprocessed_records)
             help_message = self.get_edit_help(preprocessed_records)
@@ -372,7 +385,7 @@ class ModelView(object):
                             hint_message=hint_message,
                             help_message=help_message,
                             model_view=self,
-                            __read_only__=read_only,
+                            __read_only__=readonly,
                             in_batch_mode=in_batch_mode,
                             **kwargs)
         if form.is_submitted():
@@ -399,16 +412,33 @@ class ModelView(object):
 
         :param objs: the objs to be viewed, is None, we are in list view
         """
-        pass
+        # note!!! we consider edit permission is stronger than view permission
+        if self.permission_required:
+            if processed_objs:
+                if not Permission(self.edit_all_need).can():
+                    if not Permission(self.view_all_need).can():
+                        for o in processed_objs:
+                            pk = self.modell.get_pk_value(o)
+                            if not Permission(self.edit_need(pk)).can():
+                                Permission(self.view_need(pk)).test()
+            else:
+                if not Permission(self.edit_all_need).can():
+                    Permission(self.view_all_need).test()
 
     def try_create(self):
         """
         control if user could create the new object
         """
-        pass
+        if self.permission_required:
+            Permission(self.create_need).test()
 
     def try_edit(self, processed_objs=None):
-        pass
+        if self.permission_required:
+            if processed_objs:
+                if not Permission(self.edit_all_need).can():
+                    for o in processed_objs:
+                        pk = self.modell.get_pk_value(o)
+                        Permission(self.edit_need(pk)).test()
 
     def create_view(self):
         self.try_create()
@@ -554,9 +584,9 @@ class ModelView(object):
             action_name = request.form.get("__action__")
             models = self.modell.get_items(
                 request.form.getlist('selected-ids'))
-            for action in self._compose_actions():
+            processed_objs = [self.expand_model(obj) for obj in models]
+            for action in self._compose_actions(processed_objs):
                 if action.name == action_name:
-                    processed_objs = [self.expand_model(obj) for obj in models]
                     action.try_(processed_objs)
                     try:
                         ret = action.op_upon_list(processed_objs, self)
@@ -826,6 +856,35 @@ class ModelView(object):
     #                                self.create_api,
     #                                methods=["GET", "POST"])
 
+    def grant_all(self, identity):
+        identity.provides.add(self.create_need)
+        identity.provides.add(self.view_all_need)
+        identity.provides.add(self.edit_all_need)
+        identity.provides.add(self.remove_all_need)
+
+    def grant_create(self, identity):
+        identity.provides.add(self.create_need)
+
+    def grant_remove(self, identity, pk=None):
+        if pk is None:
+            identity.provides.add(self.remove_all_need)
+        else:
+            identity.provides.add(self.remove_need(pk))
+
+    def grant_edit(self, identity, pk=None):
+        if pk is None:
+            need = self.edit_all_need
+        else:
+            need = self.edit_need(pk)
+        identity.provides.add(need)
+
+    def grant_view(self, identity, pk=None):
+        if pk is None:
+            need = self.view_all_need
+        else:
+            need = self.view_need(pk)
+        identity.provides.add(need)
+
     def _parse_args(self):
         page = request.args.get("page", 1, type=int)
         order_by = request.args.get("order_by")
@@ -854,7 +913,7 @@ class ModelView(object):
                 order_by = self.default_order[0]
         return offset, limit, order_by, desc
 
-    def _compose_edit_form(self, record=None):
+    def _compose_edit_form(self, record, readonly):
         # TODO  reserve order
         edit_col_specs = self._compose_edit_col_specs(record)
         assert isinstance(edit_col_specs, dict)
@@ -863,7 +922,7 @@ class ModelView(object):
             uneditable_col_specs = []
             for c in itertools.chain(*edit_col_specs.values()):
                 if c.as_input:  # some info columnes won't be put here
-                    if c.disabled:
+                    if c.disabled or readonly:
                         uneditable_col_specs.append(c)
                     else:
                         col_specs.append(c)
@@ -900,8 +959,10 @@ class ModelView(object):
                         bound_field = uneditable_bound_form[col_spec.col_name]
                     bound_field, focus_set = \
                         self._composed_stuffed_field(record,
-                                                    bound_field,
-                                                    col_spec, focus_set)
+                                                     bound_field,
+                                                     col_spec, focus_set)
+                    if readonly:
+                        bound_field.__read_only__ = True
                 else:  # info fields
                     bound_field = self._compose_pseudo_field(ret, record,
                                                              col_spec)
@@ -922,8 +983,8 @@ class ModelView(object):
             bound_field.widget = col_spec.override_widget(record)
         return bound_field
 
-    def _compose_batch_edit_form(self, records):
-        batch_edit_col_specs = self._compose_batch_edit_col_specs()[0]
+    def _compose_batch_edit_form(self, records, readonly):
+        batch_edit_col_specs = self._compose_batch_edit_col_specs()
         assert isinstance(batch_edit_col_specs, dict)
         if self._batch_edit_form is None:
             self._batch_edit_form = self._scaffold_form(
@@ -953,6 +1014,8 @@ class ModelView(object):
                     self._composed_stuffed_field(fake_obj,
                                                  ret[col_spec.col_name],
                                                  col_spec, focus_set)
+                if readonly:
+                    bound_field.__read_only__ = True
                 ret.fieldsets.setdefault(fs_name, []).append(bound_field)
         return ret
 
@@ -1133,7 +1196,9 @@ class ModelView(object):
         ret = []
         for action in self.get_actions(processed_objs):
             action.model_view = self
-            ret.append(action)
+            if not processed_objs or action.permission is None or \
+               action.permission.can():
+                ret.append(action)
         return ret
 
     def _update_objs(self, form, objs):
@@ -1159,7 +1224,7 @@ class ModelView(object):
                                 _(u"can't apply %(action)s due to %(reason)s",
                                   action=action.name,
                                   reason=action.get_forbidden_msg_formats()[
-                                      ret_code] % unicode(obj)),
+                                      ret_code] % {'obj': unicode(obj)}),
                                 'error')
                             return False
                     try:

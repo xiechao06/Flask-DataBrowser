@@ -1,6 +1,7 @@
 # -*- coding: UTF-8 -*-
 from flask import redirect, request
 from flask.ext.babel import _
+from .constants import BACK_URL_PARAM
 from .utils import raised_when
 
 _raised_when_model_view_unset = raised_when(lambda inst, *args, **kwargs: not inst.model_view,
@@ -84,7 +85,7 @@ class DeleteAction(BaseAction):
     def op_upon_list(self, objs, model_view):
         for obj in objs:
             self._op(obj, model_view)
-        return redirect(request.args.get('url', request.url))
+        return redirect(request.args.get(BACK_URL_PARAM, request.url))
 
     def op(self, obj):
         # even a model-like object could be deleted

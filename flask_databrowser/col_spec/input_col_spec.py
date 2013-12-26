@@ -7,6 +7,7 @@ class InputColSpec(ColSpec):
 
     as_input = True
 
+    # TODO need default_value parameter
     def __init__(self, col_name, label=None, group_by=None, disabled=False, doc=None,
                  formatter=None, filter_=None,
                  opt_filter=None,  validators=None,

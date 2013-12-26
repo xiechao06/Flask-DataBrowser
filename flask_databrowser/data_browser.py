@@ -99,3 +99,7 @@ class DataBrowser(object):
         pkg = __import__('flask_databrowser.plugins.' + plugin_name,
                          fromlist=[plugin_name])
         pkg.setup(self)
+
+    def grant_all(self, identity):
+        for model_view in self.__registered_view_map.values():
+            model_view.grant_all(identity)
