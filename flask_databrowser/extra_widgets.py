@@ -83,9 +83,11 @@ class Link(object):
 
 class PlainText(object):
     def __init__(self, max_len=None,
-                 template='/__data_browser__/snippets/plain-text.html'):
+                 template='/__data_browser__/snippets/plain-text.html',
+                 placeholder=' -- '):
         self.max_len = max_len
         self.template = template
+        self.placeholder = placeholder
 
     def __call__(self, field, **kwargs):
         # TODO just hand code
@@ -95,7 +97,7 @@ class PlainText(object):
                 abbrev = field._value()[:self.max_len - 3]
         v = field._value()
         if v is None:
-            v = ''
+            v = self.placeholder
         return render_template(self.template, value=v,
                                abbrev=abbrev,
                                html_params=html_params(**kwargs))

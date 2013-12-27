@@ -47,11 +47,27 @@ class PseudoField(fields.Field):
                                 self.href = href
 
                             def __call__(self, v, obj):
+                                if v is None:
+                                    return None
                                 pk = self.remote_side.get_pk_value(v)
                                 return (v, self.href(pk))
                         self.formatter = _Formatter(kol, href)
                         if not self.widget:
-                            self.widget = extra_widgets.Link('_blank')
+                            # due to permission, although there do be a page
+                            # of remote object, but current user can't see,
+                            # so we won't display link to it
+                            def _widget(field, **kwargs):
+                                if field.data is None:
+                                    return extra_widgets.PlainText()(field,
+                                                                     **kwargs)
+                                elif field.data[1] is None:
+                                    field.data = field.data[0]
+                                    return extra_widgets.PlainText()(field,
+                                                                     **kwargs)
+                                else:
+                                    return extra_widgets.Link(
+                                        '_blank')(field, **kwargs)
+                            self.widget = _widget
         else:
             self.formatter = self.col_spec.formatter
         if not self.widget:

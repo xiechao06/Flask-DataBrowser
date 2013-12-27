@@ -22,6 +22,7 @@ from flask_upload2.fields import FileField
 from flask.ext.databrowser import filters
 from flask.ext.databrowser.col_spec import (ColSpec, InputColSpec,
                                             input_col_spec_from_kolumne)
+from flask.ext.databrowser.action import ACTION_OK
 from flask.ext.databrowser.exceptions import ValidationError
 from flask.ext.databrowser.form import BaseForm
 from flask.ext.databrowser.constants import (WEB_SERVICE, WEB_PAGE,
@@ -79,7 +80,6 @@ class ModelView(object):
         self.view_need = lambda id_: (_('view'), self.modell.label, id_)
         self.remove_need = lambda id_: (_('remove'), self.modell.label, id_)
         self.remove_all_need = (_('remove'), _('all'), self.modell.label)
-
 
     @property
     def can_batchly_edit(self):
@@ -586,8 +586,8 @@ class ModelView(object):
                 request.form.getlist('selected-ids'))
             processed_objs = [self.expand_model(obj) for obj in models]
             for action in self._compose_actions(processed_objs):
-                if action.name == action_name:
-                    action.try_(processed_objs)
+                if action.name == action_name and \
+                   action.test(*processed_objs) == ACTION_OK:
                     try:
                         ret = action.op_upon_list(processed_objs, self)
                         if isinstance(ret, tuple):
@@ -626,7 +626,7 @@ class ModelView(object):
             def _get_forbidden_actions(obj):
                 ret = []
                 for action in self._compose_actions():
-                    test_code = action.test_enabled(obj)
+                    test_code = action.test(obj)
                     if test_code != 0:
                         ret.append((action.name, test_code))
                 return ret
@@ -636,8 +636,7 @@ class ModelView(object):
                     "name": action.name,
                     "warn_msg": action.warn_msg,
                     "icon": action.data_icon,
-                    "forbidden_message_formats":
-                    action.get_forbidden_msg_formats(),
+                    "forbidden_message_formats": action.forbidden_msg_formats,
                 }
 
             # NOTE!!! direct action shouldn't be passed, they're
@@ -745,7 +744,7 @@ class ModelView(object):
     def scaffold_actions(self):
         return [dict(name=action.name, value=action.name,
                      css_class=action.css_class, data_icon=action.data_icon,
-                     forbidden_msg_formats=action.get_forbidden_msg_formats(),
+                     forbidden_msg_formats=action.forbidden_msg_formats,
                      warn_msg=action.warn_msg,
                      direct=action.readonly)
                 for action in self._compose_actions()]
@@ -967,11 +966,6 @@ class ModelView(object):
                     bound_field = self._compose_pseudo_field(ret, record,
                                                              col_spec)
                 ret.fieldsets.setdefault(fs_name, []).append(bound_field)
-        ## stuff the info fields
-        #for fs_name, fs_col_specs in info_col_specs.items():
-            #for col_spec in fs_col_specs:
-                #bound_field = self._compose_pseudo_field(ret, record, col_spec)
-                #ret.fieldsets.setdefault(fs_name, []).append(bound_field)
         return ret
 
     def _compose_pseudo_field(self, form, record, col_spec):
@@ -1082,6 +1076,10 @@ class ModelView(object):
                         col_spec.data_browser = self.data_browser
                         normalized_col_specs.setdefault(fieldset_name,
                                                         []).append(col_spec)
+                    else:
+                        col.data_browser = self.data_browser
+                        normalized_col_specs.setdefault(fieldset_name,
+                                                        []).append(col)
                 else:
                     col_spec = col
                     if isinstance(col, basestring):
@@ -1193,11 +1191,16 @@ class ModelView(object):
         return []
 
     def _compose_actions(self, processed_objs=None):
+        '''
+        compose actions, when in list view, all actions will be returned,
+        but in form, only enabled actions will be returned
+        :return: a list of BaseAction
+        '''
         ret = []
+        in_list_view = not processed_objs
         for action in self.get_actions(processed_objs):
             action.model_view = self
-            if not processed_objs or action.permission is None or \
-               action.permission.can():
+            if in_list_view or action.test(*processed_objs) == ACTION_OK:
                 ret.append(action)
         return ret
 
@@ -1216,14 +1219,13 @@ class ModelView(object):
         if action_name:
             for action in self._compose_actions(processed_objs):
                 if action.name == action_name:
-                    action.try_(processed_objs)
                     for obj in processed_objs:
-                        ret_code = action.test_enabled(obj)
-                        if ret_code != 0:
+                        ret_code = action.test(obj)
+                        if ret_code != ACTION_OK:
                             flash(
                                 _(u"can't apply %(action)s due to %(reason)s",
                                   action=action.name,
-                                  reason=action.get_forbidden_msg_formats()[
+                                  reason=action.forbidden_msg_formats[
                                       ret_code] % {'obj': unicode(obj)}),
                                 'error')
                             return False
@@ -1468,7 +1470,7 @@ class ModelView(object):
                            obj=r,
                            forbidden_actions=[action.name for action in
                                               self._compose_actions() if
-                                              action.test_enabled(r) != 0])
+                                              action.test(r) != ACTION_OK])
 
         return [] if not objs else list(g())
 
@@ -1524,8 +1526,8 @@ class ModelView(object):
                 preprocessed_model = self.expand_model(model)
                 d = {"name": unicode(model), "actions": {}}
                 for action in customized_actions:
-                    error_code = action.test_enabled(preprocessed_model)
-                    if error_code is not None:
+                    error_code = action.test(preprocessed_model)
+                    if error_code != ACTION_OK:
                         d["actions"][action.name] = error_code
                 ret[id] = d
         return ret

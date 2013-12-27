@@ -7,7 +7,8 @@ from flask.ext.databrowser.col_spec import LinkColumnSpec
 from flask.ext.databrowser.utils import (url_for_other_page,
                                          urlencode_filter,
                                          truncate_str)
-from flask.ext.databrowser.constants import WEB_PAGE, WEB_SERVICE
+from flask.ext.databrowser.constants import (WEB_PAGE, WEB_SERVICE,
+                                             BACK_URL_PARAM)
 
 
 class DataBrowser(object):
@@ -85,11 +86,16 @@ class DataBrowser(object):
         '''
         try:
             model_view = self.__registered_view_map[modell.token]
-            model_view.try_edit()
 
             def f(pk):
                 obj = modell.query.get(pk)
-                return model_view.url_for_object(obj, url=request.url)
+                try:
+                    model_view.try_view([model_view.expand_model(obj)])
+                    return model_view.url_for_object(obj,
+                                                     **{BACK_URL_PARAM:
+                                                        request.url})
+                except PermissionDenied:
+                    return None
             return f
         except (KeyError, PermissionDenied):
             return None
