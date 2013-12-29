@@ -74,13 +74,14 @@ class BaseAction(object):
                  records=",".join(unicode(record) for record in records))
 
     def test(self, *records):
-        def _get_edit_need(obj):
-            pk = self._model_view.modell.get_pk_value(obj)
-            return self._model_view.edit_need(pk)
-        needs = [_get_edit_need(record) for record in records]
-        perm = Permission(*needs).union(Permission(
-            self._model_view.edit_all_need))
-        return 0 if perm.can() else ACTION_IMPERMISSIBLE
+        if self._model_view.permission_required:
+            def _get_edit_need(obj):
+                pk = self._model_view.modell.get_pk_value(obj)
+                return self._model_view.edit_need(pk)
+            needs = [_get_edit_need(record) for record in records]
+            perm = Permission(*needs).union(Permission(
+                self._model_view.edit_all_need))
+            return 0 if perm.can() else ACTION_IMPERMISSIBLE
 
     @property
     def forbidden_msg_formats(self):
@@ -123,10 +124,11 @@ class DeleteAction(BaseAction):
         return self.model_view.modell.delete_record(obj)
 
     def test(self, *records):
-        def _get_remove_need(obj):
-            pk = self._model_view.modell.get_pk_value(obj)
-            return self._model_view.remove_need(pk)
-        needs = [_get_remove_need(record) for record in records]
-        perm = Permission(*needs).union(Permission(
-            self._model_view.remove_all_need))
-        return 0 if perm.can() else ACTION_IMPERMISSIBLE
+        if self._model_view.permission_required:
+            def _get_remove_need(obj):
+                pk = self._model_view.modell.get_pk_value(obj)
+                return self._model_view.remove_need(pk)
+            needs = [_get_remove_need(record) for record in records]
+            perm = Permission(*needs).union(Permission(
+                self._model_view.remove_all_need))
+            return 0 if perm.can() else ACTION_IMPERMISSIBLE

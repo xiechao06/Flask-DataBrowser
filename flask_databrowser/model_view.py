@@ -310,7 +310,7 @@ class ModelView(object):
                 readonly = False
             except PermissionDenied:
                 readonly = True
-            form = self._compose_edit_form(preprocessed_record, readonly)
+            form = self._compose_edit_form(record, readonly)
             if form.validate_on_submit():  # ON POST
                 ret = self._update_objs(form, [record])
                 if ret:
@@ -358,7 +358,7 @@ class ModelView(object):
             help_message = self.get_edit_help(preprocessed_records)
             actions = all_customized_actions
         grouper_info = {}
-        model_columns = self._compose_edit_col_specs(record)
+        model_columns = self._compose_edit_col_specs()
 
         for col in model_columns:
             grouper_2_cols = {}
@@ -914,7 +914,7 @@ class ModelView(object):
 
     def _compose_edit_form(self, record, readonly):
         # TODO  reserve order
-        edit_col_specs = self._compose_edit_col_specs(record)
+        edit_col_specs = self._compose_edit_col_specs()
         assert isinstance(edit_col_specs, dict)
         if self._edit_form is None:
             col_specs = []
@@ -939,7 +939,11 @@ class ModelView(object):
                 else:
                     setattr(record, k, v)
         ret = self._edit_form(obj=record)
-        uneditable_bound_form = self._uneditable_form(obj=record)
+        if hasattr(self, '_uneditable_form'):
+            uneditable_bound_form = self._uneditable_form(obj=record)
+        else:
+            uneditable_bound_form =  {}
+        record = self.expand_model(record)
         # compose bound_field sets, note! bound_field sets are our stuffs
         # other than
         # the standard wtforms.Form, they are ONLY use to generate form
@@ -1407,7 +1411,7 @@ class ModelView(object):
         field = StuffedField(obj, bound_field, col_spec, focus_set)
         return field, field.__auto_focus__
 
-    def _compose_edit_col_specs(self, obj):
+    def _compose_edit_col_specs(self):
         if not self._edit_col_specs:
             self._edit_col_specs = \
                 self._compose_normalized_col_specs(self.edit_columns)
@@ -1534,7 +1538,10 @@ class ModelView(object):
 
     def _get_extra_params(self, view_name):
         kwargs = self.extra_params.get(view_name, {})
+        ret = {}
         for k, v in kwargs.items():
             if isinstance(v, types.FunctionType):
-                kwargs[k] = v(self)
-        return kwargs
+                ret[k] = v(self)
+            else:
+                ret[k] = v
+        return ret
