@@ -51,8 +51,8 @@ class ModelView(object):
     language = "en"
     #TODO should rename to hide_backrefs
     column_hide_backrefs = True
-    list_template = "__data_browser__/list.html"
-    create_template = edit_template = "__data_browser__/form.html"
+    list_template = "data_browser__/list.html"
+    create_template = edit_template = "data_browser__/form.html"
 
     hidden_pk = True
     create_in_steps = False
@@ -462,7 +462,7 @@ class ModelView(object):
                 else:
                     if on_fly:
                         return render_template(
-                            "__data_browser__/on_fly_result.html",
+                            "data_browser__/on_fly_result.html",
                             model_cls=self.modell.name,
                             obj=unicode(model),
                             obj_pk=self.modell.get_pk_value(model),
@@ -1037,9 +1037,9 @@ class ModelView(object):
     def _get_step_create_template(self, step):
         try:
             return self.step_create_templates[step] or \
-                '__data_browser__/form.html'
+                'data_browser__/form.html'
         except IndexError:
-            return '__data_browser__/form.html'
+            return 'data_browser__/form.html'
 
     def _compose_normalized_col_specs(self, columns):
         """

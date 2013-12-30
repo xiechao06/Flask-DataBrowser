@@ -15,7 +15,7 @@ class DataBrowser(object):
     def __init__(self, app, logger=None, upload_folder='uploads',
                  plugins=None):
         self.logger = logger or app.logger
-        self.blueprint = Blueprint("__data_browser__", __name__,
+        self.blueprint = Blueprint("data_browser__", __name__,
                                    static_folder="static",
                                    template_folder="templates")
         for plugin in plugins:
@@ -33,7 +33,7 @@ class DataBrowser(object):
         self.app.jinja_env.filters['truncate'] = truncate_str
         # register it for using the templates of data browser
         self.app.register_blueprint(self.blueprint,
-                                    url_prefix="/__data_browser__")
+                                    url_prefix="/data_browser__")
 
     def register_modell(self, modell, blueprint=None):
         from flask.ext.databrowser.model_view import ModelView

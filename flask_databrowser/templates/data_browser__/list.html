@@ -1,4 +1,4 @@
-{% extends "__data_browser__/layout.html" %}
+{% extends "data_browser__/layout.html" %}
 
 {% block __data_browser__builtin_head_block %}
   <script>
@@ -140,7 +140,7 @@
           {% block actions %}
             {{ render_footer_action_bar() }}
           {% endblock actions %}
-          {% from "__data_browser__/macro.html" import render_pagination %}
+          {% from "data_browser__/macro.html" import render_pagination %}
           {{ render_pagination(__pagination__, __count__, g.request_from_mobile) }}
         {% else %}
           <p class="text-error">{{ _("no results matched!") }}</p>

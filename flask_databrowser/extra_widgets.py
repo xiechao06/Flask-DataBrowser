@@ -83,7 +83,7 @@ class Link(object):
 
 class PlainText(object):
     def __init__(self, max_len=None,
-                 template='/__data_browser__/snippets/plain-text.html',
+                 template='/data_browser__/snippets/plain-text.html',
                  placeholder=' -- '):
         self.max_len = max_len
         self.template = template

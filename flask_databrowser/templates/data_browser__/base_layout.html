@@ -8,24 +8,24 @@
   {% block __data_browser__head_block %}
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <link href="{{ url_for('__data_browser__.static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
-    <link href="{{ url_for('__data_browser__.static', filename='css/font-awesome.min.css') }}" rel="stylesheet">
-    <link href="{{ url_for('__data_browser__.static', filename='css/select2.css') }}" rel="stylesheet"/>
-    <link href="{{ url_for('__data_browser__.static', filename='css/select2-bootstrap.css') }}" rel="stylesheet"/>
-    <link href="{{ url_for('__data_browser__.static', filename='css/admin.css') }}" rel="stylesheet"/>
-    <link href="{{ url_for('__data_browser__.static', filename='css/bootstrap-datetimepicker.min.css') }}" rel="stylesheet"/>
-    <script src="{{ url_for('__data_browser__.static', filename='js/jquery-1.9.1.min.js') }}"></script>
-    <script src="{{ url_for('__data_browser__.static', filename='js/select2.min.js') }}"></script>
-    <script src="{{ url_for('__data_browser__.static', filename='js/bootstrap.min.js') }}"></script>
-    <script src="{{ url_for('__data_browser__.static', filename='js/bootstrap-datetimepicker.min.js') }}"></script>
-    <script src="{{ url_for('__data_browser__.static', filename='js/form.js') }}"></script>
-    <script src="{{ url_for('__data_browser__.static', filename='js/sprintf-0.6.js') }}"></script>
-    <script src="{{ url_for('__data_browser__.static', filename='js/url.min.js') }}"></script>
+    <link href="{{ url_for('data_browser__.static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
+    <link href="{{ url_for('data_browser__.static', filename='css/font-awesome.min.css') }}" rel="stylesheet">
+    <link href="{{ url_for('data_browser__.static', filename='css/select2.css') }}" rel="stylesheet"/>
+    <link href="{{ url_for('data_browser__.static', filename='css/select2-bootstrap.css') }}" rel="stylesheet"/>
+    <link href="{{ url_for('data_browser__.static', filename='css/admin.css') }}" rel="stylesheet"/>
+    <link href="{{ url_for('data_browser__.static', filename='css/bootstrap-datetimepicker.min.css') }}" rel="stylesheet"/>
+    <script src="{{ url_for('data_browser__.static', filename='js/jquery-1.9.1.min.js') }}"></script>
+    <script src="{{ url_for('data_browser__.static', filename='js/select2.min.js') }}"></script>
+    <script src="{{ url_for('data_browser__.static', filename='js/bootstrap.min.js') }}"></script>
+    <script src="{{ url_for('data_browser__.static', filename='js/bootstrap-datetimepicker.min.js') }}"></script>
+    <script src="{{ url_for('data_browser__.static', filename='js/form.js') }}"></script>
+    <script src="{{ url_for('data_browser__.static', filename='js/sprintf-0.6.js') }}"></script>
+    <script src="{{ url_for('data_browser__.static', filename='js/url.min.js') }}"></script>
     {% if g.request_from_mobile %}
-      <script src="{{ url_for('__data_browser__.static', filename='js/custom_checkbox_and_radio.js') }}"></script>
-      <script src="{{ url_for('__data_browser__.static', filename='js/jquery.tagsinput.js') }}"></script>
-      <script src="{{ url_for('__data_browser__.static', filename='js/jquery.placeholder.js') }}"></script>
-      <script src="{{ url_for('__data_browser__.static', filename='js/quo.js') }}"></script>
+      <script src="{{ url_for('data_browser__.static', filename='js/custom_checkbox_and_radio.js') }}"></script>
+      <script src="{{ url_for('data_browser__.static', filename='js/jquery.tagsinput.js') }}"></script>
+      <script src="{{ url_for('data_browser__.static', filename='js/jquery.placeholder.js') }}"></script>
+      <script src="{{ url_for('data_browser__.static', filename='js/quo.js') }}"></script>
     {% endif %}
     <script>
       $(function () {

@@ -1,4 +1,4 @@
-{% extends "__data_browser__/layout.html" %}
+{% extends "data_browser__/layout.html" %}
 {% block body %}
 
 <div class="container">
@@ -35,6 +35,6 @@
       {% endif %}
     </table>
   </div>
-  <a href="{{ back_url or request.headers.get("referer") or "/" }}" class="btn btn-large"><big>{{ _("点击返回") }}</big></a>
+  <a href="{{ back_url or request.headers.get("referer") or "/" }}" class="btn btn-large"><big>{{ _("click to return") }}</big></a>
 </div>
 {% endblock %}
