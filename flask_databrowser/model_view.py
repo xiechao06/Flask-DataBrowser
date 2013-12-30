@@ -1095,8 +1095,13 @@ class ModelView(object):
     def _compose_list_col_specs(self):
         if not self._list_col_specs:
             for col in self.list_columns:
-                col_spec = self._col_spec_from_str(col) if \
-                    isinstance(col, basestring) else col
+                if isinstance(col, basestring):
+                    col_spec = self._col_spec_from_str(col)
+                else:
+                    col_spec = col
+                    if col_spec.doc is None:
+                        col_spec.doc = self.modell.get_column_doc(
+                            col_spec.col_name)
                 self._list_col_specs.append(col_spec)
         return self._list_col_specs
 
