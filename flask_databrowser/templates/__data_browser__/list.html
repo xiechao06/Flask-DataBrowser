@@ -93,7 +93,7 @@
               action_2_rows[action_name][forbidden_code].push(model_repr);
             }
           });
-          $("[name=__action__]").each(function () {
+          $("button[name=__action__]").each(function () {
             var tooltip = "";
             if ($(this).val() in action_2_rows) {
               var forbidden_code_2_rows = action_2_rows[$(this).val()];
@@ -106,11 +106,11 @@
                 tooltip += sprintf(format, rows.toString()) + '\n';
               }
               tooltip = tooltip.substr(0, tooltip.length - 1);
-              $(this).attr("title", tooltip);
+              $(this).parent().attr("title", tooltip);
               $(this).attr("disabled", true);
             } else {
               $(this).attr("disabled", false);
-              $(this).attr("title", tooltip);
+              $(this).parent().attr("title", tooltip);
             }
           });
         }
@@ -350,12 +350,12 @@
           <button id="batch-edit" type="submit" class="btn btn-info" value="{{ _('batch edit') }}">{{ _('batch edit') }}</button>
         {% endif %}
         {% for action in __actions__ %}
-          <button type="submit" name="__action__" class="{{ action.css_class }}" data-warn="{{ action.warn_msg }}" data-direct="{{ action.direct }}" value="{{ action.name }}">
+        <div style='display: inline-block'><button type="submit" name="__action__" class="{{ action.css_class }}" data-warn="{{ action.warn_msg }}" data-direct="{{ action.direct }}" value="{{ action.name }}">
             {% if action.data_icon %}
               <i class="{{ action.data_icon }} fa-fw"></i>
             {% endif %}
             {{ action.name }}
-          </button>
+          </button></div>
         {% endfor %}
       {% endblock %}
     </div>
