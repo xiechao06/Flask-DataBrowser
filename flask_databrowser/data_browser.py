@@ -18,7 +18,7 @@ class DataBrowser(object):
         self.blueprint = Blueprint("data_browser__", __name__,
                                    static_folder="static",
                                    template_folder="templates")
-        for plugin in plugins:
+        for plugin in (plugins or []):
             self._enable_plugin(plugin)
         self.app = app
         self._init_app()
