@@ -338,7 +338,7 @@ class SAKolumne(Kolumne):
                 """
                 if column.unique or column.primary_key:
                     #为了取得真正的model
-                    return Unique(self._property.parent, get_session=self._db.session,
+                    return Unique(self._property.class_attribute, get_session=self._db.session,
                                   message=_("This field must be unique!"))
 
             def length_validator(column):

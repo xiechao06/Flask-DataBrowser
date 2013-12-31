@@ -246,12 +246,18 @@ def main():
                     return redirect("http://www.u148.com")
 
             return [
-                MyDeleteAction(u"删除", None, data_icon="fa fa-times"),
+                MyDeleteAction(u"删除", data_icon="fa fa-times"),
                 RollCall(u"点名", warn_msg=u"点名后就是弱智！"), RollCall(u"点名", warn_msg=u"点名后就是弱智！"),
                 RollCall(u"点名", warn_msg=u"点名后就是弱智！"), RollCall(u"点名", warn_msg=u"点名后就是弱智！"),
                 RollCall(u"点名", warn_msg=u"点名后就是弱智！"), RollCall(u"点名", warn_msg=u"点名后就是弱智！"),
                 RollCall(u"点名", warn_msg=u"点名后就是弱智！"), _ReadOnlyAction(u"打酱油的")
             ]
+
+        def try_view(self, processed_objs=None):
+            pass
+
+        def try_create(self):
+            pass
 
     user_model_view = UserModelView(SAModell(User, db, u"用户"))
     browser.register_model_view(user_model_view, accounts_bp,
