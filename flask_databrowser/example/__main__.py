@@ -114,6 +114,7 @@ def main():
                                     #model: "http://farm9.staticflickr"
                                     #".com/8522/8478415115_152c6f5e55_m.jpg",
                                     #doc=u"头像，^_^！"), "good"]
+        @databrowser.ModelView.cached
         @property
         def create_columns(self):
             ret = OrderedDict()
@@ -205,7 +206,7 @@ def main():
                 filters.Only("roll_called", self, label=u"仅展示点名",
                              test=lambda col: col is True,
                              notation="__roll_called", default_value=False),
-                filters.Between("create_time")
+                filters.Between("create_time", self)
             ]
 
         #def __list_filters__(self):
@@ -264,6 +265,7 @@ def main():
             pass
 
     user_model_view = UserModelView(SAModell(User, db, u"用户"))
+
     browser.register_model_view(user_model_view, accounts_bp,
                                 extra_params={"form_view": {"age_hint": "modify your age here"},
                                               "create_view": {"age_hint": "input your age here"}})
