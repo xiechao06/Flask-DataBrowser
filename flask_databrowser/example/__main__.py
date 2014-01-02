@@ -192,17 +192,21 @@ def main():
             yesterday = today.date()
             week_ago = (today - timedelta(days=7)).date()
             _30days_ago = (today - timedelta(days=30)).date()
-            return [filters.In_("group", name=u"是", opt_formatter=lambda opt: opt.name),
-                              filters.BiggerThan("create_time", name=u"在",
-                                                 options=[(yesterday, u'一天内'),
-                                                          (week_ago, u'一周内'),
-                                                          (_30days_ago, u'30天内')], default_value=str(_30days_ago)),
-                              filters.EqualTo("name", name=u"是"),
-                              filters.Contains("name", name=u"包含"),
-                              filters.Only("roll_called", display_col_name=u"仅展示点名", test=lambda col: col == True,
-                                           notation="__roll_called", default_value=False),
-                              filters.Between("create_time")
-        ]
+            return [
+                filters.In_("group", self, name=u"是",
+                            opt_formatter=lambda opt: opt.name),
+                filters.BiggerThan("create_time", self, name=u"在",
+                                   options=[(yesterday, u'一天内'),
+                                            (week_ago, u'一周内'),
+                                            (_30days_ago, u'30天内')],
+                                   default_value=str(_30days_ago)),
+                filters.EqualTo("name", self, name=u"是"),
+                filters.Contains("name", self, name=u"包含"),
+                filters.Only("roll_called", self, label=u"仅展示点名",
+                             test=lambda col: col is True,
+                             notation="__roll_called", default_value=False),
+                filters.Between("create_time")
+            ]
 
         #def __list_filters__(self):
         #return [filters.NotEqualTo("name", value=u"Type")]

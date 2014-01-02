@@ -67,7 +67,6 @@ class ModelView(object):
         self._create_col_specs = []
         self._edit_col_specs = []
         self._batch_edit_col_specs = []
-        self._default_list_filters = []
         self._create_form = self._edit_form = \
             self._batch_edit_form = None
         self.page_size = page_size
@@ -555,7 +554,7 @@ class ModelView(object):
             kwargs["__action_2_forbidden_message_formats__"] = dict(
                 (action["name"], action["forbidden_msg_formats"]) for action in
                 kwargs["__actions__"])
-            filters_ = column_filters + self._get_default_list_filters()
+            filters_ = column_filters + self.default_filters
             count, data = self.modell.get_list(order_by, desc, filters_,
                                                (page - 1) * self.page_size,
                                                self.page_size)
@@ -1104,14 +1103,6 @@ class ModelView(object):
                             col_spec.col_name)
                 self._list_col_specs.append(col_spec)
         return self._list_col_specs
-
-    def _get_default_list_filters(self):
-        if not self._default_list_filters:
-            for filter_ in self.default_filters:
-                if not filter_.model_view:
-                    filter_.model_view = self
-                self._default_list_filters.append(filter_)
-        return self._default_list_filters
 
     def _render(self, template, **kwargs):
         return render_template(template, **kwargs)

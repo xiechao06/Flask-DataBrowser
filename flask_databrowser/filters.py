@@ -9,19 +9,16 @@ import operator
 from flask.ext.babel import gettext as _
 from werkzeug.utils import cached_property
 
-from .utils import TemplateParam, raised_when
+from .utils import TemplateParam
 from flask.ext.databrowser.sa.sa_utils import get_primary_key
-
-_runtime_error = RuntimeError(r'field "model view" unset, you should set it')
-_raised_when_model_unset = raised_when(lambda inst, *args, **kwargs:
-                                       not inst.model_view, _runtime_error)
 
 
 class BaseFilter(TemplateParam):
     __notation__ = ""
     multiple = False
 
-    def __init__(self, col_name, name="", options=None, opt_formatter=None,
+    def __init__(self, col_name, model_view, name="", options=None,
+                 opt_formatter=None,
                  label=None, hidden=False,
                  default_value=None, value=None):
         # TODO datetime unsupported
@@ -29,27 +26,24 @@ class BaseFilter(TemplateParam):
                              ["name", "id"])(name,
                                              col_name + self.__notation__)
         self.col_name = col_name
+        self.model_view = model_view
         self.label = label
         self.value = value
-        self.model_view = None
         self.__options = options or []
         self.opt_formatter = opt_formatter
         self.hidden = hidden
         self.default_value = default_value
 
     @property
-    @_raised_when_model_unset
     def model(self):
         # TODO obviously don't use
         return self.model_view.modell.model
 
     @property
-    @_raised_when_model_unset
     def data_type(self):
         return 'numeric'
 
     @property
-    @_raised_when_model_unset
     def input_type(self):
         """
         用tuple 是因为有可能返回 类似于(number, number)的双控件
@@ -67,7 +61,6 @@ class BaseFilter(TemplateParam):
                     return 'text',
 
     @property
-    @_raised_when_model_unset
     def input_class(self):
         return 'numeric-filter'
 
@@ -77,7 +70,8 @@ class BaseFilter(TemplateParam):
         attrs = self.col_name.split(".")
         last_join_model = self.model
         for rel in attrs[:-1]:
-            last_join_model = getattr(last_join_model, rel).property.mapper.class_
+            last_join_model = getattr(last_join_model,
+                                      rel).property.mapper.class_
         attr = getattr(last_join_model, attrs[-1])
         return attr
 
@@ -89,7 +83,8 @@ class BaseFilter(TemplateParam):
         attrs = self.col_name.split(".")
         last_join_model = self.model
         for rel in attrs[:-1]:
-            last_join_model = getattr(last_join_model, rel).property.mapper.class_
+            last_join_model = getattr(last_join_model,
+                                      rel).property.mapper.class_
             ret.append(last_join_model)
         return ret
 
@@ -198,8 +193,11 @@ class Contains(BaseFilter):
 
 
 class Between(BaseFilter):
-    def __init__(self, col_name, name="", sep="--", default_value=None, label=None):
-        super(Between, self).__init__(col_name=col_name, name=name, default_value=default_value,
+    def __init__(self, col_name, model_view, name="", sep="--",
+                 default_value=None, label=None):
+        super(Between, self).__init__(col_name=col_name,
+                                      model_view=model_view, name=name,
+                                      default_value=default_value,
                                       label=label)
         self.sep = sep
 
@@ -213,12 +211,10 @@ class Between(BaseFilter):
     __notation__ = "__between"
 
     @property
-    @_raised_when_model_unset
     def input_type(self):
         return super(Between, self).input_type * 2
 
     @property
-    @_raised_when_model_unset
     def input_class(self):
         return 'numeric-filter'
 
@@ -233,9 +229,12 @@ class In_(BaseFilter):
 
 
 class Only(BaseFilter):
-    def __init__(self, col_name, display_col_name, test, notation, default_value=False):
+    def __init__(self, col_name, model_view, label, test, notation,
+                 default_value=False):
         self.__notation__ = notation
-        super(Only, self).__init__(col_name=col_name, default_value=default_value, label=display_col_name)
+        super(Only, self).__init__(col_name=col_name, model_view=model_view,
+                                   default_value=default_value,
+                                   label=label)
         self.test = test
         self._value = None
 
