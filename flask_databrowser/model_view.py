@@ -58,14 +58,27 @@ class ModelView(object):
     create_in_steps = False
     step_create_templates = []
 
+    class __metaclass__(type):
+        def __init__(cls, name, bases, nmspc):
+            type.__init__(cls, name, bases, nmspc)
+            if getattr(cls.list_columns.fget, '__fdb_cached__', False):
+                cls._list_col_specs =  werkzeug.cached_property(
+                    cls._list_col_specs.fget)
+            if getattr(cls.edit_columns.fget, '__fdb_cached__', False):
+                cls._edit_col_specs = werkzeug.cached_property(
+                    cls._edit_col_specs.fget)
+
+    @classmethod
+    def cached(cls, p):
+        p.fget.__fdb_cached__ = True
+        return p
+
     def __init__(self, modell, page_size=16, permission_required=True):
         self.modell = modell
         self.blueprint = None
         self.extra_params = {}
         self.data_browser = None
-        self._list_col_specs = []
         self._create_col_specs = []
-        self._edit_col_specs = []
         self._batch_edit_col_specs = []
         self._create_form = self._edit_form = \
             self._batch_edit_form = None
@@ -357,7 +370,7 @@ class ModelView(object):
             help_message = self.get_edit_help(preprocessed_records)
             actions = all_customized_actions
         grouper_info = {}
-        model_columns = self._compose_edit_col_specs()
+        model_columns = self._edit_col_specs
 
         for col in model_columns:
             grouper_2_cols = {}
@@ -653,7 +666,7 @@ class ModelView(object):
             def _obj_to_dict(obj):
                 ret = {"id": obj["pk"], "repr": obj["repr_"],
                        "forbidden_actions": _get_forbidden_actions(obj["obj"])}
-                for col in self._compose_list_col_specs():
+                for col in self._list_col_specs:
                     col_name = col if isinstance(col, basestring) else \
                         col.col_name
                     ret[col_name] = unicode(
@@ -913,7 +926,7 @@ class ModelView(object):
 
     def _compose_edit_form(self, record, readonly):
         # TODO  reserve order
-        edit_col_specs = self._compose_edit_col_specs()
+        edit_col_specs = self._edit_col_specs
         assert isinstance(edit_col_specs, dict)
         if self._edit_form is None:
             col_specs = []
@@ -1091,18 +1104,19 @@ class ModelView(object):
                         col_spec)
         return normalized_col_specs
 
-    def _compose_list_col_specs(self):
-        if not self._list_col_specs:
-            for col in self.list_columns:
-                if isinstance(col, basestring):
-                    col_spec = self._col_spec_from_str(col)
-                else:
-                    col_spec = col
-                    if col_spec.doc is None:
-                        col_spec.doc = self.modell.get_column_doc(
-                            col_spec.col_name)
-                self._list_col_specs.append(col_spec)
-        return self._list_col_specs
+    @property
+    def _list_col_specs(self):
+        list_col_specs = []
+        for col in self.list_columns:
+            if isinstance(col, basestring):
+                col_spec = self._col_spec_from_str(col)
+            else:
+                col_spec = col
+                if col_spec.doc is None:
+                    col_spec.doc = self.modell.get_column_doc(
+                        col_spec.col_name)
+            list_col_specs.append(col_spec)
+        return list_col_specs
 
     def _render(self, template, **kwargs):
         return render_template(template, **kwargs)
@@ -1407,11 +1421,9 @@ class ModelView(object):
         field = StuffedField(obj, bound_field, col_spec, focus_set)
         return field, field.__auto_focus__
 
-    def _compose_edit_col_specs(self):
-        if not self._edit_col_specs:
-            self._edit_col_specs = \
-                self._compose_normalized_col_specs(self.edit_columns)
-        return self._edit_col_specs
+    @property
+    def _edit_col_specs(self):
+        return self._compose_normalized_col_specs(self.edit_columns)
 
     def _get_url(self, endpoint, **kwargs):
         if isinstance(self.blueprint, Flask):
@@ -1424,7 +1436,7 @@ class ModelView(object):
         collect columns displayed in table
         """
         def _(order_by, desc):
-            for c in self._compose_list_col_specs():
+            for c in self._list_col_specs:
                 if c.col_name in self.sortable_columns:
                     args = request.args.copy()
                     args["order_by"] = c.col_name
@@ -1456,7 +1468,7 @@ class ModelView(object):
                 #converter = ValueConverter(r, self)
                 pk = self.modell.get_pk_value(r)
                 fields = []
-                for c in self._compose_list_col_specs():
+                for c in self._list_col_specs:
                     raw_value = operator.attrgetter(c.col_name)(r)
                     field = c.make_field(r, self)
                     bound_field = field.bind(None, c.col_name)
