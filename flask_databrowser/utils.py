@@ -1,4 +1,5 @@
 # -*- coding: UTF-8 -*-
+import os
 import string
 import random
 import types
@@ -168,4 +169,5 @@ def truncate_str(s, length=255, killwords=False, end='...', href="#"):
 
 
 def random_str(size=6, chars=string.ascii_uppercase + string.digits):
+    random.seed = (os.urandom(1024))
     return ''.join(random.choice(chars) for x in range(size))

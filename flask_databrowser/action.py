@@ -57,9 +57,9 @@ class BaseAction(object):
         """
         will be called when all operations done
         """
-        s = (u"operation %(action)s applied upon %(model_label)s - "
-             "[%(records)s] successfully")
-        return _(s, action=self.name, model_label=self._model_label,
+        return _(u"operation %(action)s applied upon %(model_label)s - "
+                 "[%(records)s] successfully", action=self.name,
+                 model_label=self._model_label,
                  records=",".join(unicode(record) for record in records))
 
     def extract_error_message(self, exception_, records):
