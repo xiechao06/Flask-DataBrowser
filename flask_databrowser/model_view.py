@@ -62,11 +62,13 @@ class ModelView(object):
         def __init__(cls, name, bases, nmspc):
             type.__init__(cls, name, bases, nmspc)
             if getattr(cls.list_columns.fget, '__fdb_cached__', False):
-                cls._list_col_specs =  werkzeug.cached_property(
+                cls._list_col_specs = werkzeug.cached_property(
                     cls._list_col_specs.fget)
             if getattr(cls.edit_columns.fget, '__fdb_cached__', False):
                 cls._edit_col_specs = werkzeug.cached_property(
                     cls._edit_col_specs.fget)
+            if getattr(cls.create_columns.fget, '__fdb_cached__', False):
+                cls._create_col_specs = werkzeug.cached_property(cls._create_col_specs.fget)
 
     @classmethod
     def cached(cls, p):
@@ -78,7 +80,6 @@ class ModelView(object):
         self.blueprint = None
         self.extra_params = {}
         self.data_browser = None
-        self._create_col_specs = []
         self._batch_edit_col_specs = []
         self._create_form = self._edit_form = \
             self._batch_edit_form = None
@@ -1033,14 +1034,15 @@ class ModelView(object):
         """
         get all the *NORMALIZED* create column specs for model view.
         """
-        if not self._create_col_specs:
-            self._create_col_specs = \
-                self._compose_normalized_col_specs(self.create_columns)
         if current_step is None:
             return self._create_col_specs
         else:
             return dict([self._create_col_specs.items()
                          [current_step]])
+
+    @property
+    def _create_col_specs(self):
+        return self._compose_normalized_col_specs(self.create_columns)
 
     @property
     def _config(self):
