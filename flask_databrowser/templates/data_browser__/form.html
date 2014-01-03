@@ -20,7 +20,6 @@
 
   <div class="container">
     {{ lib.render_form(form, return_url, extra, last_step, next_step, previous_steps_info) }}
-
     {% if help_message %}
       <div id="help-modal" class="modal fade" role="dialog" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
@@ -38,6 +37,12 @@
       </div>
     {% endif %}
   </div>
+  
+  {% for field in form -%}
+    {% if field.widget.input_type == 'tinymce' -%}
+      {{ lib.richtext_editor(field) }}
+    {%- endif %}
+  {%- endfor %}
 
 {% endblock %}
 

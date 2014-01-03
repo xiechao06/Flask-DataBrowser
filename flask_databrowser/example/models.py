@@ -15,6 +15,7 @@ class User(db.Model):
     age = db.Column(db.Integer, default=24)
     birthday = db.Column(db.Date, default=datetime.today().date())
     pic_path = db.Column(db.String(32))
+    brief = db.Column(db.String(32))
 
     def __unicode__(self):
         return self.name

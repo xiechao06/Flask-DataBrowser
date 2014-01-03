@@ -12,7 +12,8 @@ from collections import OrderedDict
 from flask.ext.databrowser.col_spec import FileColSpec, InputHtmlSnippetColSpec
 from flask.ext.databrowser.grouper import SAPropertyGrouper
 from flask.ext.databrowser.sa import SAModell
-from flask.ext.databrowser.col_spec import (InputColSpec, HtmlSnippetColSpec)
+from flask.ext.databrowser.col_spec import (InputColSpec, HtmlSnippetColSpec,
+                                            RichTextColSpec)
 from flask.ext.databrowser.action import BaseAction
 
 admin_permission = Permission(RoleNeed("Admin"))
@@ -118,7 +119,8 @@ def main():
         @property
         def create_columns(self):
             ret = OrderedDict()
-            ret["primary"] = ["name", "group", "password"]
+            ret["primary"] = ["name", "group", "password",
+                RichTextColSpec("brief")]
             ret["secondary"] = [
                 InputHtmlSnippetColSpec("age", template="/accounts/age-snippet.html"),
                 "roll_called", "birthday", "create_time", "car_list"]
@@ -137,7 +139,9 @@ def main():
                                        #'form_width_class': "col-lg-3"}),
                 "password",
                 HtmlSnippetColSpec("foo",
-                                   template="/accounts/foo-snippet.html")]
+                                   template="/accounts/foo-snippet.html"),
+                RichTextColSpec("brief")
+            ]
             ret[u"次要的"] = [
                 "roll_called",
                 "good",

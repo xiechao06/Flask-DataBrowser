@@ -6,6 +6,7 @@ from .html_snippet_col_spec import HtmlSnippetColSpec
 from .input_html_snippet_col_spec import InputHtmlSnippetColSpec
 from .file_col_spec import FileColSpec
 from .link_column_spec import LinkColumnSpec
+from .rich_text_col_spec import RichTextColSpec
 
 #from .image_column_spec import ImageColumnSpec
 #from .table_column_spec import TableColumnSpec
