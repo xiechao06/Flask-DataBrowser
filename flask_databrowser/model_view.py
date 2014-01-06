@@ -19,7 +19,7 @@ from flask.ext.principal import PermissionDenied, Permission
 from flask.ext.sqlalchemy import Pagination
 from flask_upload2.fields import FileField
 
-from flask.ext.databrowser import filters
+from flask.ext.databrowser import filters, extra_fields
 from flask.ext.databrowser.col_spec import (ColSpec, InputColSpec,
                                             input_col_spec_from_kolumne)
 from flask.ext.databrowser.action import ACTION_OK
@@ -1302,7 +1302,14 @@ class ModelView(object):
                                     field.multiple else save_paths[0])
                         continue
                     if name not in untouched_fields and field.raw_data:
-                        field.populate_obj(obj, name)
+                        if isinstance(field, extra_fields.URLField) and \
+                           getattr(obj, name) is None:
+                            field.populate_obj(obj, name)
+                            # if not convert field to string, will burst into
+                            # error
+                            setattr(obj, name, getattr(obj, name).url)
+                        else:
+                            field.populate_obj(obj, name)
 
                 self.do_update_log(obj, _("update"))
                 flash(_(u"%(model_label)s %(obj)s was updated and saved",

@@ -6,7 +6,6 @@ from decimal import Decimal
 from sqlalchemy_utils import types as sa_util_types
 from wtforms import validators, fields, ValidationError, SelectField, TextAreaField, BooleanField, FloatField, \
     PasswordField
-from wtforms.fields.html5 import URLField
 from wtforms.widgets.html5 import URLInput
 from wtforms.widgets import HTMLString, html_params, CheckboxInput, TextArea
 from flask.ext.babel import _
@@ -25,6 +24,7 @@ from wtforms_components.widgets import (ColorInput, EmailInput, DateInput,
 from flask.ext.databrowser.kolumne import Kolumne
 from flask.ext.databrowser.sa import sa_utils
 from flask.ext.databrowser import extra_widgets, utils
+from flask.ext.databrowser.extra_fields import URLField
 from flask.ext.databrowser.col_spec import InputColSpec
 from flask.ext.databrowser.sa.sa_fields import GroupedQuerySelectField, QuerySelectField, QuerySelectMultipleField
 
