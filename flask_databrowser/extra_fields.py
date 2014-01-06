@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from datetime import time
+import furl
 from flask.ext.babel import gettext
 from wtforms import fields, widgets
 from flask.ext.databrowser.extra_widgets import Select2Widget, Select2TagsWidget
@@ -91,3 +92,20 @@ class FileField(FileField):
     def __init__(self, save_path=None, *args, **kwargs):
         super(FileField, self).__init__(*args, **kwargs)
         self.save_path = save_path
+
+class URLField(fields.html5.URLField):
+    '''
+    why bother to write our own URLField, because sqlalchemy-utils will
+    convert the field value to furl
+    '''
+    def process_formdata(self, valuelist):
+        """
+        Process data received over the wire from a form.
+
+        This will be called during form construction with data supplied
+        through the `formdata` argument.
+
+        :param valuelist: A list of strings to process.
+        """
+        if valuelist:
+            self.data = furl.furl(valuelist[0])

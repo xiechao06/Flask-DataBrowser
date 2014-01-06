@@ -1311,12 +1311,12 @@ class ModelView(object):
                 self.modell.commit()
             return True
         except Exception, ex:
+            self.modell.rollback()
             flash(
                 _('Failed to update %(model_label)s %(obj)s due to %(error)s',
                   model_label=self.modell.label,
                   obj=",".join([unicode(obj) for obj in objs]),
                   error=unicode(ex)), 'error')
-            self.modell.rollback()
             return False
 
     def _compose_warn_msg(self, form):
