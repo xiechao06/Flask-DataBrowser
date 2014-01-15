@@ -11,8 +11,9 @@
       $("[data-role=close-btn]").click(function () {
         $("#my-modal").modal("hide");
         var uri = new Uri(window.opener.location.href);
+        var local = new Uri(location.href);
         uri.replaceQueryParam('{{ target }}', '{{ obj_pk }}');
-        window.opener.location = uri.toString();
+        window.opener.location = uri.toString() + "&" + decodeURIComponent(local.getQueryParamValue("extra"));
         window.close();
       });
     });</script>

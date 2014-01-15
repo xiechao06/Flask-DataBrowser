@@ -313,6 +313,12 @@ class SAKolumne(Kolumne):
         if isinstance(column.type, sa_types.Date):
             return self.date_format
 
+    def get_date_format(self):
+        if hasattr(self, "local_column"):
+            return self._get_date_format(self.local_column)
+        else:
+            return self._get_date_format(self._property.class_attribute)
+
     @property
     def date_format(self):
         return "%Y-%m-%d"

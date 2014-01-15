@@ -43,7 +43,7 @@ class DataBrowser(object):
     def register_model_view(self, model_view, blueprint, extra_params=None):
         model_view.blueprint = blueprint
         model_view.data_browser = self
-        model_view.extra_params = extra_params
+        model_view.extra_params = extra_params or {}
 
         if model_view.serv_type & WEB_PAGE:
             model_view.add_page_url_rule()
@@ -75,6 +75,7 @@ class DataBrowser(object):
         try:
             model_view = self.__registered_view_map[modell.token]
             model_view.try_create()
+            import urllib2
             return model_view.url_for_object(None, url=request.url,
                                              on_fly=on_fly, target=target)
         except (KeyError, PermissionDenied):
