@@ -2,6 +2,7 @@
 from collections import OrderedDict
 import copy
 from decimal import Decimal
+from datetime import datetime, date
 
 from sqlalchemy_utils import types as sa_util_types
 from wtforms import validators, fields, ValidationError, SelectField, TextAreaField, BooleanField, FloatField, \
@@ -301,24 +302,6 @@ class SAKolumne(Kolumne):
             return null_or_unicode
         return python_type
 
-    def _get_date_format(self, column):
-        """
-        Returns date format for given column.
-
-        :param column: SQLAlchemy Column object
-        """
-        if isinstance(column.type, (sa_types.DateTime, sa_util_types.ArrowType)):
-            return self.datetime_format
-
-        if isinstance(column.type, sa_types.Date):
-            return self.date_format
-
-    def get_date_format(self):
-        if hasattr(self, "local_column"):
-            return self._get_date_format(self.local_column)
-        else:
-            return self._get_date_format(self._property.class_attribute)
-
     @property
     def date_format(self):
         return "%Y-%m-%d"
@@ -396,8 +379,23 @@ class SAKolumne(Kolumne):
             return lambda x: x
 
 
+    def coerce_value(self, v):
+        '''
+        coerce value into the type comply with column definition
+        '''
+        assert isinstance(v, basestring)
+        column = self._property.columns[0]
+        coerce = self._get_coerce(column)
+        # note!!! must test datetime firstly, since datetime is subclass of
+        # date
+        if issubclass(coerce, datetime):
+            return datetime.strptime(v, self.datetime_format)
+        if issubclass(coerce, date):
+            return datetime.strptime(v, self.date_format)
+        return coerce(v)
+
+
 def pack_grouper(field, col_spec):
     field.field_class = GroupedQuerySelectField
     field.kwargs["col_spec"] = col_spec
     return field
-

@@ -23,3 +23,10 @@ class Kolumne(object):
     @property
     def doc(self):
         raise NotImplementedError
+
+    @property
+    def coerce_value(self, v):
+        '''
+        coerce value into the type comply with column definition
+        '''
+        raise NotImplementedError

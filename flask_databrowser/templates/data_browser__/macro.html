@@ -261,7 +261,7 @@
           <button id="submit-btn" name="__builtin_action__" type="submit" class="btn btn-primary btn-lg navbar-btn" >{{ _('commit') }}</button>
           <button id="reset-btn" type="reset" class="btn btn-danger btn-lg navbar-btn">{{ _('reset') }}</button>
           {% if cancel_url %}
-            <a class="btn navbar-btn btn-default btn-lg" href="{{ cancel_url }}">{{ _("back") }}</a>
+            <a id="close-btn" class="btn navbar-btn btn-default btn-lg" href="{{ cancel_url }}">{{ _("back") }}</a>
           {% endif %}
         </ul>
         <ul class="nav navbar-nav navbar-right">
@@ -286,7 +286,7 @@
               <button id="reset-btn" type="reset" class="btn btn-danger">{{ _('reset') }}</button>
             {% endif %}
             {% if cancel_url %}
-              <a href="{{ cancel_url }}" class="btn btn-default">{{ _('back') }}</a>
+              <a id='close-btn' href="{{ cancel_url }}" class="btn btn-default">{{ _('back') }}</a>
             {% endif %}
           </div>
           {% if extra =="create" or actions %}

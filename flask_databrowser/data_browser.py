@@ -76,8 +76,8 @@ class DataBrowser(object):
             model_view = self.__registered_view_map[modell.token]
             model_view.try_create()
             import urllib2
-            return model_view.url_for_object(None, url=request.url,
-                                             on_fly=on_fly, target=target)
+            return model_view.url_for_object(None, on_fly=on_fly,
+                                             target=target)
         except (KeyError, PermissionDenied):
             return None
 
