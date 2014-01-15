@@ -1364,7 +1364,7 @@ class ModelView(object):
         create a form for creation using create columns
         """
 
-        def convertValue(value, formatter=None):
+        def convert_value(value, formatter=None):
             import datetime
 
             try:
@@ -1390,7 +1390,7 @@ class ModelView(object):
                                 values.append(v_)
                         default_args[k] = values
                 else:
-                    default_args[k] = convertValue(v[0], kol.get_date_format())
+                    default_args[k] = convert_value(v[0], kol.get_date_format())
         obj = None
         if default_args:
             obj = type("_temp", (object, ), default_args)()
