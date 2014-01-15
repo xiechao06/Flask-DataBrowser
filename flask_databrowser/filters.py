@@ -27,7 +27,7 @@ class BaseFilter(TemplateParam):
                                              col_name + self.__notation__)
         self.col_name = col_name
         self.model_view = model_view
-        self.label = label
+        self.label = label or col_name
         self.value = value
         self.__options = options or []
         self.opt_formatter = opt_formatter
