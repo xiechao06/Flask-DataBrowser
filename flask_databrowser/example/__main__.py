@@ -43,7 +43,7 @@ def main():
     from flask.ext import databrowser
     from flask.ext.databrowser.action import DeleteAction, RedirectAction
 
-    from models import User, Car
+    from models import User, Car, Group
 
     accounts_bp = Blueprint("accounts", __name__, static_folder="static",
                             template_folder="templates")
@@ -274,8 +274,15 @@ def main():
 
         __form_columns__ = ["id", "model"]
 
+    class GroupModelView(databrowser.ModelView):
+        def try_create(self):
+            pass
+
     browser.register_model_view(CarModelView(SAModell(Car, db, u"汽车")), accounts_bp,
                                 extra_params={"form_view": {"company": "xc"}})
+
+    browser.register_model_view(GroupModelView(SAModell(Group, db, u"")), accounts_bp)
+
     app.register_blueprint(accounts_bp, url_prefix="/accounts")
 
     @app.route("/")

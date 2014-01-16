@@ -308,7 +308,7 @@ class ModelView(object):
             id_list = [i for i in id_.split(",") if i]
 
         return_url = request.args.get(BACK_URL_PARAM) or \
-            url_for('.' + self.list_view_endpoint)
+                     url_for('.' + self.list_view_endpoint)
 
         if id_list is None:
             return redirect(return_url)
@@ -328,13 +328,13 @@ class ModelView(object):
                 ret = self._update_objs(form, [record])
                 if ret:
                     if isinstance(ret, werkzeug.wrappers.BaseResponse) and \
-                       ret.status_code == 302:
+                                    ret.status_code == 302:
                         return ret
                     else:
                         url_parts = list(urlparse.urlparse(request.url))
                         queries = url_parts[4].split('&')
                         queries = '&'.join(q for q in queries if not
-                                           q.startswith(BACK_URL_PARAM))
+                        q.startswith(BACK_URL_PARAM))
                         url = urlparse.urlunparse(url_parts)
                         return redirect(url)
             hint_message = self.edit_hint_message(preprocessed_record,
@@ -359,11 +359,11 @@ class ModelView(object):
                 ret = self._update_objs(form, records)
                 if ret:
                     if isinstance(ret, werkzeug.wrappers.BaseResponse) and \
-                       ret.status_code == 302:
+                                    ret.status_code == 302:
                         return ret
                     else:
                         return redirect(request.url)
-            # ON GET
+                # ON GET
             hint_message = self.batch_edit_hint_message(preprocessed_records,
                                                         readonly)
             all_customized_actions = \
@@ -377,7 +377,7 @@ class ModelView(object):
             grouper_2_cols = {}
             #TODO why many to one?
             if isinstance(col, InputColSpec) and col.group_by and \
-               col.kolumne.direction == "MANYTOONE":
+                            col.kolumne.direction == "MANYTOONE":
                 rows = [row for row in
                         col.filter_(col.kolumne.remote_side.query) if
                         col.opt_filter(row)]
@@ -600,7 +600,7 @@ class ModelView(object):
             processed_objs = [self.expand_model(obj) for obj in models]
             for action in self._compose_actions(processed_objs):
                 if action.name == action_name and \
-                   action.test(*processed_objs) == ACTION_OK:
+                                action.test(*processed_objs) == ACTION_OK:
                     try:
                         ret = action.op_upon_list(processed_objs, self)
                         if isinstance(ret, tuple):
@@ -609,7 +609,7 @@ class ModelView(object):
                         if not action.readonly:
                             self.modell.commit()
                         if isinstance(ret, werkzeug.wrappers.BaseResponse) \
-                           and ret.status_code == 302:
+                            and ret.status_code == 302:
                             if not action.readonly:
                                 flash(action.success_message(processed_objs),
                                       'success')
@@ -690,8 +690,8 @@ class ModelView(object):
         for filter_ in column_filters:
             default_value = filter_.default_value
             if default_value is not None and \
-               not isinstance(default_value, types.ListType) and \
-               not isinstance(default_value, types.TupleType):
+                    not isinstance(default_value, types.ListType) and \
+                    not isinstance(default_value, types.TupleType):
                 default_value = [default_value]
             if filter_.options:
                 ret.append({
@@ -938,11 +938,11 @@ class ModelView(object):
                         uneditable_col_specs.append(c)
                     else:
                         col_specs.append(c)
-            # why split into 2 form, since only _edit_form will be validated
+                # why split into 2 form, since only _edit_form will be validated
             # and populated
             self._edit_form = self._scaffold_form(col_specs)
             self._uneditable_form = self._scaffold_form(uneditable_col_specs)
-        # if request specify some fields, then we override fields with this
+            # if request specify some fields, then we override fields with this
         # value
         for k, v in request.args.items():
             if self.modell.has_kolumne(k):
@@ -955,7 +955,7 @@ class ModelView(object):
         if hasattr(self, '_uneditable_form'):
             uneditable_bound_form = self._uneditable_form(obj=record)
         else:
-            uneditable_bound_form =  {}
+            uneditable_bound_form = {}
         record = self.expand_model(record)
         # compose bound_field sets, note! bound_field sets are our stuffs
         # other than
@@ -1051,7 +1051,7 @@ class ModelView(object):
     def _get_step_create_template(self, step):
         try:
             return self.step_create_templates[step] or \
-                'data_browser__/form.html'
+                   'data_browser__/form.html'
         except IndexError:
             return 'data_browser__/form.html'
 
@@ -1093,11 +1093,11 @@ class ModelView(object):
                             col_spec.doc = self.modell.get_column_doc(col_name)
                         col_spec.data_browser = self.data_browser
                         normalized_col_specs.setdefault(fieldset_name,
-                                                        []).append(col_spec)
+                            []).append(col_spec)
                     else:
                         col.data_browser = self.data_browser
                         normalized_col_specs.setdefault(fieldset_name,
-                                                        []).append(col)
+                            []).append(col)
                 else:
                     col_spec = col
                     if isinstance(col, basestring):
@@ -1168,7 +1168,7 @@ class ModelView(object):
                             fs.save(save_path)
                             save_paths.append(save_path)
                     setattr(obj, field.name, save_paths if field.multiple else
-                            save_paths[0])
+                    save_paths[0])
                 continue
             if field.raw_data:
                 field.populate_obj(obj, name)
@@ -1242,7 +1242,7 @@ class ModelView(object):
                                 _(u"can't apply %(action)s due to %(reason)s",
                                   action=action.name,
                                   reason=action.forbidden_msg_formats[
-                                      ret_code] % {'obj': unicode(obj)}),
+                                             ret_code] % {'obj': unicode(obj)}),
                                 'error')
                             return False
                     try:
@@ -1257,7 +1257,7 @@ class ModelView(object):
                             flash(action.success_message(processed_objs),
                                   'success')
                         if isinstance(ret, werkzeug.wrappers.BaseResponse) \
-                           and ret.status_code == 302:
+                            and ret.status_code == 302:
                             return ret
                         return True
                     except Exception, ex:
@@ -1273,7 +1273,7 @@ class ModelView(object):
                         raise
             raise ValidationError(
                 _('invalid action %(action)s', action=action_name))
-        # normal update
+            # normal update
         try:
             self.try_edit(processed_objs)
             # compute the field should be holded
@@ -1299,11 +1299,11 @@ class ModelView(object):
                                     fs.save(save_path)
                                     save_paths.append(save_path)
                             setattr(obj, field.name, save_paths if
-                                    field.multiple else save_paths[0])
+                            field.multiple else save_paths[0])
                         continue
                     if name not in untouched_fields and field.raw_data:
                         if isinstance(field, extra_fields.URLField) and \
-                           getattr(obj, name) is None:
+                                        getattr(obj, name) is None:
                             field.populate_obj(obj, name)
                             # if not convert field to string, will burst into
                             # error
@@ -1381,7 +1381,7 @@ class ModelView(object):
                                 values.append(v_)
                         default_args[k] = values
                 else:
-                    default_args[k] = v[0]
+                    default_args[k] = kol.coerce_value(v[0]) if v[0] else ''
         obj = None
         if default_args:
             obj = type("_temp", (object, ), default_args)()
@@ -1397,7 +1397,7 @@ class ModelView(object):
         for k, v in default_args.items():
             if v and hasattr(ret, k) and k not in request.form:
                 getattr(ret, k).data = v
-        # compose field sets, note! field sets are our stuffs other than
+            # compose field sets, note! field sets are our stuffs other than
         # the standard wtforms.Form, they are ONLY use to generate form
         # in html page
         ret.fieldsets = OrderedDict()
@@ -1444,13 +1444,14 @@ class ModelView(object):
         """
         collect columns displayed in table
         """
+
         def _(order_by, desc):
             for c in self._list_col_specs:
                 if c.col_name in self.sortable_columns:
                     args = request.args.copy()
                     args["order_by"] = c.col_name
                     if order_by == c.col_name:  # the table is sorted by c,
-                                                # so revert the order
+                    # so revert the order
                         if not desc:
                             args["desc"] = 1
                         else:
@@ -1510,7 +1511,7 @@ class ModelView(object):
             if filter.default_value is not None:
                 filter.value = filter.default_value
             if isinstance(filter, filters.Only) and request.args and \
-               not request.args.get(filter.col_name):
+                    not request.args.get(filter.col_name):
                 filter.value = False
         for k, v in request.args.lists():
             try:

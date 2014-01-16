@@ -42,8 +42,15 @@
 {% endblock %}
 
 {% block __data_browser__builtin_head_block %}
+  <script src="{{ url_for('data_browser__.static', filename='js/jsuri-1.1.1.min.js') }}"></script>
+
   <script type="text/javascript">
     $(function () {
+      {% if request.args.get('on_fly') %}
+      $("#close-btn").click(function () {
+          window.close();
+        })
+      {% endif %}
       {% if grouper_info %}
         grouper_info = {{ grouper_info|tojson|safe }};
         for (var grouper_name in grouper_info) {
@@ -86,7 +93,17 @@
         return false;
       });
       $("a[data-role=new-related-obj]").click(function () {
-        var win = window.open($(this).attr('href'), $(this).attr('data-target'));
+        var uri = new Uri($(this).attr("href"));
+        var back_uri = new Uri(window.location.toString());
+        var params = $("form").serializeArray();
+        for ( var i in params ) {
+          if (params[i].name != "csrf_token") {
+            back_uri.replaceQueryParam(params[i].name, encodeURIComponent(params[i].value));
+          }
+        }
+        uri.addQueryParam("__back_url__", encodeURIComponent(back_uri.toString()));
+        $(this).attr("href", uri.toString());
+        var win = window.open($(this).attr("href"), $(this).attr('data-target'));
         win.focus();
         return false;
       });
