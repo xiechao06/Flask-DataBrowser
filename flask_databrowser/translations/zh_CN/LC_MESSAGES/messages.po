@@ -204,7 +204,7 @@ msgstr "选择错误"
 
 #: sa/sa_kolumne.py:342
 msgid "This field must be unique!"
-msgstr "该字段必须是合法的UUID"
+msgstr "该字段必须唯一"
 
 #: sa/sa_modell.py:31
 #, python-format
