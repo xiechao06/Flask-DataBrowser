@@ -8,7 +8,7 @@ import sys
 import types
 from collections import OrderedDict
 import urlparse
-import posixpath
+import os.path
 
 import werkzeug
 from werkzeug.utils import secure_filename
@@ -41,7 +41,6 @@ class ModelView(object):
 
     # 可以重写的属性
     column_formatters = {}
-    default_order = None
     __customized_actions__ = []
     __max_col_len__ = 255
     __extra_fields__ = {}
@@ -68,7 +67,8 @@ class ModelView(object):
                 cls._edit_col_specs = werkzeug.cached_property(
                     cls._edit_col_specs.fget)
             if getattr(cls.create_columns.fget, '__fdb_cached__', False):
-                cls._create_col_specs = werkzeug.cached_property(cls._create_col_specs.fget)
+                cls._create_col_specs = werkzeug.cached_property(
+                    cls._create_col_specs.fget)
 
     @classmethod
     def cached(cls, p):
@@ -236,6 +236,10 @@ class ModelView(object):
         return []
 
     @property
+    def default_order(self):
+        return (self.modell.primary_key, 'desc')
+
+    @property
     def default_filters(self):
         return []
 
@@ -308,7 +312,7 @@ class ModelView(object):
             id_list = [i for i in id_.split(",") if i]
 
         return_url = request.args.get(BACK_URL_PARAM) or \
-                     url_for('.' + self.list_view_endpoint)
+            url_for('.' + self.list_view_endpoint)
 
         if id_list is None:
             return redirect(return_url)
@@ -328,13 +332,13 @@ class ModelView(object):
                 ret = self._update_objs(form, [record])
                 if ret:
                     if isinstance(ret, werkzeug.wrappers.BaseResponse) and \
-                                    ret.status_code == 302:
+                       ret.status_code == 302:
                         return ret
                     else:
                         url_parts = list(urlparse.urlparse(request.url))
                         queries = url_parts[4].split('&')
                         queries = '&'.join(q for q in queries if not
-                        q.startswith(BACK_URL_PARAM))
+                                           q.startswith(BACK_URL_PARAM))
                         url = urlparse.urlunparse(url_parts)
                         return redirect(url)
             hint_message = self.edit_hint_message(preprocessed_record,
@@ -359,7 +363,7 @@ class ModelView(object):
                 ret = self._update_objs(form, records)
                 if ret:
                     if isinstance(ret, werkzeug.wrappers.BaseResponse) and \
-                                    ret.status_code == 302:
+                       ret.status_code == 302:
                         return ret
                     else:
                         return redirect(request.url)
@@ -377,7 +381,7 @@ class ModelView(object):
             grouper_2_cols = {}
             #TODO why many to one?
             if isinstance(col, InputColSpec) and col.group_by and \
-                            col.kolumne.direction == "MANYTOONE":
+               col.kolumne.direction == "MANYTOONE":
                 rows = [row for row in
                         col.filter_(col.kolumne.remote_side.query) if
                         col.opt_filter(row)]
@@ -600,7 +604,7 @@ class ModelView(object):
             processed_objs = [self.expand_model(obj) for obj in models]
             for action in self._compose_actions(processed_objs):
                 if action.name == action_name and \
-                                action.test(*processed_objs) == ACTION_OK:
+                   action.test(*processed_objs) == ACTION_OK:
                     try:
                         ret = action.op_upon_list(processed_objs, self)
                         if isinstance(ret, tuple):
@@ -609,7 +613,7 @@ class ModelView(object):
                         if not action.readonly:
                             self.modell.commit()
                         if isinstance(ret, werkzeug.wrappers.BaseResponse) \
-                            and ret.status_code == 302:
+                           and ret.status_code == 302:
                             if not action.readonly:
                                 flash(action.success_message(processed_objs),
                                       'success')
@@ -938,8 +942,8 @@ class ModelView(object):
                         uneditable_col_specs.append(c)
                     else:
                         col_specs.append(c)
-                # why split into 2 form, since only _edit_form will be validated
-            # and populated
+                # why split into 2 forms, since only _edit_form will be
+                # validated and populated
             self._edit_form = self._scaffold_form(col_specs)
             self._uneditable_form = self._scaffold_form(uneditable_col_specs)
             # if request specify some fields, then we override fields with this
@@ -1051,7 +1055,7 @@ class ModelView(object):
     def _get_step_create_template(self, step):
         try:
             return self.step_create_templates[step] or \
-                   'data_browser__/form.html'
+                'data_browser__/form.html'
         except IndexError:
             return 'data_browser__/form.html'
 
@@ -1093,11 +1097,11 @@ class ModelView(object):
                             col_spec.doc = self.modell.get_column_doc(col_name)
                         col_spec.data_browser = self.data_browser
                         normalized_col_specs.setdefault(fieldset_name,
-                            []).append(col_spec)
+                                                        []).append(col_spec)
                     else:
                         col.data_browser = self.data_browser
                         normalized_col_specs.setdefault(fieldset_name,
-                            []).append(col)
+                                                        []).append(col)
                 else:
                     col_spec = col
                     if isinstance(col, basestring):
@@ -1161,14 +1165,14 @@ class ModelView(object):
                             filename = secure_filename(fs.filename)
                             save_path = field.save_path
                             if not save_path:
-                                save_path = posixpath.join(
+                                save_path = os.path.join(
                                     self.data_browser.upload_folder, filename)
                             if isinstance(save_path, types.FunctionType):
                                 save_path = save_path(obj, filename)
                             fs.save(save_path)
                             save_paths.append(save_path)
                     setattr(obj, field.name, save_paths if field.multiple else
-                    save_paths[0])
+                            save_paths[0])
                 continue
             if field.raw_data:
                 field.populate_obj(obj, name)
@@ -1241,8 +1245,9 @@ class ModelView(object):
                             flash(
                                 _(u"can't apply %(action)s due to %(reason)s",
                                   action=action.name,
-                                  reason=action.forbidden_msg_formats[
-                                             ret_code] % {'obj': unicode(obj)}),
+                                  reason=
+                                  action.forbidden_msg_formats[ret_code] %
+                                  {'obj': unicode(obj)}),
                                 'error')
                             return False
                     try:
@@ -1257,7 +1262,7 @@ class ModelView(object):
                             flash(action.success_message(processed_objs),
                                   'success')
                         if isinstance(ret, werkzeug.wrappers.BaseResponse) \
-                            and ret.status_code == 302:
+                           and ret.status_code == 302:
                             return ret
                         return True
                     except Exception, ex:
@@ -1290,7 +1295,7 @@ class ModelView(object):
                                     filename = secure_filename(fs.filename)
                                     save_path = field.save_path
                                     if not save_path:
-                                        save_path = posixpath.join(
+                                        save_path = os.path.join(
                                             self.data_browser.upload_folder,
                                             filename)
                                     if isinstance(save_path,
@@ -1299,11 +1304,11 @@ class ModelView(object):
                                     fs.save(save_path)
                                     save_paths.append(save_path)
                             setattr(obj, field.name, save_paths if
-                            field.multiple else save_paths[0])
+                                    field.multiple else save_paths[0])
                         continue
                     if name not in untouched_fields and field.raw_data:
                         if isinstance(field, extra_fields.URLField) and \
-                                        getattr(obj, name) is None:
+                           getattr(obj, name) is None:
                             field.populate_obj(obj, name)
                             # if not convert field to string, will burst into
                             # error
@@ -1527,9 +1532,7 @@ class ModelView(object):
         it will be used, else "/__data_browser/form.html" will be used
         """
         if self.edit_template is None:
-            import posixpath
-
-            self.edit_template = posixpath.join(
+            self.edit_template = os.path.join(
                 self.data_browser.blueprint.name, "form.html")
         return self.edit_template
 

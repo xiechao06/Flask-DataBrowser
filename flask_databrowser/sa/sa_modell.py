@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from flask.ext.babel import _
+from werkzeug import cached_property
 from sqlalchemy.orm.properties import RelationshipProperty, ColumnProperty
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 from flask.ext.databrowser.modell import Modell
@@ -15,7 +16,6 @@ class SAModell(Modell):
         self.db = db
         super(SAModell, self).__init__(label or model.__name__)
         self._hide_back_ref = hide_back_ref
-        self._primary_key = None
 
     @property
     def name(self):
@@ -61,12 +61,9 @@ class SAModell(Modell):
     def query(self):
         return self.model.query
 
-    @property
+    @cached_property
     def primary_key(self):
-        if self._primary_key is None:
-            self._primary_key = get_primary_key(self.model)
-        return self._primary_key
-
+        return get_primary_key(self.model)
     def get_column_doc(self, col_name):
         criterion = self._get_last_sa_criterion(col_name)
         return getattr(criterion, "doc", None)

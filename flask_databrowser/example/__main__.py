@@ -183,7 +183,9 @@ def main():
 
         #__sortable_columns__ = ["id", "name", "group"]
 
-        default_order = ("name", "desc")
+        @property
+        def default_order(self):
+            return ("name", "desc")
 
         @property
         def filters(self):
