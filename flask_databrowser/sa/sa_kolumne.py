@@ -385,14 +385,11 @@ class SAKolumne(Kolumne):
         '''
         assert isinstance(v, basestring)
         column = self._property.columns[0]
-        coerce = self._get_coerce(column)
-        # note!!! must test datetime firstly, since datetime is subclass of
-        # date
-        if issubclass(coerce, datetime):
+        if isinstance(column.type, sa_types.DateTime):
             return datetime.strptime(v, self.datetime_format)
-        if issubclass(coerce, date):
+        elif isinstance(column.type, sa_types.Date):
             return datetime.strptime(v, self.date_format)
-        return coerce(v)
+        return v
 
 
 def pack_grouper(field, col_spec):
