@@ -26,7 +26,7 @@ class SAModell(Modell):
         return ".".join([self.model.__module__, self.name])
 
     def order_by(self, query, order_by, desc):
-        order_criterion = self._get_last_sa_criterion(order_by)
+        order_criterion = self._get_last_sa_column(order_by)
         if order_criterion is None:
             err_msg = _("Invalid order by criterion '%(order_by)s'",
                         order_by=order_by)
@@ -64,12 +64,12 @@ class SAModell(Modell):
     @cached_property
     def primary_key(self):
         return get_primary_key(self.model)
+
     def get_column_doc(self, col_name):
-        criterion = self._get_last_sa_criterion(col_name)
+        criterion = self._get_last_sa_column(col_name)
         return getattr(criterion, "doc", None)
 
-    #TODO should rename to _get_last_sa_column
-    def _get_last_sa_criterion(self, col_name):
+    def _get_last_sa_column(self, col_name):
         attr_name_list = col_name.split('.')
         last_model = self.model
 
@@ -85,7 +85,7 @@ class SAModell(Modell):
             return None
 
     def search_kolumne(self, col_name):
-        col_def = self._get_last_sa_criterion(col_name)
+        col_def = self._get_last_sa_column(col_name)
         if col_def:
             return SAKolumne(col_def, self.db)
         return None
@@ -144,7 +144,8 @@ class SAModell(Modell):
 
     @property
     def properties(self):
-        return [SAKolumne(p, self.db) for p in self.model.__mapper__.iterate_properties]
+        return [SAKolumne(p, self.db) for p in
+                self.model.__mapper__.iterate_properties]
 
     def get_kolumne(self, col_name):
         if self.has_kolumne(col_name):
@@ -152,7 +153,9 @@ class SAModell(Modell):
         return None
 
     def has_kolumne(self, col_name):
-        return hasattr(self.model, col_name) and isinstance(getattr(self.model, col_name), InstrumentedAttribute)
+        return hasattr(self.model, col_name) and \
+            isinstance(getattr(self.model, col_name),
+                       InstrumentedAttribute)
 
     @property
     def session(self):

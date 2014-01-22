@@ -582,7 +582,8 @@ class ModelView(object):
             kwargs["__count__"] = count
             kwargs["__data__"] = self._scaffold_list(data)
             kwargs["__object_url__"] = self.url_for_object()
-            kwargs["__order_by__"] = lambda col_name: col_name == order_by
+            kwargs["__order_by__"] = lambda col_name: \
+                    self._sortable_column_map[col_name] == order_by
             try:
                 self.try_create()
                 kwargs["__can_create__"] = True
@@ -1452,10 +1453,10 @@ class ModelView(object):
 
         def _(order_by, desc):
             for c in self._list_col_specs:
-                if c.col_name in self.sortable_columns:
+                if c.col_name in self._sortable_column_map:
                     args = request.args.copy()
-                    args["order_by"] = c.col_name
-                    if order_by == c.col_name:  # the table is sorted by c,
+                    args["order_by"] = self._sortable_column_map[c.col_name]
+                    if order_by == args['order_by']:  # the table is sorted by c,
                     # so revert the order
                         if not desc:
                             args["desc"] = 1
@@ -1471,6 +1472,16 @@ class ModelView(object):
                            sort_url=sort_url)
 
         return list(_(order_by=order_by, desc=desc))
+
+    @werkzeug.cached_property
+    def _sortable_column_map(self):
+        ret = {}
+        for c in self.sortable_columns:
+            if isinstance(c, basestring):
+                ret[c] = c
+            else:
+                ret[c[0]] = c[1]
+        return ret
 
     def _scaffold_list(self, objs):
         """

@@ -7,12 +7,12 @@ app.config['BABEL_DEFAULT_LOCALE'] = 'zh_CN'
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///temp.db"
 app.config["DEBUG"] = True
 from flask.ext.sqlalchemy import SQLAlchemy
+
 db = SQLAlchemy(app)
 
 from flask.ext.babel import Babel
 
 Babel(app)
-
 
 import logging
 from models import Log
@@ -27,18 +27,19 @@ class DBHandler(logging.Handler):
         log = Log()
         obj = getattr(record, "obj", None)
         if obj:
-            log.obj = repr(obj)
-        log.name = record.name
-        log.level = record.levelname
-        log.module = record.module
-        log.func_name = record.funcName
-        log.line_no = record.lineno
-        log.thread = record.thread
-        log.thread_name = record.threadName
-        log.process = record.process
-        log.message = record.msg
-        log.args = str(record.args)
+            log.obj = unicode(obj)
+        log.name = unicode(record.name)
+        log.level = unicode(record.levelname)
+        log.module = unicode(record.module)
+        log.func_name = unicode(record.funcName)
+        log.line_no = unicode(record.lineno)
+        log.thread = unicode(record.thread)
+        log.thread_name = unicode(record.threadName)
+        log.process = unicode(record.process)
+        log.message = unicode(record.msg)
+        log.args = unicode(record.args)
         db.session.add(log)
         db.session.commit()
+
 
 app.logger.addHandler(DBHandler())
