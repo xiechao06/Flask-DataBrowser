@@ -67,7 +67,6 @@ class InputColSpec(ColSpec):
         """
         return self.col_name + "." + self.group_by.__class__.__name__
 
-    # TODO should be make_field
     def make_field(self, record=None, model_view=None):
         """
         convert to field
