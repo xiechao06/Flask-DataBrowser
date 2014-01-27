@@ -136,6 +136,7 @@ class SAKolumne(Kolumne):
                 return fields.HiddenField()
             kwargs.update(sa_utils.get_column_default_value(column))
             kwargs.update(self._format_args(column))
+            kwargs.update(self._choices_args(column))
             ret = self._get_field(column, **kwargs)
         return ret
 
@@ -273,12 +274,11 @@ class SAKolumne(Kolumne):
             if column.type.scale is not None:
                 kwargs['step'] = self.scale_to_step(column.type.scale)
 
-        widget_class = self.WIDGET_MAP[field_cls]
-        return widget_class(**kwargs)
+        widget_class = self.WIDGET_MAP.get(field_cls)
+        return widget_class and widget_class(**kwargs)
 
-    def _choices_args(self):
+    def _choices_args(self, column):
         kwargs = {}
-        column = self._property.columns[0]
         if isinstance(column.type, sa_util_types.ChoiceType):
             kwargs['choices'] = column.type.choices
             kwargs['coerce'] = self._get_coerce(column)
