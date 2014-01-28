@@ -25,7 +25,7 @@ from wtforms_components.widgets import (ColorInput, EmailInput, DateInput,
 from flask.ext.databrowser.kolumne import Kolumne
 from flask.ext.databrowser.sa import sa_utils
 from flask.ext.databrowser import extra_widgets, utils
-from flask.ext.databrowser.extra_fields import URLField
+from flask.ext.databrowser.extra_fields import URLField, ChoiceSelectField
 from flask.ext.databrowser.col_spec import InputColSpec
 from flask.ext.databrowser.sa.sa_fields import GroupedQuerySelectField, QuerySelectField, QuerySelectMultipleField
 
@@ -50,7 +50,7 @@ class SAKolumne(Kolumne):
         (sa_types.Time, TimeField),
         (sa_types.Unicode, StringField),
         (sa_util_types.ArrowType, DateTimeField),
-        (sa_util_types.ChoiceType, SelectField),
+        (sa_util_types.ChoiceType, ChoiceSelectField),
         (sa_util_types.ColorType, ColorField),
         (sa_util_types.EmailType, EmailField),
         (sa_util_types.NumberRangeType, NumberRangeField),
