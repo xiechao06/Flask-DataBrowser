@@ -3,6 +3,7 @@ from datetime import time
 import furl
 from flask.ext.babel import gettext
 from wtforms import fields, widgets
+import wtforms_components
 from flask.ext.databrowser.extra_widgets import Select2Widget, Select2TagsWidget
 
 
@@ -106,3 +107,13 @@ class URLField(fields.html5.URLField):
             self.data = furl.furl(valuelist[0])
         else:
             self.data = furl.furl('')
+
+
+class ChoiceSelectField(wtforms_components.SelectField):
+    '''
+    why provides this field for ChoiceType, because only when
+    wtforms_components.SelectField requires when field's data is the choice's code,
+    the choice is selected
+    '''
+    def process_data(self, value):
+        self.data = value.code
