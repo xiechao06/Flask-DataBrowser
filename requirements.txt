@@ -1,7 +1,5 @@
-pyquery>=1.2.4
 flask
 flask-sqlalchemy
-Hamlish-Jinja
 PyYAML>=3.10
 wtforms
 Flask-Principal>=0.3.3
